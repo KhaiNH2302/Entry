@@ -1,0 +1,2598 @@
+Date: Mon, 27 Jul 2026 01:53:14 +0000 (UTC)
+Message-ID: <1072299572.95.1785117194142@25e00f440432>
+Subject: Exported From Confluence
+MIME-Version: 1.0
+Content-Type: multipart/related; 
+	boundary="----=_Part_94_1708008539.1785117194141"
+
+------=_Part_94_1708008539.1785117194141
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Content-Location: file:///C:/exported.html
+
+<html xmlns:o=3D'urn:schemas-microsoft-com:office:office'
+      xmlns:w=3D'urn:schemas-microsoft-com:office:word'
+      xmlns:v=3D'urn:schemas-microsoft-com:vml'
+      xmlns=3D'urn:w3-org-ns:HTML'>
+<head>
+    <meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8=
+">
+    <title>=C4=90=E1=BA=B7c t=E1=BA=A3 c=C3=A1c k=C3=AAnh t=C3=ADch h=E1=BB=
+=A3p</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:TargetScreenSize>1024x640</o:TargetScreenSize>
+            <o:PixelsPerInch>72</o:PixelsPerInch>
+            <o:AllowPNG/>
+        </o:OfficeDocumentSettings>
+        <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>90</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+                <!--
+        @page Section1 {
+            size: 8.5in 11.0in;
+            margin: 1.0in;
+            mso-header-margin: .5in;
+            mso-footer-margin: .5in;
+            mso-paper-source: 0;
+        }
+
+        table {
+            border: solid 1px;
+            border-collapse: collapse;
+        }
+
+        table td, table th {
+            border: solid 1px;
+            padding: 5px;
+        }
+
+        td {
+            page-break-inside: avoid;
+        }
+
+        tr {
+            page-break-after: avoid;
+        }
+
+        div.Section1 {
+            page: Section1;
+        }
+
+        /* Confluence print stylesheet. Common to all themes for print medi=
+a */
+/* Full of !important until we improve batching for print CSS */
+
+@media print {
+    #main {
+        padding-bottom: 1em !important; /* The default padding of 6em is to=
+o much for printouts */
+    }
+
+    body {
+        font: var(--ds-font-body-small, Arial, Helvetica, FreeSans, sans-se=
+rif);
+    }
+
+    body, #full-height-container, #main, #page, #content, .has-personal-sid=
+ebar #content {
+        background: var(--ds-surface, #fff) !important;
+        color: var(--ds-text, #000) !important;
+        border: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+
+    a, a:link, a:visited, a:focus, a:hover, a:active {
+        color: var(--ds-text, #000);
+    }
+
+    #content h1,
+    #content h2,
+    #content h3,
+    #content h4,
+    #content h5,
+    #content h6 {
+        page-break-after: avoid;
+    }
+
+    pre {
+        font: var(--ds-font-code, Monaco, "Courier New", monospace);
+    }
+
+    #header,
+    .aui-header-inner,
+    #navigation,
+    #sidebar,
+    .sidebar,
+    #personal-info-sidebar,
+    .ia-fixed-sidebar,
+    .page-actions,
+    .navmenu,
+    .ajs-menu-bar,
+    .noprint,
+    .inline-control-link,
+    .inline-control-link a,
+    a.show-labels-editor,
+    .global-comment-actions,
+    .comment-actions,
+    .quick-comment-container,
+    #addcomment {
+        display: none !important;
+    }
+
+    /* CONF-28544 cannot print multiple pages in IE */
+    #splitter-content {
+        position: relative !important;
+    }
+
+    .comment .date::before {
+        content: none !important; /* remove middot for print view */
+    }
+
+    h1.pagetitle img {
+        height: auto;
+        width: auto;
+    }
+
+    .print-only {
+        display: block;
+    }
+
+    #footer {
+        position: relative !important; /* CONF-17506 Place the footer at en=
+d of the content */
+        margin: 0;
+        padding: 0;
+        background: none;
+        clear: both;
+    }
+
+    #poweredby {
+        border-top: none;
+        background: none;
+    }
+
+    #poweredby li.print-only {
+        display: list-item;
+        font-style: italic;
+    }
+
+    #poweredby li.noprint {
+        display: none;
+    }
+
+    /* no width controls in print */
+    .wiki-content .table-wrap,
+    .wiki-content p,
+    .panel .codeContent,
+    .panel .codeContent pre,
+    .image-wrap {
+        overflow: visible !important;
+    }
+
+    /* TODO - should this work? */
+    #children-section,
+    #comments-section .comment,
+    #comments-section .comment .comment-body,
+    #comments-section .comment .comment-content,
+    #comments-section .comment p {
+        page-break-inside: avoid;
+    }
+
+    #page-children a {
+        text-decoration: none;
+    }
+
+    /**
+     hide twixies
+
+     the specificity here is a hack because print styles
+     are getting loaded before the base styles. */
+    #comments-section.pageSection .section-header,
+    #comments-section.pageSection .section-title,
+    #children-section.pageSection .section-header,
+    #children-section.pageSection .section-title,
+    .children-show-hide {
+        padding-left: 0;
+        margin-left: 0;
+    }
+
+    .children-show-hide.icon {
+        display: none;
+    }
+
+    /* personal sidebar */
+    .has-personal-sidebar #content {
+        margin-right: 0px;
+    }
+
+    .has-personal-sidebar #content .pageSection {
+        margin-right: 0px;
+    }
+
+    .no-print, .no-print * {
+        display: none !important;
+    }
+}
+-->
+    </style>
+</head>
+<body>
+    <h1>=C4=90=E1=BA=B7c t=E1=BA=A3 c=C3=A1c k=C3=AAnh t=C3=ADch h=E1=BB=A3=
+p</h1>
+    <div class=3D"Section1">
+        <h1 local-id=3D"cb5171420a70" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=
+=C3=A1ck=C3=AAnht=C3=ADchh=E1=BB=A3p-T=C3=A0ili=E1=BB=87ut=C3=ADchh=E1=BB=
+=A3ph=E1=BB=87th=E1=BB=91ngQLTS=E2=80=93OGL=E2=80=93CoreBanking">T=C3=A0i l=
+i=E1=BB=87u t=C3=ADch h=E1=BB=A3p h=E1=BB=87 th=E1=BB=91ng QLTS =E2=80=93 O=
+GL =E2=80=93 Core Banking</h1>
+<h2 local-id=3D"25af62f6fdbe" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-1.M=E1=BB=A5cti=C3=AAu">1. M=E1=BB=A5c ti=C3=
+=AAu</h2>
+<p local-id=3D"dfa8b6ba572b">T=C3=A0i li=E1=BB=87u m=C3=B4 t=E1=BA=A3 chi t=
+i=E1=BA=BFt lu=E1=BB=93ng nghi=E1=BB=87p v=E1=BB=A5, API t=C3=ADch h=E1=BB=
+=A3p gi=E1=BB=AFa h=E1=BB=87 th=E1=BB=91ng QLTS (H=E1=BA=A1ch to=C3=A1n k=
+=E1=BA=BF to=C3=A1n), h=E1=BB=87 th=E1=BB=91ng OGL v=C3=A0 Core Banking Vie=
+tinBank nh=E1=BA=B1m ph=E1=BB=A5c v=E1=BB=A5 c=C3=A1c nghi=E1=BB=87p v=E1=
+=BB=A5: v=E1=BA=A5n tin t=C3=A0i kho=E1=BA=A3n, qu=E1=BA=A3n l=C3=BD NCC, t=
+=E1=BA=A1o ch=E1=BB=A9ng t=E1=BB=AB AP, thanh to=C3=A1n, h=E1=BA=A1ch to=C3=
+=A1n GL v=C3=A0 chuy=E1=BB=83n ti=E1=BB=81n.</p>
+<p local-id=3D"5da0dae4637c">T=C3=A0i li=E1=BB=87u m=C3=B4 t=E1=BA=A3 <stro=
+ng>logic x=E1=BB=AD l=C3=BD</strong>, <strong>mapping d=E1=BB=AF li=E1=BB=
+=87u</strong>, <strong>lu=E1=BB=93ng t=C3=ADch h=E1=BB=A3p</strong>, <stron=
+g>sequence diagram</strong>, v=C3=A0 <strong>mapping API =E2=80=93 Database=
+ =E2=80=93 Logic</strong> cho hai nghi=E1=BB=87p v=E1=BB=A5:</p>
+<ul local-id=3D"b27e8a8d-0f9b-461d-b677-060cfd2d25bf">
+<li local-id=3D"72efcf0e-ed18-4479-9331-93867ed55d8b">
+<p local-id=3D"67dd9a42274a"><strong>T=E1=BA=A1m =E1=BB=A9ng (TU)</strong><=
+/p></li>
+<li local-id=3D"ed099f46-e761-4297-b422-ff8f10580688">
+<p local-id=3D"48e017936c09"><strong>Thanh to=C3=A1n (TT)</strong></p></li>
+</ul>
+<p local-id=3D"d1e8123dc226">=C3=81p d=E1=BB=A5ng cho 3 h=E1=BB=87 th=E1=BB=
+=91ng:</p>
+<ul local-id=3D"f33d3403-9ba2-485c-a8e5-706f1a50bf32">
+<li local-id=3D"278ac453-e44c-4ec1-abcf-e949f039163d">
+<p local-id=3D"14b4f59a29d3"><strong>QLTS (H=E1=BA=A1ch to=C3=A1n k=E1=BA=
+=BF to=C3=A1n)</strong> =E2=80=93 H=E1=BB=87 th=E1=BB=91ng sinh logic, t=C3=
+=ADnh to=C3=A1n b=C3=BAt to=C3=A1n, qu=E1=BA=A3n l=C3=BD phi=E1=BA=BFu.</p>=
+</li>
+<li local-id=3D"9ebe62ee-9857-4e3e-998b-0ae49536567b">
+<p local-id=3D"648e01681c6f"><strong>OGL</strong> =E2=80=93 H=E1=BB=87 th=
+=E1=BB=91ng ghi nh=E1=BA=ADn b=C3=BAt to=C3=A1n k=E1=BA=BF to=C3=A1n.</p></=
+li>
+<li local-id=3D"535e67a2-974c-49e8-aa17-f7f138e9ac6a">
+<p local-id=3D"547cf78aec92"><strong>Core Banking</strong> =E2=80=93 H=E1=
+=BB=87 th=E1=BB=91ng th=E1=BB=B1c hi=E1=BB=87n chuy=E1=BB=83n ti=E1=BB=81n =
+v=C3=A0 v=E1=BA=A5n tin t=C3=A0i kho=E1=BA=A3n.</p></li>
+</ul>
+<h2 local-id=3D"dee34c28022f" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-2.Ki=E1=BA=BFntr=C3=BAct=E1=BB=95ngth=E1=BB=83=
+">2. Ki=E1=BA=BFn tr=C3=BAc t=E1=BB=95ng th=E1=BB=83</h2>
+<p local-id=3D"ce9c4f954b42">Lu=E1=BB=93ng t=C3=ADch h=E1=BB=A3p g=E1=BB=93=
+m c=C3=A1c b=C6=B0=E1=BB=9Bc ch=C3=ADnh:</p>
+<ul local-id=3D"92e5a5ed-1d33-4047-a390-60797654b7f2">
+<li local-id=3D"f3f24597-98b9-4dfd-bb7d-bc3427720d16">
+<p local-id=3D"1142307d1bcf">Kh=E1=BB=9Fi t=E1=BA=A1o phi=E1=BA=BFu =C4=91=
+=E1=BB=81 ngh=E1=BB=8B t=E1=BA=A1m =E1=BB=A9ng/thanh to=C3=A1n.</p>
+<ul local-id=3D"6c41a3b53587">
+<li local-id=3D"5e960f4d-ffb7-48f9-98da-1e2e56956e7e">
+<p local-id=3D"ad76809e58ff">V=E1=BA=A5n tin t=C3=A0i kho=E1=BA=A3n Core Ba=
+nking.</p></li>
+<li local-id=3D"79dcebb7-9a3a-4321-91a2-fc2324d3fd5e">
+<p local-id=3D"e731098b40d4">V=E1=BA=A5n tin/t=E1=BA=A1o m=E1=BB=9Bi NCC tr=
+=C3=AAn OGL.</p></li>
+</ul></li>
+<li local-id=3D"2ace3f9d-b4db-4d1e-bb78-345c98a88fc2">
+<p local-id=3D"7a232ab29328">Ph=C3=AA duy=E1=BB=87t phi=E1=BA=BFu thanh to=
+=C3=A1n.</p>
+<ul local-id=3D"1c68d01400ba">
+<li local-id=3D"eb27f2b9-e37b-4171-b212-711423203775">
+<p local-id=3D"3d9eebea295a">G=E1=BB=ADi ch=E1=BB=A9ng t=E1=BB=AB AP sang O=
+GL.</p></li>
+<li local-id=3D"dd87b8ea-f494-4cdf-a73a-bb74cde0cd98">
+<p local-id=3D"d95f05129713">G=E1=BB=ADi l=C3=B4 h=E1=BA=A1ch to=C3=A1n GL.=
+</p></li>
+<li local-id=3D"d2434d80-98fa-4aca-9248-7eba0a5d0383">
+<p local-id=3D"3f611c877c4f">Chuy=E1=BB=83n ti=E1=BB=81n qua Core Banking (=
+n=E1=BB=99i b=E1=BB=99/CITAD).</p></li>
+</ul></li>
+<li local-id=3D"bd0ea442-0a41-4797-965d-6fd1bbca6dc6">
+<p local-id=3D"70b87a4fcdd1">Tra c=E1=BB=A9u tr=E1=BA=A1ng th=C3=A1i h=E1=
+=BA=A1ch to=C3=A1n OGL. (Job)</p></li>
+</ul>
+<p local-id=3D"03c1b3b88943">Reference t=C3=A0i li=E1=BB=87u chi ti=E1=BA=
+=BFt t=C3=ADch h=E1=BB=A3p Core banking</p>
+<p local-id=3D"79f0fedb4093"><a href=3D"https://vietinbank.atlassian.net/wi=
+ki/spaces/DX/pages/363036775/c+t+t+ch+h+p+Core+Banking+-+chuy+n+ti+n" data-=
+linked-resource-id=3D"363036775" data-linked-resource-version=3D"6" data-li=
+nked-resource-type=3D"page">=C4=90=E1=BA=B7c t=E1=BA=A3 t=C3=ADch h=E1=BB=
+=A3p Core Banking - chuy=E1=BB=83n ti=E1=BB=81n</a></p>
+<p local-id=3D"6b7f418903bf">Reference t=C3=A0i li=E1=BB=87u chi ti=E1=BA=
+=BFt t=C3=ADch h=E1=BB=A3p OGL</p>
+<p local-id=3D"db7bda8fee05"><a href=3D"https://vietinbank.atlassian.net/wi=
+ki/spaces/DX/pages/363398468/c+t+t+ch+h+p+OGL" data-linked-resource-id=3D"3=
+63398468" data-linked-resource-version=3D"24" data-linked-resource-type=3D"=
+page">=C4=90=E1=BA=B7c t=E1=BA=A3 t=C3=ADch h=E1=BB=A3p OGL</a></p>
+<h2 local-id=3D"eaa57bbaeb02" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-3.S=C6=A1=C4=91=E1=BB=93sequencet=E1=BB=95ngth=
+=E1=BB=83">3. S=C6=A1 =C4=91=E1=BB=93 sequence t=E1=BB=95ng th=E1=BB=83</h2=
+><span class=3D"confluence-embedded-file-wrapper image-center-wrapper confl=
+uence-embedded-manual-size"><img class=3D"confluence-embedded-image image-c=
+enter" alt=3D"image-20260724-035807.png" width=3D"468" loading=3D"lazy" src=
+=3D"a02730a6f084478d351aa81b6dcb2e4d4f5d54832b3d51505f1b6e8b35ee4e83" data-=
+image-src=3D"https://vietinbank.atlassian.net/wiki/download/attachments/362=
+546174/image-20260724-035807.png?version=3D1&amp;modificationDate=3D1784865=
+486364&amp;cacheVersion=3D1&amp;api=3Dv2" data-height=3D"1963" data-width=
+=3D"1045" data-unresolved-comment-count=3D"0" data-linked-resource-id=3D"36=
+8345381" data-linked-resource-version=3D"1" data-linked-resource-type=3D"at=
+tachment" data-linked-resource-default-alias=3D"image-20260724-035807.png" =
+data-base-url=3D"https://vietinbank.atlassian.net/wiki" data-linked-resourc=
+e-content-type=3D"image/png" data-linked-resource-container-id=3D"362546174=
+" data-linked-resource-container-version=3D"12" data-media-id=3D"cebdb7fb-7=
+836-4baf-8c9a-5972e99d6560" data-media-type=3D"file" height=3D"879"></span>
+<p local-id=3D"63e628fabef2"></p>
+<h2 local-id=3D"91610a131f52" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.Lu=E1=BB=93ngnghi=E1=BB=87pv=E1=BB=A5chiti=
+=E1=BA=BFt">4. Lu=E1=BB=93ng nghi=E1=BB=87p v=E1=BB=A5 chi ti=E1=BA=BFt</h2=
+>
+<h3 local-id=3D"a2d2065bcbce" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.1.Lu=E1=BB=93ngnghi=E1=BB=87pv=E1=BB=A5T=E1=
+=BA=A1m=E1=BB=A9ng(TU)">4.1. Lu=E1=BB=93ng nghi=E1=BB=87p v=E1=BB=A5 T=E1=
+=BA=A1m =E1=BB=A9ng (TU)</h3>
+<h4 local-id=3D"48fc7ac98ca8" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.1.1.C=C3=A1cb=C6=B0=E1=BB=9Bcth=E1=BB=B1chi=
+=E1=BB=87n">4.1.1. C=C3=A1c b=C6=B0=E1=BB=9Bc th=E1=BB=B1c hi=E1=BB=87n</h4=
+>
+<ol start=3D"1" local-id=3D"3f71d4f5-4378-4a0a-a8fc-668542ccead3">
+<li local-id=3D"655d67df-fffc-4873-be93-137678f4dfbf">
+<p local-id=3D"2c44bbe39e6d">T=E1=BA=A1o =C4=91=E1=BB=81 ngh=E1=BB=8B t=E1=
+=BA=A1m =E1=BB=A9ng</p>
+<ol start=3D"1" local-id=3D"9032e422b210">
+<li local-id=3D"53f03a25-604f-4aa6-9c59-43d6458da062">
+<p local-id=3D"52e056b73b6e">Ki=E1=BB=83m tra NCC &amp; Site NCC (OGL)</p><=
+/li>
+<li local-id=3D"36b99916-b25c-4a8d-97be-bef85fd2116a">
+<p local-id=3D"f0f3da41b227">V=E1=BA=A5n tin t=C3=A0i kho=E1=BA=A3n th=E1=
+=BB=A5 h=C6=B0=E1=BB=9Fng (CoreBanking)</p></li>
+<li local-id=3D"e3a5d11e-e124-47bc-ab1b-96683e71917b">
+<p local-id=3D"5e7a890b0279">Ki=E1=BB=83m tra c=C3=B4ng n=E1=BB=A3 NCC</p><=
+/li>
+</ol></li>
+<li local-id=3D"ca0395ce-0c0b-4e34-aa3e-e3e1b9864c92">
+<p local-id=3D"9daa4d8cd7e6">Ph=C3=AA duy=E1=BB=87t</p>
+<ol start=3D"1" local-id=3D"f19cca77681c">
+<li local-id=3D"55778b40-89c5-481f-9f17-3f767bc28435">
+<p local-id=3D"2137f7e70633">Sinh b=C3=BAt to=C3=A1n</p></li>
+<li local-id=3D"843fb161-c97b-422b-93ef-65611619b813">
+<p local-id=3D"84a3c98cb5c3">G=E1=BB=ADi OGL (AP/GL)</p></li>
+<li local-id=3D"d6f2afcd-a60a-4900-87f8-c612b5dc3ded">
+<p local-id=3D"61a2a15dfeaf">Chuy=E1=BB=83n ti=E1=BB=81n CoreBanking</p></l=
+i>
+<li local-id=3D"4abb1e37-5991-4ec7-95ca-e60ea2482092">
+<p local-id=3D"1c149dae57e7">C=E1=BA=ADp nh=E1=BA=ADt k=E1=BA=BFt qu=E1=BA=
+=A3</p></li>
+</ol></li>
+</ol>
+<h4 local-id=3D"87ae6398c453" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.1.2.Logicsinhb=C3=BAtto=C3=A1nT=E1=BA=A1m=E1=
+=BB=A9ng(TU)">4.1.2. Logic sinh b=C3=BAt to=C3=A1n T=E1=BA=A1m =E1=BB=A9ng =
+(TU)</h4>
+<div class=3D"table-wrap">
+<table data-layout=3D"default" data-local-id=3D"f35324b2-9cb8-4fca-ba31-77c=
+aed1ba656" class=3D"confluenceTable">
+<tbody>
+<tr data-local-id=3D"b364fed2-fe3b-478d-a4ec-3a99a154ab7f">
+<th data-local-id=3D"a8ea424c-cf88-4dcd-881a-0d7330b93943" class=3D"conflue=
+nceTh">
+<p local-id=3D"6834b79398ae">Case</p></th>
+<th data-local-id=3D"8383138c-c025-4192-8d6e-cc58cbf859ae" class=3D"conflue=
+nceTh">
+<p local-id=3D"1769c7ef5964">Payment Method</p></th>
+<th data-local-id=3D"8039e8e5-9753-4b95-9672-79e15a74847b" class=3D"conflue=
+nceTh">
+<p local-id=3D"79f969622086">Tax</p></th>
+<th data-local-id=3D"7b32ed17-4304-4f92-baa2-bf713efc8f15" class=3D"conflue=
+nceTh">
+<p local-id=3D"f6e33aa927aa">OGL API</p></th>
+<th data-local-id=3D"5fa0f51d-762d-4bd1-b6cf-75f74fb67928" class=3D"conflue=
+nceTh">
+<p local-id=3D"2f972c34e694">Accounting Entry</p></th>
+<th data-local-id=3D"2306ae5f-8390-4f63-8c6f-6f3541a0b094" class=3D"conflue=
+nceTh">
+<p local-id=3D"f9582ee633b0">Core Banking</p></th>
+</tr>
+<tr data-local-id=3D"72fcccc9-ae8a-4871-b989-6a3b1b1c9a9e">
+<td data-local-id=3D"5af6a30c-a77d-48c7-af7e-17ea3faee7a6" class=3D"conflue=
+nceTd">
+<p local-id=3D"054d83df65e1">TU-01</p></td>
+<td data-local-id=3D"d99ff68d-8bcd-44c4-9757-648012f4fa3c" class=3D"conflue=
+nceTd">
+<p local-id=3D"5f4959ce31dd">Transfer</p></td>
+<td data-local-id=3D"fb270f38-096e-4b6b-b3de-98c2ffe8408a" class=3D"conflue=
+nceTd">
+<p local-id=3D"844f19681503">No</p></td>
+<td data-local-id=3D"11b59055-3770-4ee6-86af-7158f548ad41" class=3D"conflue=
+nceTd">
+<p local-id=3D"06acf4021c12">OGL Vendor =E2=86=92 OGL AP Invoice (Prepaymen=
+t) =E2=86=92 OGL AP Payment</p></td>
+<td data-local-id=3D"0182703f-007c-49fa-b7f2-331491c53994" class=3D"conflue=
+nceTd">
+<p local-id=3D"e11f68e7cb03">Prepayment + Payment</p></td>
+<td data-local-id=3D"6e58d622-8fcf-4150-ad04-436a7d112723" class=3D"conflue=
+nceTd">
+<p local-id=3D"ac0401cf9d9a">Transfer</p></td>
+</tr>
+<tr data-local-id=3D"3cd7c425-321c-4474-a760-79745c541d73">
+<td data-local-id=3D"6677ee71-c34a-4e4b-bb82-67bd5176aaee" class=3D"conflue=
+nceTd">
+<p local-id=3D"69872a531e3c">TU-02</p></td>
+<td data-local-id=3D"c392144f-a068-4492-a220-bfc79f6dfb48" class=3D"conflue=
+nceTd">
+<p local-id=3D"9b8d984ece94">Transfer</p></td>
+<td data-local-id=3D"5edf75a6-90be-4b0e-9750-ae65d615a00c" class=3D"conflue=
+nceTd">
+<p local-id=3D"b7693bcbd582">Yes</p></td>
+<td data-local-id=3D"58c73519-fd05-45f4-8935-c8b37ff89d71" class=3D"conflue=
+nceTd">
+<p local-id=3D"12955d27e587">OGL Vendor =E2=86=92 OGL AP Invoice (Prepaymen=
+t) =E2=86=92 OGL AP Invoice (Standard) =E2=86=92 OGL AP Payment</p></td>
+<td data-local-id=3D"44b86aac-4d06-4e7b-8c59-193532978736" class=3D"conflue=
+nceTd">
+<p local-id=3D"102aeaec883a">Prepayment + Tax + Payment</p></td>
+<td data-local-id=3D"65d12b07-781d-4076-ab5a-e6ca7cf6d269" class=3D"conflue=
+nceTd">
+<p local-id=3D"bd0881cc3bae">Transfer</p></td>
+</tr>
+<tr data-local-id=3D"cc656d56-bf23-4c04-a03f-4fbec21ae3c2">
+<td data-local-id=3D"5d529649-e183-4070-8e05-70ecdd8783ba" class=3D"conflue=
+nceTd">
+<p local-id=3D"c22515ae32eb">TU-03</p></td>
+<td data-local-id=3D"667459e1-4b02-4256-863b-55288cbccaa2" class=3D"conflue=
+nceTd">
+<p local-id=3D"b40c7aea2a72">Cash</p></td>
+<td data-local-id=3D"bd20393e-2316-4d72-a59c-3be02f18e6d7" class=3D"conflue=
+nceTd">
+<p local-id=3D"961ba5515209">No</p></td>
+<td data-local-id=3D"2640bacc-a22d-4fd2-ae5d-eab164c92626" class=3D"conflue=
+nceTd">
+<p local-id=3D"d0e75e5376c4">OGL Vendor =E2=86=92 OGL AP Invoice (Prepaymen=
+t) =E2=86=92 OGL AP Payment =E2=86=92 OGL GL Interface</p></td>
+<td data-local-id=3D"d6fb69ed-b151-432d-ad76-bb46e468754c" class=3D"conflue=
+nceTd">
+<p local-id=3D"1fe270dc91c6">Prepayment + Payment + Cash Journal</p></td>
+<td data-local-id=3D"19720aaa-7ac5-437f-810e-4487f4fb8234" class=3D"conflue=
+nceTd">
+<p local-id=3D"4f4bad0f3951">Kh=C3=B4ng</p></td>
+</tr>
+<tr data-local-id=3D"79530298-e6d7-4be4-b133-630278483db1">
+<td data-local-id=3D"d87e8c07-39b1-435e-b502-d13eb2c5558f" class=3D"conflue=
+nceTd">
+<p local-id=3D"26b496f73229">TU-04</p></td>
+<td data-local-id=3D"c56eff37-e2a0-462d-9957-85ae79e9e905" class=3D"conflue=
+nceTd">
+<p local-id=3D"195141579e2f">Cash</p></td>
+<td data-local-id=3D"5fd7b015-39a4-45f5-aec5-2c73de039ebf" class=3D"conflue=
+nceTd">
+<p local-id=3D"c85b5ad14e43">Yes</p></td>
+<td data-local-id=3D"292a9926-d757-484f-9976-16899c72684f" class=3D"conflue=
+nceTd">
+<p local-id=3D"ecc0db737c70">OGL Vendor =E2=86=92 OGL AP Invoice (Prepaymen=
+t) =E2=86=92 OGL AP Invoice (Standard) =E2=86=92 OGL AP Payment =E2=86=92 O=
+GL GL Interface</p></td>
+<td data-local-id=3D"facb4287-a77c-4dd4-a232-8b51008e7ae8" class=3D"conflue=
+nceTd">
+<p local-id=3D"d93b869059eb">Prepayment + Tax + Payment + Cash Journal</p><=
+/td>
+<td data-local-id=3D"4282dbb6-cd7d-4606-ba86-9b5a17196334" class=3D"conflue=
+nceTd">
+<p local-id=3D"15f1cbf580a8">Kh=C3=B4ng</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 local-id=3D"a0c63b3a5dac" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.2V=E1=BA=A5ntint=C3=A0ikho=E1=BA=A3nCoreBank=
+ing">4.2 V=E1=BA=A5n tin t=C3=A0i kho=E1=BA=A3n Core Banking</h3>
+<p local-id=3D"9e4cc99186bb"><strong>API:</strong> <code>A382_MSA_PRF_DEP_I=
+NQ v1.0.0</code></p>
+<p local-id=3D"eec9658b8f7d"><strong>M=E1=BB=A5c =C4=91=C3=ADch:</strong> L=
+=E1=BA=A5y t=C3=AAn ch=E1=BB=A7 t=C3=A0i kho=E1=BA=A3n =C4=91=E1=BB=83 gi=
+=E1=BA=A3m r=E1=BB=A7i ro nh=E1=BA=ADp sai.</p>
+<p local-id=3D"08badabb0cfd"><strong>Input ch=C3=ADnh:</strong></p>
+<ul local-id=3D"a18e47c4-c959-4f0a-8568-ade1cf452c96">
+<li local-id=3D"54ae18e7-a970-4a8e-b868-449aff1c9af5">
+<p local-id=3D"89ccb92f85f9"><code>data.acctId</code>: S=E1=BB=91 t=C3=A0i =
+kho=E1=BA=A3n th=E1=BB=A5 h=C6=B0=E1=BB=9Fng.</p></li>
+<li local-id=3D"81f74644-c034-4770-9b5a-43e1c34b90ca">
+<p local-id=3D"57ac909f587d"><code>data.type =3D "1"</code> (truy v=E1=BA=
+=A5n t=C3=A0i kho=E1=BA=A3n).</p></li>
+<li local-id=3D"6eeb6987-f3c9-42e6-ab46-8aeabdaac7f1">
+<p local-id=3D"febce775e4dc"><code>data.debOrCre =3D "C"</code>.</p></li>
+</ul>
+<p local-id=3D"d0f7ef5eeabe"><strong>Output ch=C3=ADnh:</strong></p>
+<ul local-id=3D"77e3b49f-0326-4cc6-8e77-a41b53653f77">
+<li local-id=3D"b85639fe-fac3-45f1-99db-f64a90cd5c53">
+<p local-id=3D"33c862476565"><code>data.acctName</code>: T=C3=AAn ch=E1=BB=
+=A7 t=C3=A0i kho=E1=BA=A3n.</p></li>
+<li local-id=3D"a49dc692-9dab-4621-a984-df5bdd80bdd3">
+<p local-id=3D"e8ad2b21d9af"><code>data.stat</code>: Tr=E1=BA=A1ng th=C3=A1=
+i t=C3=A0i kho=E1=BA=A3n.</p></li>
+</ul>
+<blockquote local-id=3D"390d5bb1-7421-4298-937c-6f3c1fa06664">
+<p local-id=3D"20db38e0ffd2">V=C3=AD d=E1=BB=A5 t=E1=BB=AB t=C3=A0i li=E1=
+=BB=87u: =E2=80=9Cdata.acctName=E2=80=9D: =E2=80=9CCustomer Name=E2=80=9D</=
+p>
+</blockquote>
+<p local-id=3D"9c8cd86fabe9">QLTS l=C6=B0u k=E1=BA=BFt qu=E1=BA=A3 v=C3=A0o=
+ phi=E1=BA=BFu =C4=91=E1=BB=81 ngh=E1=BB=8B.</p>
+<h3 local-id=3D"cfbc5457f812" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.3V=E1=BA=A5ntin/t=E1=BA=A1om=E1=BB=9BiNCCtr=
+=C3=AAnOGL">4.3 V=E1=BA=A5n tin / t=E1=BA=A1o m=E1=BB=9Bi NCC tr=C3=AAn OGL=
+</h3>
+<h4 local-id=3D"ee8ba1f13a2d" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.3.1V=E1=BA=A5ntinNCC">4.3.1 V=E1=BA=A5n tin =
+NCC</h4>
+<p local-id=3D"9b2812782484"><strong>API:</strong> <code>GET /vendors/site-=
+info</code></p>
+<p local-id=3D"0d897ebfa997"><strong>Input:</strong> <code>entity</code>, <=
+code>vendorName</code>, <code>vendorNumber</code>, <code>vendorSiteCode</co=
+de>.</p>
+<p local-id=3D"f95a53d73857"><strong>Output:</strong> Danh s=C3=A1ch NCC v=
+=C3=A0 site.</p>
+<p local-id=3D"b34a4bbf0ebb">N=E1=BA=BFu NCC <strong>ch=C6=B0a t=E1=BB=93n =
+t=E1=BA=A1i</strong>, chuy=E1=BB=83n sang b=C6=B0=E1=BB=9Bc t=E1=BA=A1o m=
+=E1=BB=9Bi.</p>
+<h4 local-id=3D"0fa522079677" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.3.2T=E1=BA=A1om=E1=BB=9BiNCC">4.3.2 T=E1=BA=
+=A1o m=E1=BB=9Bi NCC</h4>
+<p local-id=3D"828f7a0abbe4"><strong>API:</strong> <code>POST /vendors/site=
+</code></p>
+<p local-id=3D"dedd7d62d889"><strong>Input:</strong> Th=C3=B4ng tin NCC + c=
+=C3=A1c segment h=E1=BA=A1ch to=C3=A1n (dr/cr).</p>
+<p local-id=3D"ee497ff6dd39"><strong>Output:</strong> <code>vendorId</code>=
+, <code>vendorSiteId</code>, <code>status</code>.</p>
+<p local-id=3D"efd9f4413c7a">QLTS l=C6=B0u vendorNumber + vendorSiteCode v=
+=C3=A0o phi=E1=BA=BFu =C4=91=E1=BB=81 ngh=E1=BB=8B.</p>
+<h3 local-id=3D"62cffff4b28c" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.4Ph=C3=AAduy=E1=BB=87tphi=E1=BA=BFuthanhto=
+=C3=A1n">4.4 Ph=C3=AA duy=E1=BB=87t phi=E1=BA=BFu thanh to=C3=A1n</h3>
+<p local-id=3D"b417a85f13a0">Ng=C6=B0=E1=BB=9Di d=C3=B9ng ph=C3=AA duy=E1=
+=BB=87t phi=E1=BA=BFu =E2=86=92 QLTS c=E1=BA=ADp nh=E1=BA=ADt tr=E1=BA=A1ng=
+ th=C3=A1i "=C4=90=C3=A3 ph=C3=AA duy=E1=BB=87t".</p>
+<h3 local-id=3D"b8e3fa9d7845" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.5G=E1=BB=ADich=E1=BB=A9ngt=E1=BB=ABAPsangOGL=
+">4.5 G=E1=BB=ADi ch=E1=BB=A9ng t=E1=BB=AB AP sang OGL</h3>
+<h4 local-id=3D"19e5084111cc" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.5.1T=E1=BA=A1om=E1=BB=9Bich=E1=BB=A9ngt=E1=
+=BB=ABAP">4.5.1 T=E1=BA=A1o m=E1=BB=9Bi ch=E1=BB=A9ng t=E1=BB=AB AP</h4>
+<p local-id=3D"47680b923a18"><strong>API:</strong> <code>POST /ap/create-in=
+voice</code></p>
+<p local-id=3D"f12c0fd9059a"><strong>Input ch=C3=ADnh:</strong></p>
+<ul local-id=3D"9d1b40ae-9c97-4ee6-b1ea-cd810efc86eb">
+<li local-id=3D"25dd15f4-3c5c-4254-aa99-bf6a6ee70b16">
+<p local-id=3D"e38f57b00c93"><code>vendorNumber</code>, <code>vendorSiteCod=
+e</code>, <code>entity</code>.</p></li>
+<li local-id=3D"0e47b962-35a6-4157-b133-23de8222bf6a">
+<p local-id=3D"bbea95e7bc3e"><code>invoiceLineList</code>: C=C3=A1c d=C3=B2=
+ng h=E1=BA=A1ch to=C3=A1n.</p></li>
+<li local-id=3D"3ffbbca0-91ca-4ac5-9f8c-3accf453a0be">
+<p local-id=3D"062313bac6f2"><code>vatList</code>: Danh s=C3=A1ch h=C3=B3a =
+=C4=91=C6=A1n VAT.</p></li>
+</ul>
+<p local-id=3D"ebf33e0051ce"><strong>Output:</strong> <code>transactionId</=
+code>, <code>requestId</code>.</p>
+<h4 local-id=3D"913889c3b026" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.5.2Thanhto=C3=A1nch=E1=BB=A9ngt=E1=BB=ABAP=
+=C4=91=C3=A3c=C3=B3">4.5.2 Thanh to=C3=A1n ch=E1=BB=A9ng t=E1=BB=AB AP =C4=
+=91=C3=A3 c=C3=B3</h4>
+<p local-id=3D"b469ed868486"><strong>API:</strong> <code>POST /ap/create-pa=
+yment</code></p>
+<p local-id=3D"d468377a9467"><strong>Input:</strong> <code>invoiceNumber</c=
+ode>, <code>amount</code>, <code>maker</code>, <code>checker</code>.</p>
+<p local-id=3D"4f6fa09fce52"><strong>Output:</strong> <code>transactionId</=
+code>, <code>requestId</code>.</p>
+<h3 local-id=3D"1f543aaa3095" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.6G=E1=BB=ADil=C3=B4h=E1=BA=A1chto=C3=A1nGL">=
+4.6 G=E1=BB=ADi l=C3=B4 h=E1=BA=A1ch to=C3=A1n GL</h3>
+<p local-id=3D"155888283bd5"><strong>API:</strong> <code>POST /general-ledg=
+er/interface</code></p>
+<p local-id=3D"9bc1d92ebfd2"><strong>Input:</strong></p>
+<ul local-id=3D"1a806f9f-dc3e-4ce3-91a4-2108bc57e3e5">
+<li local-id=3D"18232932-e890-4ba7-9cdb-f99322909ced">
+<p local-id=3D"31c9fbc58cd9"><code>RequestId</code>, <code>AccountingDate</=
+code>, <code>CurrencyCode</code>, <code>BranchCode</code>.</p></li>
+<li local-id=3D"912d2128-da1d-4051-a6ce-39fd92e00a0e">
+<p local-id=3D"b793870b82cc">Danh s=C3=A1ch <code>Line</code> g=E1=BB=93m 7=
+ segment + s=E1=BB=91 ti=E1=BB=81n N=E1=BB=A3/C=C3=B3.</p></li>
+</ul>
+<p local-id=3D"a1d2a6b950a7"><strong>Output:</strong> <code>transactionId</=
+code>.</p>
+<h3 local-id=3D"61844de1d438" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.7Chuy=E1=BB=83nti=E1=BB=81nquaCoreBanking">4=
+.7 Chuy=E1=BB=83n ti=E1=BB=81n qua Core Banking</h3>
+<p local-id=3D"be04be056412">QLTS x=C3=A1c =C4=91=E1=BB=8Bnh k=C3=AAnh chuy=
+=E1=BB=83n ti=E1=BB=81n: <strong>n=E1=BB=99i b=E1=BB=99 VietinBank</strong>=
+ ho=E1=BA=B7c <strong>CITAD</strong>.</p>
+<h4 local-id=3D"bc1ae37b9095" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.7.1Chuy=E1=BB=83nti=E1=BB=81nn=E1=BB=99ib=E1=
+=BB=99">4.7.1 Chuy=E1=BB=83n ti=E1=BB=81n n=E1=BB=99i b=E1=BB=99</h4>
+<p local-id=3D"87bff127c1f4"><strong>API:</strong> <code>A382_MSA_TRANSFER_=
+IN v1.0.0</code></p>
+<p local-id=3D"6fa63e371d19"><strong>Input ch=C3=ADnh:</strong></p>
+<ul local-id=3D"2fd1b93c-0e5e-4ec8-b4ec-c25bdf6d1df6">
+<li local-id=3D"72c30212-17f5-4ddd-a217-8c6ac7a4bc9c">
+<p local-id=3D"5582d793c81d"><code>depAcctIdFrom</code>: T=C3=A0i kho=E1=BA=
+=A3n ghi n=E1=BB=A3.</p></li>
+<li local-id=3D"b4bcd249-d7c9-40d0-999f-715fe1790620">
+<p local-id=3D"42134e5c27f6"><code>depAcctIdTo</code>: T=C3=A0i kho=E1=BA=
+=A3n th=E1=BB=A5 h=C6=B0=E1=BB=9Fng.</p></li>
+<li local-id=3D"20c292aa-e892-4207-8565-9816cbe12b36">
+<p local-id=3D"008615e6b666"><code>amount</code>, <code>notes</code>, <code=
+>feeInfo</code>.</p></li>
+</ul>
+<p local-id=3D"a8f668d93fe6"><strong>Output:</strong> <code>trnRefNum</code=
+>, <code>hostRefNum</code>, <code>postedDt</code>.</p>
+<h4 local-id=3D"545cd46fdc79" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.7.2Chuy=E1=BB=83nti=E1=BB=81nCITAD">4.7.2 Ch=
+uy=E1=BB=83n ti=E1=BB=81n CITAD</h4>
+<p local-id=3D"0bdbcf360a00"><strong>API:</strong> <code>A382_MSA_TRANSFER_=
+OUT v1.0.0</code></p>
+<p local-id=3D"b7a53d4becbc"><strong>Input ch=C3=ADnh:</strong></p>
+<ul local-id=3D"d29baf31-1c91-4a01-9fe0-e2ece4a57721">
+<li local-id=3D"ba3d8e56-ea79-46de-8faa-035dd8b4f79c">
+<p local-id=3D"8f249c84b290"><code>toAcctId</code>, <code>toBankId</code>, =
+<code>toBranchId</code>, <code>amount[]</code>.</p></li>
+<li local-id=3D"8e8a2b8d-6dcc-4d2d-974a-919b146a0913">
+<p local-id=3D"ce3546670634"><code>trnDesc</code>: N=E1=BB=99i dung giao d=
+=E1=BB=8Bch.</p></li>
+</ul>
+<p local-id=3D"352ab1429315"><strong>Output:</strong> <code>statusCode</cod=
+e>, <code>hostRefNum</code>, <code>pmtStatus</code>.</p>
+<p local-id=3D"ea65fe836090">QLTS c=E1=BA=ADp nh=E1=BA=ADt phi=E1=BA=BFu: "=
+=C4=90=C3=A3 thanh to=C3=A1n".</p>
+<h3 local-id=3D"37f026ad4418" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-4.8Trac=E1=BB=A9utr=E1=BA=A1ngth=C3=A1ih=E1=BA=
+=A1chto=C3=A1nOGL">4.8 Tra c=E1=BB=A9u tr=E1=BA=A1ng th=C3=A1i h=E1=BA=A1ch=
+ to=C3=A1n OGL</h3>
+<p local-id=3D"d3cb54624090"><strong>API:</strong> <code>POST /batch/status=
+</code></p>
+<p local-id=3D"c76e73b84bf2"><strong>Input:</strong> <code>transactionId</c=
+ode>.</p>
+<p local-id=3D"3b6c822d200f"><strong>Output:</strong> <code>status =3D COMP=
+LETED | PROCESSING | ERROR | NOT_FOUND</code>.</p>
+<h2 local-id=3D"5219d92ed736" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-5.Ph=E1=BB=A5l=E1=BB=A5c:Danhs=C3=A1chAPIs=E1=
+=BB=ADd=E1=BB=A5ng+MasterdatamappingAPI">5. Ph=E1=BB=A5 l=E1=BB=A5c: Danh s=
+=C3=A1ch API s=E1=BB=AD d=E1=BB=A5ng + Master data mapping API</h2>
+<h3 local-id=3D"be7e3e733639" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-CoreBanking">Core Banking</h3>
+<ul local-id=3D"4ba073ff-fd9c-45f5-9d60-c702d02a9187">
+<li local-id=3D"d70ceac9-3cf6-4265-acd0-624fa15a5844">
+<p local-id=3D"496321ab9c56"><code>acct-inq</code>: V=E1=BA=A5n tin t=C3=A0=
+i kho=E1=BA=A3n.</p></li>
+<li local-id=3D"00ef033c-b9b9-469c-b23b-b48a5252cd5f">
+<p local-id=3D"ad8cd0ef5887"><code>fundstransferadd</code>: Chuy=E1=BB=83n =
+ti=E1=BB=81n n=E1=BB=99i b=E1=BB=99.</p></li>
+<li local-id=3D"950717de-34b7-4f90-9930-e37c96f5a3d3">
+<p local-id=3D"b5359fc95efa"><code>pmtadd</code>: Chuy=E1=BB=83n ti=E1=BB=
+=81n CITAD.</p></li>
+</ul>
+<h3 local-id=3D"ba402ddbcf1e" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-OGL">OGL</h3>
+<ul local-id=3D"59741cb5-628a-436e-9bbd-ec1dd2558d58">
+<li local-id=3D"252517b2-144e-456a-a1e4-0f9b35ab1290">
+<p local-id=3D"8e38999fcfd2"><code>/auth/token/access</code>: L=E1=BA=A5y t=
+oken.</p></li>
+<li local-id=3D"914d740e-820f-429b-bb7e-9c1eeaea2e79">
+<p local-id=3D"ddc0ab02fdd9"><code>/vendors/site-info</code>: V=E1=BA=A5n t=
+in NCC.</p></li>
+<li local-id=3D"05afcc2e-130f-4cb9-b570-f84a06a1052f">
+<p local-id=3D"73536c2fecd2"><code>/vendors/site</code>: T=E1=BA=A1o NCC.</=
+p></li>
+<li local-id=3D"0d8fd3d9-3304-451e-bd30-920353631344">
+<p local-id=3D"69b906bb2256"><code>/ap/create-invoice</code>: T=E1=BA=A1o c=
+h=E1=BB=A9ng t=E1=BB=AB AP.</p></li>
+<li local-id=3D"3ee743ab-15e3-4ad9-aed2-72bd7b29fb31">
+<p local-id=3D"fec031671331"><code>/ap/create-payment</code>: Thanh to=C3=
+=A1n AP.</p></li>
+<li local-id=3D"b7e3e111-b7bb-4747-8dcf-8ff53a37c8f1">
+<p local-id=3D"8eb882957ea5"><code>/general-ledger/interface</code>: H=E1=
+=BA=A1ch to=C3=A1n GL.</p></li>
+<li local-id=3D"31fae1c2-d9d8-4f47-8f7e-705eb5e537e7">
+<p local-id=3D"9965912b5f59"><code>/batch/status</code>: Ki=E1=BB=83m tra t=
+r=E1=BA=A1ng th=C3=A1i h=E1=BA=A1ch to=C3=A1n.</p></li>
+</ul>
+<h3 local-id=3D"1cdd91b76f3e" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-MasterData:">MasterData<strong>: </strong></h3=
+>
+<p local-id=3D"48324e381d57"><img height=3D"250" style=3D"margin: 2px; bord=
+er: 1px solid #ddd; box-sizing: border-box; vertical-align: text-bottom;" s=
+rc=3D"d3fea6114de58406d57122fdf2cdf67d3a813ff11b016999bfa0d9ec5ea1e440" wid=
+th=3D"250"></p>
+<h2 local-id=3D"788100743e7e" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-6.MappingAPI&amp;SequenceDiagram">6. Mapping A=
+PI &amp; Sequence Diagram</h2>
+<h3 local-id=3D"15309deea573" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-6.1.Danhs=C3=A1chAPIs=E1=BB=ADd=E1=BB=A5ng">6.=
+1. Danh s=C3=A1ch API s=E1=BB=AD d=E1=BB=A5ng</h3>
+<h5 local-id=3D"ccb9330e8aea" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-6.1.1APIOGL">6.1.1 API OGL</h5>
+<ul local-id=3D"ca37614b-b8ad-4f9f-8163-b41216849bfa">
+<li local-id=3D"f9a84d80-0ac2-4e1d-9c97-e3ef208b5d04">
+<p local-id=3D"f42498a72fde"><strong>/ap/create-invoice</strong> =E2=80=93 =
+T=E1=BA=A1o ch=E1=BB=A9ng t=E1=BB=AB AP</p></li>
+<li local-id=3D"b47623a3-f6c2-4624-b41d-42c8c2a3f9f8">
+<p local-id=3D"98da3673b798"><strong>/ap/create-payment</strong> =E2=80=93 =
+Thanh to=C3=A1n ch=E1=BB=A9ng t=E1=BB=AB AP =C4=91=C3=A3 c=C3=B3</p></li>
+<li local-id=3D"34ae10e6-12b1-417b-8cf4-610511fbd4a1">
+<p local-id=3D"95baf56ac53d"><strong>/general-ledger/interface</strong> =E2=
+=80=93 H=E1=BA=A1ch to=C3=A1n GL</p></li>
+<li local-id=3D"ef33edf5-80f2-42ed-915f-44ca286168e4">
+<p local-id=3D"74aae3cf03cf"><strong>/vendors/site-info</strong> =E2=80=93 =
+V=E1=BA=A5n tin NCC</p></li>
+<li local-id=3D"5008de7b-d72b-4319-a20d-f463c87a0b34">
+<p local-id=3D"1ddc953eee24"><strong>/vendors/site</strong> =E2=80=93 T=E1=
+=BA=A1o NCC</p></li>
+<li local-id=3D"424318ee-3ed7-42f2-8921-c7ca7dc345df">
+<p local-id=3D"5422ffdc595c"><strong>/batch/status</strong> =E2=80=93 Ki=E1=
+=BB=83m tra tr=E1=BA=A1ng th=C3=A1i h=E1=BA=A1ch to=C3=A1n</p></li>
+</ul>
+<h5 local-id=3D"eef97416f415" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-6.1.2APICoreBanking">6.1.2 API Core Banking</h=
+5>
+<ul local-id=3D"ea617382-24b0-4acb-a9c8-0e49908d8924">
+<li local-id=3D"cecf0035-12fb-4b02-b0ae-4be6e0cd42ee">
+<p local-id=3D"6c7acf733535"><strong>acct-inq</strong> =E2=80=93 V=E1=BA=A5=
+n tin t=C3=A0i kho=E1=BA=A3n</p></li>
+<li local-id=3D"3e983280-70e8-4e2c-a88e-f0f79cc8f16d">
+<p local-id=3D"6bf42b4d590e"><strong>fundstransferadd</strong> =E2=80=93 Ch=
+uy=E1=BB=83n ti=E1=BB=81n n=E1=BB=99i b=E1=BB=99</p></li>
+<li local-id=3D"09defaa3-90c0-4bb9-befd-0f166e5f5317">
+<p local-id=3D"dff719bb4e8d"><strong>pmtadd</strong> =E2=80=93 Chuy=E1=BB=
+=83n ti=E1=BB=81n CITAD</p></li>
+</ul>
+<h3 local-id=3D"1acdbc3f962d" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-6.2.Mappingchiti=E1=BA=BFtt=E1=BB=ABngcaset=E1=
+=BA=A1m=E1=BB=A9ng=E2=86=92API">6.2. Mapping chi ti=E1=BA=BFt t=E1=BB=ABng =
+case t=E1=BA=A1m =E1=BB=A9ng =E2=86=92 API</h3>
+<div class=3D"table-wrap">
+<table data-layout=3D"default" data-local-id=3D"7a395c6d-a20e-4d37-8079-e83=
+d53956b4d" class=3D"confluenceTable">
+<tbody>
+<tr data-local-id=3D"e783bea4-17b3-4f01-9079-70e5132c34d6">
+<th data-local-id=3D"c5121a8a-1359-4bff-97e8-9530aa62a86b" class=3D"conflue=
+nceTh">
+<p local-id=3D"a2dd0839ca72">Case</p></th>
+<th data-local-id=3D"77e4a11d-222e-4dd9-ab03-8b8ee129da26" class=3D"conflue=
+nceTh">
+<p local-id=3D"a2d479397f68">Payment Method</p></th>
+<th data-local-id=3D"0354aabc-a8c2-4423-bae3-7c0cfad35485" class=3D"conflue=
+nceTh">
+<p local-id=3D"190a999d4f18">Tax</p></th>
+<th data-local-id=3D"489a7026-2c67-4d10-857c-44ac729b0625" class=3D"conflue=
+nceTh">
+<p local-id=3D"393183949aeb">OGL API</p></th>
+<th data-local-id=3D"40fd7129-5597-4b58-94e9-8e8671cb0863" class=3D"conflue=
+nceTh">
+<p local-id=3D"1d3bf05a0da1">Accounting Entry</p></th>
+<th data-local-id=3D"0a9d4321-f242-46f1-8b3f-7e540cb5cc96" class=3D"conflue=
+nceTh">
+<p local-id=3D"46a29c702273">Core Banking</p></th>
+</tr>
+<tr data-local-id=3D"4dbf3d13-febd-4337-b541-3107b1ca0059">
+<td data-local-id=3D"a70347df-4544-4c54-b251-4c51fb03ddaf" class=3D"conflue=
+nceTd">
+<p local-id=3D"6040987b8117">TU-01</p></td>
+<td data-local-id=3D"f8c1780d-c9d8-413f-a650-2bb2b9a1a428" class=3D"conflue=
+nceTd">
+<p local-id=3D"d8dbc2565297">Transfer</p></td>
+<td data-local-id=3D"6e299a6c-14fb-47b2-81fa-33332b2ff4ff" class=3D"conflue=
+nceTd">
+<p local-id=3D"8b00568a492e">No</p></td>
+<td data-local-id=3D"ffc8f8bd-b3be-43ba-be67-31b26dfa1406" class=3D"conflue=
+nceTd">
+<p local-id=3D"d66f118d7248">OGL Vendor =E2=86=92 OGL AP Invoice (Prepaymen=
+t) =E2=86=92 OGL AP Payment</p></td>
+<td data-local-id=3D"4fb39185-8b87-4e9a-8043-a2979f56bce9" class=3D"conflue=
+nceTd">
+<p local-id=3D"66d9c1d9d46f">Prepayment + Payment</p></td>
+<td data-local-id=3D"c5538cd2-970b-4cf5-9e8a-577bd68f8e80" class=3D"conflue=
+nceTd">
+<p local-id=3D"c49e10b9702c">Transfer</p></td>
+</tr>
+<tr data-local-id=3D"423a83ef-afea-4c15-bfde-f1573b971dee">
+<td data-local-id=3D"3d8b6f1e-4675-4741-8b8b-b67de7e31fcd" class=3D"conflue=
+nceTd">
+<p local-id=3D"2564be693de7">TU-02</p></td>
+<td data-local-id=3D"6806c1d6-a03e-4961-88d6-4c0f315d3f34" class=3D"conflue=
+nceTd">
+<p local-id=3D"a3010851b05f">Transfer</p></td>
+<td data-local-id=3D"96fc65ae-299d-447f-b2c0-fc6b61a11320" class=3D"conflue=
+nceTd">
+<p local-id=3D"8f9caa09f8e7">Yes</p></td>
+<td data-local-id=3D"6fd3ac36-3c6f-44d1-9334-5260013bfa4d" class=3D"conflue=
+nceTd">
+<p local-id=3D"434f6944d3b9">OGL Vendor =E2=86=92 OGL AP Invoice (Prepaymen=
+t) =E2=86=92 OGL AP Invoice (Standard) =E2=86=92 OGL AP Payment</p></td>
+<td data-local-id=3D"59d3006d-87b0-46f7-952c-0b2068f88239" class=3D"conflue=
+nceTd">
+<p local-id=3D"a34c8450e351">Prepayment + Tax + Payment</p></td>
+<td data-local-id=3D"f5ff76f6-72d5-40ad-9f5d-fba80282ee26" class=3D"conflue=
+nceTd">
+<p local-id=3D"523ef615d6ae">Transfer</p></td>
+</tr>
+<tr data-local-id=3D"7d7f8041-b9a8-4914-8778-1442b8dede38">
+<td data-local-id=3D"8c126aee-78bc-4bf0-a214-a31c0d6aa0b7" class=3D"conflue=
+nceTd">
+<p local-id=3D"bddaa4f72921">TU-03</p></td>
+<td data-local-id=3D"4252da34-1c5a-4b67-85af-1785c9eade20" class=3D"conflue=
+nceTd">
+<p local-id=3D"ae822526a68c">Cash</p></td>
+<td data-local-id=3D"e69bd24d-cb35-4d4d-ae9c-4b4f2318763a" class=3D"conflue=
+nceTd">
+<p local-id=3D"85d796ec9892">No</p></td>
+<td data-local-id=3D"4ddbed3b-0ab4-43b5-9f45-1ed96395e611" class=3D"conflue=
+nceTd">
+<p local-id=3D"320d905272f7">OGL Vendor =E2=86=92 OGL AP Invoice (Prepaymen=
+t) =E2=86=92 OGL AP Payment =E2=86=92 OGL GL Interface</p></td>
+<td data-local-id=3D"21cea9f9-c1e1-4b06-94d8-300fde43a9b4" class=3D"conflue=
+nceTd">
+<p local-id=3D"4e124b6bbc39">Prepayment + Payment + Cash Journal</p></td>
+<td data-local-id=3D"9d9eb330-4620-4cdf-a9c2-0058e5222bd6" class=3D"conflue=
+nceTd">
+<p local-id=3D"de5c059ba4b1">Kh=C3=B4ng</p></td>
+</tr>
+<tr data-local-id=3D"b9931fea-d857-4754-a1c5-f2f6d8b577f3">
+<td data-local-id=3D"2e7489bb-fd0f-4082-b658-bbce925a46d7" class=3D"conflue=
+nceTd">
+<p local-id=3D"99002aca53b2">TU-04</p></td>
+<td data-local-id=3D"efe50ee6-531f-45ed-b1b4-1ff6a64f9eb6" class=3D"conflue=
+nceTd">
+<p local-id=3D"f85b6eff628d">Cash</p></td>
+<td data-local-id=3D"9a281e9e-f29b-43d4-8804-2e36395df011" class=3D"conflue=
+nceTd">
+<p local-id=3D"3f1894076ac3">Yes</p></td>
+<td data-local-id=3D"f1a7e458-a8b7-442a-b00d-bc1ed6c68e9b" class=3D"conflue=
+nceTd">
+<p local-id=3D"2f22e638cac5">OGL Vendor =E2=86=92 OGL AP Invoice (Prepaymen=
+t) =E2=86=92 OGL AP Invoice (Standard) =E2=86=92 OGL AP Payment =E2=86=92 O=
+GL GL Interface</p></td>
+<td data-local-id=3D"d60faf78-3721-4d01-9970-000154b74f62" class=3D"conflue=
+nceTd">
+<p local-id=3D"1c90ffafbd0f">Prepayment + Tax + Payment + Cash Journal</p><=
+/td>
+<td data-local-id=3D"a762303e-78dd-4302-9d15-5a19fde3932f" class=3D"conflue=
+nceTd">
+<p local-id=3D"e15612ebd97e">Kh=C3=B4ng</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class=3D"table-wrap">
+<table data-layout=3D"default" data-local-id=3D"d4029354-a8b2-40df-8116-31c=
+74528fea4" class=3D"confluenceTable">
+<tbody>
+<tr data-local-id=3D"828ca80f-f5f3-4fdc-8a6e-eeeb6c1a68b6">
+<th data-local-id=3D"3c5063d7-3669-498c-933b-895b8d2c1102" class=3D"conflue=
+nceTh">
+<p local-id=3D"c8cff148e026">Document</p></th>
+<th data-local-id=3D"3c92f283-0922-48be-b9cc-6ae8aed0256d" class=3D"conflue=
+nceTh">
+<p local-id=3D"088b6d2f5a0c">OGL Module</p></th>
+<th data-local-id=3D"a6658d0a-8023-4fc6-ae55-76795bdbcb99" class=3D"conflue=
+nceTh">
+<p local-id=3D"a49f0b3f1300">API</p></th>
+<th data-local-id=3D"600bc198-80aa-40f6-8ac6-9f1de5361e27" class=3D"conflue=
+nceTh">
+<p local-id=3D"35846fbd08bd">M=E1=BB=A5c =C4=91=C3=ADch</p></th>
+</tr>
+<tr data-local-id=3D"05533a92-8534-43ae-9ea6-4a3b209c91c7">
+<td data-local-id=3D"2dd34c12-27ea-4987-8fab-fc6fcaad280d" class=3D"conflue=
+nceTd">
+<p local-id=3D"f58762633e39">Vendor</p></td>
+<td data-local-id=3D"21b4b611-756d-4a75-8a4d-77554bf66ff7" class=3D"conflue=
+nceTd">
+<p local-id=3D"1fa95844ef8f">Supplier Management</p></td>
+<td data-local-id=3D"01d838cd-b706-46b8-96f9-85cf3ce0915b" class=3D"conflue=
+nceTd">
+<p local-id=3D"cb8d53d94c2c"><code>/vendors</code></p></td>
+<td data-local-id=3D"d5f5e087-01b0-46b7-8489-39a1c55eb9d0" class=3D"conflue=
+nceTd">
+<p local-id=3D"bab863608065">Ki=E1=BB=83m tra/T=E1=BA=A1o NCC</p></td>
+</tr>
+<tr data-local-id=3D"d29040da-c4e5-4598-88d7-b1b92ec3a0c7">
+<td data-local-id=3D"048371e2-711c-4adf-8a67-d5e1393d2c9c" class=3D"conflue=
+nceTd">
+<p local-id=3D"548cdf9c5d78">Vendor Site</p></td>
+<td data-local-id=3D"340be07a-0967-4a48-a8c7-cef20a4b3689" class=3D"conflue=
+nceTd">
+<p local-id=3D"1291c1d953f1">Supplier Management</p></td>
+<td data-local-id=3D"2f08d94a-aeef-4670-9fff-5437a926aae3" class=3D"conflue=
+nceTd">
+<p local-id=3D"360dbab8db79"><code>/vendors/site</code></p></td>
+<td data-local-id=3D"585488ec-36ca-4bfa-b671-b83fd205fbf8" class=3D"conflue=
+nceTd">
+<p local-id=3D"5a43bb215da2">X=C3=A1c =C4=91=E1=BB=8Bnh Site</p></td>
+</tr>
+<tr data-local-id=3D"79548d4e-6278-45ac-9616-f09a96936734">
+<td data-local-id=3D"e2bc2c4f-5838-4acc-8706-956b0d1894af" class=3D"conflue=
+nceTd">
+<p local-id=3D"73c590961033">AP Invoice - Prepayment</p></td>
+<td data-local-id=3D"9600c6e1-1780-41ff-93f4-12bdc036f9ce" class=3D"conflue=
+nceTd">
+<p local-id=3D"d6d4f08fa008">Accounts Payable</p></td>
+<td data-local-id=3D"0aaf5325-9386-488f-8418-75aad5315886" class=3D"conflue=
+nceTd">
+<p local-id=3D"cbe44d6a7736"><code>/ap/create-invoice</code></p></td>
+<td data-local-id=3D"c6a0b1b7-04e7-4b1c-a96f-a79a507b7636" class=3D"conflue=
+nceTd">
+<p local-id=3D"708714938104">Ghi nh=E1=BA=ADn kho=E1=BA=A3n t=E1=BA=A1m =E1=
+=BB=A9ng</p></td>
+</tr>
+<tr data-local-id=3D"6cc93ec1-91d5-4e43-9791-51f289b6ed18">
+<td data-local-id=3D"4a02f11f-03fb-4970-a6e0-89677d963dce" class=3D"conflue=
+nceTd">
+<p local-id=3D"06195eddada6">AP Invoice - Standard</p></td>
+<td data-local-id=3D"dda85364-38d3-4215-b38c-60cd4bcc4943" class=3D"conflue=
+nceTd">
+<p local-id=3D"dc9a9b398e50">Accounts Payable</p></td>
+<td data-local-id=3D"a69b393b-6350-409a-9674-5e875fb64be1" class=3D"conflue=
+nceTd">
+<p local-id=3D"ccaa05a113b4"><code>/ap/create-invoice</code></p></td>
+<td data-local-id=3D"a697c03a-0c03-4a50-8b9e-3d35036f88a2" class=3D"conflue=
+nceTd">
+<p local-id=3D"aba41b26c9be">Ghi nh=E1=BA=ADn ph=E1=BA=A7n thu=E1=BA=BF</p>=
+</td>
+</tr>
+<tr data-local-id=3D"5428c052-01b0-4cc5-aeed-4ef6afe66b21">
+<td data-local-id=3D"89a75e3b-0132-4dfd-aca6-f29cd76d21b9" class=3D"conflue=
+nceTd">
+<p local-id=3D"42011ac130c2">AP Payment</p></td>
+<td data-local-id=3D"2e7047ef-aeff-4758-93a8-6e66645444d3" class=3D"conflue=
+nceTd">
+<p local-id=3D"2b7cea0b96ee">Accounts Payable</p></td>
+<td data-local-id=3D"6ebf23f3-3879-44f1-81fb-9514e570efbe" class=3D"conflue=
+nceTd">
+<p local-id=3D"7ef883d499da"><code>/ap/create-payment</code></p></td>
+<td data-local-id=3D"dec40841-17b6-48b0-9743-3e600e67c93c" class=3D"conflue=
+nceTd">
+<p local-id=3D"8f18660d0f03">Thanh to=C3=A1n ch=E1=BB=A9ng t=E1=BB=AB AP</p=
+></td>
+</tr>
+<tr data-local-id=3D"89a7b04e-6f67-4231-9ad9-56b166b1aa63">
+<td data-local-id=3D"f4f23c23-a09d-447a-b303-8dbaa7d9decc" class=3D"conflue=
+nceTd">
+<p local-id=3D"77768ea1bacb">GL Journal</p></td>
+<td data-local-id=3D"6a5787da-e7dd-454a-8c76-4e23b91046f8" class=3D"conflue=
+nceTd">
+<p local-id=3D"9d9c158cdd7d">General Ledger</p></td>
+<td data-local-id=3D"f591af67-a72c-4cd0-863a-6bb4ff308fd0" class=3D"conflue=
+nceTd">
+<p local-id=3D"fca94853da7d"><code>/general-ledger/interface</code></p></td=
+>
+<td data-local-id=3D"aa3118e5-0c8b-4e2c-86f2-edfb4d1ce406" class=3D"conflue=
+nceTd">
+<p local-id=3D"6c77e33c212a">Ghi nh=E1=BA=ADn b=C3=BAt to=C3=A1n GL</p></td=
+>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 local-id=3D"f104945096ae" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-6.3.Mappingchiti=E1=BA=BFtt=E1=BB=ABngcase=E2=
+=86=92API">6.3. Mapping chi ti=E1=BA=BFt t=E1=BB=ABng case =E2=86=92 API</h=
+3><span class=3D"confluence-embedded-file-wrapper image-center-wrapper conf=
+luence-embedded-manual-size"><img class=3D"confluence-embedded-image image-=
+center" alt=3D"Screen-20260724-044558.png" width=3D"468" loading=3D"lazy" s=
+rc=3D"12b8d546634a59879e835fa22dc3ca105999dad5d5dec179374f2db2a38a2711" dat=
+a-image-src=3D"https://vietinbank.atlassian.net/wiki/download/attachments/3=
+62546174/Screen-20260724-044558.png?version=3D1&amp;modificationDate=3D1784=
+871721120&amp;cacheVersion=3D1&amp;api=3Dv2" data-height=3D"851" data-width=
+=3D"910" data-unresolved-comment-count=3D"0" data-linked-resource-id=3D"368=
+279957" data-linked-resource-version=3D"1" data-linked-resource-type=3D"att=
+achment" data-linked-resource-default-alias=3D"Screen-20260724-044558.png" =
+data-base-url=3D"https://vietinbank.atlassian.net/wiki" data-linked-resourc=
+e-content-type=3D"image/png" data-linked-resource-container-id=3D"362546174=
+" data-linked-resource-container-version=3D"12" data-media-id=3D"a7fea3f9-1=
+d7e-4f09-81fe-77e000360b5c" data-media-type=3D"file" height=3D"438"></span>
+<h5 local-id=3D"b668dd0cc0b6" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-6.3.1Nh=C3=B3m1=E2=80=9316CASEg=E1=BB=8DiAPI/a=
+p/create-invoice">6.3.1 Nh=C3=B3m 1 =E2=80=93 16 CASE g=E1=BB=8Di API <code=
+>/ap/create-invoice</code></h5>
+<div class=3D"table-wrap">
+<table data-table-width=3D"760" data-layout=3D"default" data-local-id=3D"de=
+ef0d20-c34b-4381-b3a9-2713f0d5e32c" class=3D"confluenceTable">
+<tbody>
+<tr data-local-id=3D"ad8c8dab-14a4-4bb6-9946-e4dae732e042">
+<th data-local-id=3D"89bac840-bc67-4cae-aa9f-879d7861bb59" class=3D"conflue=
+nceTh">
+<p local-id=3D"3a4d844b8d52">Case</p></th>
+<th data-local-id=3D"5e0e955b-0157-4f30-94ac-6e21918d93ca" class=3D"conflue=
+nceTh">
+<p local-id=3D"e5b8bdc556ac">=C4=90i=E1=BB=81u ki=E1=BB=87n</p></th>
+<th data-local-id=3D"8942ab23-b97d-41bf-ac28-8b11f9b6b836" class=3D"conflue=
+nceTh">
+<p local-id=3D"b45e7b3ea137">Thu=E1=BA=BF</p></th>
+<th data-local-id=3D"8af85fb6-9c21-465e-b22e-9890228fef74" class=3D"conflue=
+nceTh">
+<p local-id=3D"e30ddd4d6bfe">Lo=E1=BA=A1i NCC</p></th>
+<th data-local-id=3D"c441aea0-46f0-43c3-a7b8-bb16e1132684" class=3D"conflue=
+nceTh">
+<p local-id=3D"7a087e46fe59">API</p></th>
+<th data-local-id=3D"a1588d8f-552f-48aa-b1c8-d3967128a016" class=3D"conflue=
+nceTh">
+<p local-id=3D"880ff4afc0d0">Sinh b=C3=BAt to=C3=A1n</p></th>
+</tr>
+<tr data-local-id=3D"e6c1cb2d-ad90-41b1-b936-026e51c8d3bd">
+<td data-local-id=3D"9351a9ef-e920-49c2-95b6-96bbf2f1e7e3" class=3D"conflue=
+nceTd">
+<p local-id=3D"869df83f8eba">TT-01</p></td>
+<td data-local-id=3D"1bbe6428-4d5f-4853-a08b-cfbcfa2d218e" class=3D"conflue=
+nceTd">
+<p local-id=3D"b8def256f4dc">(3)=3D0, (1)=3D(2)</p></td>
+<td data-local-id=3D"fe69a4ce-22be-49e4-afe0-29da92ebdafc" class=3D"conflue=
+nceTd">
+<p local-id=3D"52e829b14e93">Kh=C3=B4ng</p></td>
+<td data-local-id=3D"ea78641d-086a-4c6f-b4f4-18cd03631526" class=3D"conflue=
+nceTd">
+<p local-id=3D"6124c6bf87a2">X</p></td>
+<td data-local-id=3D"ae16efbc-4b2f-4e18-bc81-6465e92f96e1" class=3D"conflue=
+nceTd">
+<p local-id=3D"22dbb3998288">/ap/create-invoice</p></td>
+<td data-local-id=3D"d8515a9a-9e6f-47e2-b4c3-c51a44ef107e" class=3D"conflue=
+nceTd">
+<p local-id=3D"9fad0cb346a7">Standard + Payment</p></td>
+</tr>
+<tr data-local-id=3D"70538b06-2cf2-429f-a4b1-a9857f2b91c1">
+<td data-local-id=3D"f7c11ef1-d926-4f3d-b0d9-94aa2cd5ce35" class=3D"conflue=
+nceTd">
+<p local-id=3D"aaf87534bbb0">TT-02</p></td>
+<td data-local-id=3D"a7569c94-c64f-457e-9f72-05e0515b9bd7" class=3D"conflue=
+nceTd">
+<p local-id=3D"2bc9297b3181">(3)=3D0, (1)=3D(2)</p></td>
+<td data-local-id=3D"a8c6d014-6ffd-4369-a761-0fce36528267" class=3D"conflue=
+nceTd">
+<p local-id=3D"04dff9322a7a">C=C3=B3</p></td>
+<td data-local-id=3D"201880f8-ee1b-433b-9508-f2ba00ce1bea" class=3D"conflue=
+nceTd">
+<p local-id=3D"da2a6f07ab37">C=C3=A1 nh=C3=A2n</p></td>
+<td data-local-id=3D"2334636f-e398-433d-9e71-4213e696650b" class=3D"conflue=
+nceTd">
+<p local-id=3D"64965e77ccd3">/ap/create-invoice + GL</p></td>
+<td data-local-id=3D"aca5da1f-679b-40fe-82b0-0910463a35fc" class=3D"conflue=
+nceTd">
+<p local-id=3D"47e922193a46">Standard + Payment + GL</p></td>
+</tr>
+<tr data-local-id=3D"daa06d94-e55e-46a3-929c-f5f425cc86c9">
+<td data-local-id=3D"a8bc8b9c-b366-42e7-a250-2e860bcd38da" class=3D"conflue=
+nceTd">
+<p local-id=3D"261df535c010">TT-03</p></td>
+<td data-local-id=3D"c89f564f-6239-4bc3-be5f-af9c323f82a0" class=3D"conflue=
+nceTd">
+<p local-id=3D"03411efe4394">(3)=3D0, (1)=3D(2)</p></td>
+<td data-local-id=3D"31753b2c-abb3-437b-aefc-a5b590a38985" class=3D"conflue=
+nceTd">
+<p local-id=3D"fb736873d182">C=C3=B3</p></td>
+<td data-local-id=3D"02df47a6-803f-4d4d-83cb-c6b2efb44f69" class=3D"conflue=
+nceTd">
+<p local-id=3D"d2332e69bde5">NCC</p></td>
+<td data-local-id=3D"8d670024-78e4-4a2f-ab7d-dcd80191d4a0" class=3D"conflue=
+nceTd">
+<p local-id=3D"a441b58ae39b">/ap/create-invoice</p></td>
+<td data-local-id=3D"32028bf8-7cdd-4218-9bac-7aac51b6ab00" class=3D"conflue=
+nceTd">
+<p local-id=3D"c025ed79c283">Standard + Payment</p></td>
+</tr>
+<tr data-local-id=3D"ad34bacd-8d06-4906-8a1b-d9666578e104">
+<td data-local-id=3D"ede2e31c-4df8-4e7f-a2e5-509364023c89" class=3D"conflue=
+nceTd">
+<p local-id=3D"6e994902a27b">TT-04</p></td>
+<td data-local-id=3D"845eeedb-5b4a-49a5-a344-080eb9a7ae23" class=3D"conflue=
+nceTd">
+<p local-id=3D"c86306accef1">(3)=3D0, (1)&gt;(2)</p></td>
+<td data-local-id=3D"47be9e58-ac6f-4937-be11-2d4fa85d1ac2" class=3D"conflue=
+nceTd">
+<p local-id=3D"e295ff1fa0df">Kh=C3=B4ng</p></td>
+<td data-local-id=3D"6640069c-c98b-4ad6-bc99-d776c82d48fd" class=3D"conflue=
+nceTd">
+<p local-id=3D"b66f57344af4">X</p></td>
+<td data-local-id=3D"aca1a616-d9aa-48b3-9a1d-3ae5cd675cba" class=3D"conflue=
+nceTd">
+<p local-id=3D"88214ed4ab78">/ap/create-invoice</p></td>
+<td data-local-id=3D"24322748-5bcb-4a4e-afd5-dbc7952115e7" class=3D"conflue=
+nceTd">
+<p local-id=3D"5a1286458889">Standard + Payment</p></td>
+</tr>
+<tr data-local-id=3D"63e445a9-28bf-40d2-abcf-9dd8276071db">
+<td data-local-id=3D"82f7d960-d456-4029-b8a6-3be9e2f53f35" class=3D"conflue=
+nceTd">
+<p local-id=3D"6f643c08675b">TT-05</p></td>
+<td data-local-id=3D"e8c917da-e3a3-4314-ae47-ef117f72ed9d" class=3D"conflue=
+nceTd">
+<p local-id=3D"5f7469a1397d">(3)=3D0, (1)&gt;(2)</p></td>
+<td data-local-id=3D"4bfe4458-5757-4067-b01e-01576cf393c6" class=3D"conflue=
+nceTd">
+<p local-id=3D"d265129fe375">C=C3=B3</p></td>
+<td data-local-id=3D"5fec588f-9ba2-4007-812c-61e85abcd59b" class=3D"conflue=
+nceTd">
+<p local-id=3D"8f61a2fb6c70">C=C3=A1 nh=C3=A2n</p></td>
+<td data-local-id=3D"535d507d-2581-4219-897e-4368c88f1d29" class=3D"conflue=
+nceTd">
+<p local-id=3D"b95ce8f9db3f">/ap/create-invoice + GL</p></td>
+<td data-local-id=3D"ef70cfd5-30fa-49b1-955e-bcf99f407ed2" class=3D"conflue=
+nceTd">
+<p local-id=3D"6234b49f6ca9">Standard + Payment + GL</p></td>
+</tr>
+<tr data-local-id=3D"338b7a78-db44-4fe3-b665-f6b0e221b45a">
+<td data-local-id=3D"671d53c1-fe1f-4593-b49a-6814eb7c75c6" class=3D"conflue=
+nceTd">
+<p local-id=3D"2cd7f881221d">TT-06</p></td>
+<td data-local-id=3D"0d5dc713-d45d-4182-b7d9-c43f9951b290" class=3D"conflue=
+nceTd">
+<p local-id=3D"bf938bad528d">(3)=3D0, (1)&gt;(2)</p></td>
+<td data-local-id=3D"a52499b1-8cc3-433e-9f93-4675f0e5bb62" class=3D"conflue=
+nceTd">
+<p local-id=3D"bc1103efb555">C=C3=B3</p></td>
+<td data-local-id=3D"0fb217d7-d7db-46dc-8a28-ac9528530c5c" class=3D"conflue=
+nceTd">
+<p local-id=3D"6422f855349d">NCC</p></td>
+<td data-local-id=3D"7efab8d9-7307-440e-aea2-2e2f87208c84" class=3D"conflue=
+nceTd">
+<p local-id=3D"a41b9f0646d3">/ap/create-invoice</p></td>
+<td data-local-id=3D"3a6c2b30-e57e-4637-a6fa-ca352b58f359" class=3D"conflue=
+nceTd">
+<p local-id=3D"fe0923abcdb8">Standard + Payment</p></td>
+</tr>
+<tr data-local-id=3D"b3a12fe0-5ec1-4c3e-ae1f-a43f89a51192">
+<td data-local-id=3D"50ad8f7f-0d32-4f65-9faf-57d740d553f2" class=3D"conflue=
+nceTd">
+<p local-id=3D"86f117b7f49b">TT-07</p></td>
+<td data-local-id=3D"f3f8f51a-9cd7-433b-a4c6-a5bc8603d95a" class=3D"conflue=
+nceTd">
+<p local-id=3D"e8b361772539">(3)&gt;0, (2)=3D0, (1)=3D(3)</p></td>
+<td data-local-id=3D"a0caf2b2-86d1-41d2-8319-8fe4399d4914" class=3D"conflue=
+nceTd">
+<p local-id=3D"2327d7e2bbff">Kh=C3=B4ng</p></td>
+<td data-local-id=3D"a41522ae-5768-4819-97dc-bdd952db6d72" class=3D"conflue=
+nceTd">
+<p local-id=3D"e179b8663fa8">X</p></td>
+<td data-local-id=3D"3648e130-146f-4f8d-98ba-2e4656c0b1c3" class=3D"conflue=
+nceTd">
+<p local-id=3D"89b8d435c588">/ap/create-invoice</p></td>
+<td data-local-id=3D"ceb74a8a-25b9-4d88-aae9-c8e9d6a54938" class=3D"conflue=
+nceTd">
+<p local-id=3D"100614d2619f">Standard + ApplyPrepayment</p></td>
+</tr>
+<tr data-local-id=3D"66b001af-031a-48c5-9e49-a2f81dbc74df">
+<td data-local-id=3D"2702a9e0-e25a-4f15-bf64-9fd928c24900" class=3D"conflue=
+nceTd">
+<p local-id=3D"bd27a5ba4045">TT-08</p></td>
+<td data-local-id=3D"4cd0ce23-ac7f-4de1-af2d-754e31fb8a95" class=3D"conflue=
+nceTd">
+<p local-id=3D"c6347de51c13">(3)&gt;0, (2)&gt;0, (2)+(3)=3D(1)</p></td>
+<td data-local-id=3D"f0ed7605-bd77-47ff-8e09-2d46a81936e8" class=3D"conflue=
+nceTd">
+<p local-id=3D"e3edc62df198">Kh=C3=B4ng</p></td>
+<td data-local-id=3D"0c60b5f2-46ea-4198-8210-1edb87e18e3f" class=3D"conflue=
+nceTd">
+<p local-id=3D"3133d335b4b8">X</p></td>
+<td data-local-id=3D"0c031caa-2106-4ea9-94fd-5e1ed49d2833" class=3D"conflue=
+nceTd">
+<p local-id=3D"957afd0790ab">/ap/create-invoice</p></td>
+<td data-local-id=3D"bc858cd7-2916-4b7a-9160-eeb9542b0252" class=3D"conflue=
+nceTd">
+<p local-id=3D"31e1710fa1d1">Standard + ApplyPrepayment + Payment</p></td>
+</tr>
+<tr data-local-id=3D"5947b909-ac6d-411b-a30c-fcbbfb37f6b9">
+<td data-local-id=3D"9cc1e9da-b9af-4ec7-86c1-40cc4bcc37a9" class=3D"conflue=
+nceTd">
+<p local-id=3D"4ee8c48c7978">TT-09</p></td>
+<td data-local-id=3D"a1022dfd-2a66-40f6-8448-9d2eefb4eb0e" class=3D"conflue=
+nceTd">
+<p local-id=3D"45f84dd210fb">(3)&gt;0, (2)&gt;0, (2)+(3)=3D(1)</p></td>
+<td data-local-id=3D"ace7423b-a732-4a3c-b373-590fbbda5909" class=3D"conflue=
+nceTd">
+<p local-id=3D"d3babd0c75cf">C=C3=B3</p></td>
+<td data-local-id=3D"f262a663-dfa4-4606-8442-62a99c291c2d" class=3D"conflue=
+nceTd">
+<p local-id=3D"7fff527e24d9">NCC</p></td>
+<td data-local-id=3D"cca1a9c8-ffd9-4bfb-9bf4-73a26e59688f" class=3D"conflue=
+nceTd">
+<p local-id=3D"d4d7fc3aeea0">/ap/create-invoice</p></td>
+<td data-local-id=3D"0b6ba155-fedd-48b4-bbda-ec757a278061" class=3D"conflue=
+nceTd">
+<p local-id=3D"a33b049e2835">Standard + ApplyPrepayment + Payment</p></td>
+</tr>
+<tr data-local-id=3D"a3c8afda-b88b-4e94-9f73-267e46f6232a">
+<td data-local-id=3D"8cbb15df-26a8-4b2b-a3a1-a128cf331c74" class=3D"conflue=
+nceTd">
+<p local-id=3D"12e1e9469a0a">TT-10</p></td>
+<td data-local-id=3D"10c9cfd1-6ab3-4b4d-8b5a-566ce716532c" class=3D"conflue=
+nceTd">
+<p local-id=3D"1467d02b35b0">(3)&gt;0, (2)&gt;0, (2)+(3)=3D(1)</p></td>
+<td data-local-id=3D"55bfb450-f08b-45c5-a335-88f47000fdb8" class=3D"conflue=
+nceTd">
+<p local-id=3D"f67fb82b899e">C=C3=B3</p></td>
+<td data-local-id=3D"7c5f7398-a6f7-4159-b8d3-aa3e4b6aee70" class=3D"conflue=
+nceTd">
+<p local-id=3D"7ee907259de0">C=C3=A1 nh=C3=A2n</p></td>
+<td data-local-id=3D"94521a7e-b160-4ced-bcab-42528e7dc620" class=3D"conflue=
+nceTd">
+<p local-id=3D"b50e871caddc">/ap/create-invoice + GL</p></td>
+<td data-local-id=3D"0e16079a-b285-435f-b70a-77eebdb1897c" class=3D"conflue=
+nceTd">
+<p local-id=3D"1763b5f55de6">Standard + ApplyPrepayment + Payment + GL</p><=
+/td>
+</tr>
+<tr data-local-id=3D"8b3c23c5-8b7a-4812-ba32-9e5eda3d892a">
+<td data-local-id=3D"5285fad4-39e0-4021-9bcf-0d59d0d0c770" class=3D"conflue=
+nceTd">
+<p local-id=3D"47875c7722b3">TT-11</p></td>
+<td data-local-id=3D"331ae772-1539-462b-907d-8cd93b376cb5" class=3D"conflue=
+nceTd">
+<p local-id=3D"7ce79f7f11e5">(3)&gt;0, (2)=3D0, (1)&gt;(3)</p></td>
+<td data-local-id=3D"c78e67a6-71ed-4253-b535-de9a4f3f42e1" class=3D"conflue=
+nceTd">
+<p local-id=3D"a23e7d663aab">Kh=C3=B4ng</p></td>
+<td data-local-id=3D"ceaf4441-40c8-4ed1-a4a4-3e19c0c91cad" class=3D"conflue=
+nceTd">
+<p local-id=3D"b0ce6e4dc418">X</p></td>
+<td data-local-id=3D"e87a421a-94f9-46ff-9465-d0479fa4f324" class=3D"conflue=
+nceTd">
+<p local-id=3D"deb7ff5ba971">/ap/create-invoice</p></td>
+<td data-local-id=3D"4b8e3538-7824-4a47-a99e-51c03bef1183" class=3D"conflue=
+nceTd">
+<p local-id=3D"dc21fe1ee7d1">Standard + ApplyPrepayment</p></td>
+</tr>
+<tr data-local-id=3D"43bb6a21-b3f7-47f3-b04d-71b79a898435">
+<td data-local-id=3D"a403197e-4302-422a-a95b-5bf4d7e198e9" class=3D"conflue=
+nceTd">
+<p local-id=3D"5b0fbaf7cb11">TT-12</p></td>
+<td data-local-id=3D"ca1c76da-6030-42bf-8bef-48a90868d373" class=3D"conflue=
+nceTd">
+<p local-id=3D"896cac3b8367">(3)&gt;0, (2)=3D0, (1)&gt;(3)</p></td>
+<td data-local-id=3D"ff9a8b8f-87ea-4ed8-a363-46d9c10392a4" class=3D"conflue=
+nceTd">
+<p local-id=3D"e2e3ee754178">C=C3=B3</p></td>
+<td data-local-id=3D"94d011dd-3a5f-4a28-bdb5-86fcce302a4e" class=3D"conflue=
+nceTd">
+<p local-id=3D"b65c71763306">NCC</p></td>
+<td data-local-id=3D"72a8a774-fc1e-4b06-836b-d09f0fb18c6d" class=3D"conflue=
+nceTd">
+<p local-id=3D"ea236cf6be71">/ap/create-invoice</p></td>
+<td data-local-id=3D"dfb78103-f068-4b42-8a56-915e4ce913d0" class=3D"conflue=
+nceTd">
+<p local-id=3D"5b6fabe0beea">Standard + ApplyPrepayment</p></td>
+</tr>
+<tr data-local-id=3D"689b5171-b4c7-423b-8068-0f18126f0296">
+<td data-local-id=3D"82071a15-b9db-42fd-9591-8cdf09b9c4f5" class=3D"conflue=
+nceTd">
+<p local-id=3D"1b8cbb6a85a7">TT-13</p></td>
+<td data-local-id=3D"347f1ccc-d448-4cc7-a3ae-e1c587bfac18" class=3D"conflue=
+nceTd">
+<p local-id=3D"adc6a9c20205">(3)&gt;0, (2)=3D0, (1)&gt;(3)</p></td>
+<td data-local-id=3D"ff1cf21c-6a49-4dfd-bb96-4076f374d158" class=3D"conflue=
+nceTd">
+<p local-id=3D"236f0274829d">C=C3=B3</p></td>
+<td data-local-id=3D"832918e5-3546-4a09-bdf0-f11bc924a77b" class=3D"conflue=
+nceTd">
+<p local-id=3D"db97437d17ff">C=C3=A1 nh=C3=A2n</p></td>
+<td data-local-id=3D"5eb36a50-6729-4884-ab42-737daed6c790" class=3D"conflue=
+nceTd">
+<p local-id=3D"42cffd5a1e04">/ap/create-invoice + GL</p></td>
+<td data-local-id=3D"2507e89d-e2bb-4abd-95a8-2cf7d1999b80" class=3D"conflue=
+nceTd">
+<p local-id=3D"bf2c5e497621">Standard + ApplyPrepayment + GL</p></td>
+</tr>
+<tr data-local-id=3D"13ab1110-dba9-431f-b4d8-329fe915a7f8">
+<td data-local-id=3D"0bcc11d8-66f4-4417-a312-a58c7e9d15de" class=3D"conflue=
+nceTd">
+<p local-id=3D"9e7fef999182">TT-14</p></td>
+<td data-local-id=3D"7c113bd6-f034-4607-af80-87125762d4a7" class=3D"conflue=
+nceTd">
+<p local-id=3D"64dd3b4bacea">(3)&gt;0, (2)&gt;0, (2)+(3)&lt;(1)</p></td>
+<td data-local-id=3D"e2bd5329-3090-4379-ad81-e151f821b0c0" class=3D"conflue=
+nceTd">
+<p local-id=3D"32290712332f">Kh=C3=B4ng</p></td>
+<td data-local-id=3D"f1dccfa7-8614-4dc3-85bb-6d483f1f1176" class=3D"conflue=
+nceTd">
+<p local-id=3D"f27ac314047f">X</p></td>
+<td data-local-id=3D"2a7bed16-e52e-4fe2-80fb-c8f62df30985" class=3D"conflue=
+nceTd">
+<p local-id=3D"d9077117b53a">/ap/create-invoice</p></td>
+<td data-local-id=3D"97763493-747f-465f-a9b7-7910720c5ebb" class=3D"conflue=
+nceTd">
+<p local-id=3D"292ffee397dd">Standard + ApplyPrepayment + Payment</p></td>
+</tr>
+<tr data-local-id=3D"a03e816e-d2a8-432e-8f75-4d00b71c5a18">
+<td data-local-id=3D"7d5265f2-bd22-48a7-977d-f1fb22381a6b" class=3D"conflue=
+nceTd">
+<p local-id=3D"93af530eb5c6">TT-15</p></td>
+<td data-local-id=3D"acb7bb77-78c4-4aef-bfbe-fe7e7fcbc7d7" class=3D"conflue=
+nceTd">
+<p local-id=3D"ce58e4518dfe">(3)&gt;0, (2)&gt;0, (2)+(3)&lt;(1)</p></td>
+<td data-local-id=3D"b0cad7cd-7865-4c7c-b3a3-3d6c41bc7b7d" class=3D"conflue=
+nceTd">
+<p local-id=3D"b93ffebe94f5">C=C3=B3</p></td>
+<td data-local-id=3D"782976d0-cebe-4ece-ad7a-d242144c84a8" class=3D"conflue=
+nceTd">
+<p local-id=3D"b71a2bf3d7ef">NCC</p></td>
+<td data-local-id=3D"62070507-3115-4e0e-8079-432474b6ab17" class=3D"conflue=
+nceTd">
+<p local-id=3D"9554fb56b01f">/ap/create-invoice</p></td>
+<td data-local-id=3D"e48eebaa-3713-4f79-9e44-8ca47749306c" class=3D"conflue=
+nceTd">
+<p local-id=3D"886a5c9aac7d">Standard + ApplyPrepayment + Payment</p></td>
+</tr>
+<tr data-local-id=3D"2ba84cb7-711e-402d-9cd0-5516ea217d1f">
+<td data-local-id=3D"8bb75214-defb-49af-9a01-ebafba9ca3ef" class=3D"conflue=
+nceTd">
+<p local-id=3D"2261125a2a86">TT-16</p></td>
+<td data-local-id=3D"d14fa935-9bbb-4b68-8ccc-d5f8f5c538de" class=3D"conflue=
+nceTd">
+<p local-id=3D"335d894bb2dc">(3)&gt;0, (2)&gt;0, (2)+(3)&lt;(1)</p></td>
+<td data-local-id=3D"0c72c369-0faf-459d-8e70-13b285d90392" class=3D"conflue=
+nceTd">
+<p local-id=3D"07f35ca592b0">C=C3=B3</p></td>
+<td data-local-id=3D"4c736902-d4cc-49b6-91a3-a668f957ad37" class=3D"conflue=
+nceTd">
+<p local-id=3D"d0ed13c1d714">C=C3=A1 nh=C3=A2n</p></td>
+<td data-local-id=3D"aefeb56d-ca22-4fca-a059-445e85cb1485" class=3D"conflue=
+nceTd">
+<p local-id=3D"33cdbca548e9">/ap/create-invoice + GL</p></td>
+<td data-local-id=3D"2c4c0c03-3d63-4151-a1f5-cf0ef78e99e6" class=3D"conflue=
+nceTd">
+<p local-id=3D"a683c5c675b3">Standard + ApplyPrepayment + Payment + GL</p><=
+/td>
+</tr>
+</tbody>
+</table>
+</div>
+<h5 local-id=3D"eb11b9992a1d" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-6.3.2Nh=C3=B3m2=E2=80=935CASENCCc=C3=A1nh=C3=
+=A2n=E2=86=92g=E1=BB=8Dith=C3=AAm/general-ledger/interface">6.3.2 Nh=C3=B3m=
+ 2 =E2=80=93 5 CASE NCC c=C3=A1 nh=C3=A2n =E2=86=92 g=E1=BB=8Di th=C3=AAm <=
+code>/general-ledger/interface</code></h5>
+<p local-id=3D"e3de60206315">C=C3=A1c case:</p>
+<ul local-id=3D"23e4a337-1c71-4000-b2e5-384843422f9a">
+<li local-id=3D"15219146-fb53-4e2c-a578-c6883f96fdf2">
+<p local-id=3D"0ee65fe6e9a6">TT-02</p></li>
+<li local-id=3D"c2f58529-a7fe-4d58-9adc-25466930e7ec">
+<p local-id=3D"122511650db4">TT-05</p></li>
+<li local-id=3D"41fccdf2-eb43-4ba2-b680-a14fa1f4a6d1">
+<p local-id=3D"b7efb696eb2b">TT-10</p></li>
+<li local-id=3D"c00f0c29-be29-4b2b-8bb3-c1a3a5197860">
+<p local-id=3D"26668ee10516">TT-13</p></li>
+<li local-id=3D"e2ceee44-4da6-4d1f-afb0-e8efd3c0c09a">
+<p local-id=3D"805a6584eb18">TT-16</p></li>
+</ul>
+<p local-id=3D"a6e74645453d"><strong>L=C3=BD do:</strong> C=C3=A1 nh=C3=A2n=
+ c=C3=B3 thu=E1=BA=BF TNCN =E2=86=92 c=E1=BA=A7n sinh th=C3=AAm b=C3=BAt to=
+=C3=A1n GL:</p>
+<ul local-id=3D"502b1e33-f1ba-4be2-aa15-3a254747b7e9">
+<li local-id=3D"607175aa-4c60-4fb8-9f2e-cb0cd0a3f831">
+<p local-id=3D"514818855ecd">N=E1=BB=A3 TK chi ph=C3=AD thu=E1=BA=BF</p></l=
+i>
+<li local-id=3D"1e5a0438-38c6-4148-874f-d82c4c1f70e4">
+<p local-id=3D"9fad5494beef">C=C3=B3 TK Thu=E1=BA=BF TNCN</p></li>
+</ul>
+<h5 local-id=3D"50efb1b24525" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-6.3.3Nh=C3=B3m3=E2=80=931CASEg=E1=BB=8DiAPI/ap=
+/create-payment">6.3.3 Nh=C3=B3m 3 =E2=80=93 1 CASE g=E1=BB=8Di API <code>/=
+ap/create-payment</code></h5>
+<div class=3D"table-wrap">
+<table data-table-width=3D"760" data-layout=3D"default" data-local-id=3D"4b=
+53865e-4483-4d38-b99b-f019b11ab21a" class=3D"confluenceTable">
+<tbody>
+<tr data-local-id=3D"5e367877-887a-4b31-a508-c63a2dc5ab88">
+<th data-local-id=3D"17b4e681-9f7a-4739-9acc-3a87a750c355" class=3D"conflue=
+nceTh">
+<p local-id=3D"6025780633f2">Case</p></th>
+<th data-local-id=3D"5ff08959-3a71-4cc6-b7f6-cf953b406e06" class=3D"conflue=
+nceTh">
+<p local-id=3D"5d2904168aa0">=C4=90i=E1=BB=81u ki=E1=BB=87n</p></th>
+<th data-local-id=3D"5c6a10a0-b38f-4962-88ab-9b49aa1191ad" class=3D"conflue=
+nceTh">
+<p local-id=3D"eef0e8814b3c">API</p></th>
+</tr>
+<tr data-local-id=3D"0fad9451-0763-4f48-a38b-cc566b9aac03">
+<td data-local-id=3D"90eee381-f2b8-4809-b5cf-ecdc432518e3" class=3D"conflue=
+nceTd">
+<p local-id=3D"a8a5d756819e">TT-17</p></td>
+<td data-local-id=3D"871a9287-59a3-41c7-bcef-19d38831996d" class=3D"conflue=
+nceTd">
+<p local-id=3D"0838058040bd">(1)=3D0, (2)&gt;0</p></td>
+<td data-local-id=3D"32b8b853-4903-4915-ba47-c36f12171a5f" class=3D"conflue=
+nceTd">
+<p local-id=3D"3a5f3c1c905f">/ap/create-payment</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p local-id=3D"7b6c85771883"><strong>=C3=9D ngh=C4=A9a:</strong> Thanh to=
+=C3=A1n kho=E1=BA=A3n ph=E1=BA=A3i tr=E1=BA=A3 c=C3=B2n l=E1=BA=A1i c=E1=BB=
+=A7a YCTT =C4=91=C3=A3 c=C3=B3 tr=C6=B0=E1=BB=9Bc =C4=91=C3=B3, kh=C3=B4ng =
+ph=C3=A1t sinh th=C3=AAm t=E1=BB=95ng ph=E1=BA=A3i tr=E1=BA=A3.</p>
+<h2 local-id=3D"9b5f13c2ce6a" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-7.MappingLogic=E2=86=94Database=E2=86=94API">7=
+. Mapping Logic =E2=86=94 Database =E2=86=94 API</h2>
+<h3 local-id=3D"cbf6eae1b484" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-7.1.MappingT=E1=BA=A1m=E1=BB=A9ngOGL">7.1. Map=
+ping T=E1=BA=A1m =E1=BB=A9ng OGL</h3>
+<div class=3D"table-wrap">
+<table data-layout=3D"default" data-local-id=3D"d711a059-be56-480e-ac4d-d43=
+a09ff0388" class=3D"confluenceTable">
+<tbody>
+<tr data-local-id=3D"884e9a28-1f5d-4148-9c47-2dc5cf08ef93">
+<th data-local-id=3D"ed590c89-a70e-4d74-b6be-69141b5077c1" class=3D"conflue=
+nceTh">
+<p local-id=3D"cee414e2c524">Logic</p></th>
+<th data-local-id=3D"c92e0290-7870-48cf-ba17-eb34f15ea89f" class=3D"conflue=
+nceTh">
+<p local-id=3D"ce45547d9837">Database</p></th>
+<th data-local-id=3D"1657b545-71dc-4271-a95c-5532ad164167" class=3D"conflue=
+nceTh">
+<p local-id=3D"8098a471acef">API</p></th>
+</tr>
+<tr data-local-id=3D"b2c7fb7f-09fe-4ecb-8d00-c8cd118488ca">
+<td data-local-id=3D"f18c1d94-f19a-47f0-bed0-d11367721e58" class=3D"conflue=
+nceTd">
+<p local-id=3D"af6ae3325e96">S=E1=BB=91 ti=E1=BB=81n t=E1=BA=A1m =E1=BB=A9n=
+g</p></td>
+<td data-local-id=3D"bc00b251-4dbd-4c4a-874d-c37fedc321c5" class=3D"conflue=
+nceTd">
+<p local-id=3D"46b4f293c4bc">prepayment.amount</p></td>
+<td data-local-id=3D"96121075-f6c0-4063-a5c3-c9ec2f9ca51d" class=3D"conflue=
+nceTd">
+<p local-id=3D"1e243715d3b2">ap/create-invoice.amount</p></td>
+</tr>
+<tr data-local-id=3D"b6c73f94-90e8-4e21-a085-e114e7e1bb16">
+<td data-local-id=3D"f05f56a3-d402-44a2-8a0e-bfb5c1a1fda2" class=3D"conflue=
+nceTd">
+<p local-id=3D"8eb6cf1606e8">T=C3=A0i kho=E1=BA=A3n th=E1=BB=A5 h=C6=B0=E1=
+=BB=9Fng</p></td>
+<td data-local-id=3D"b16735d1-1b25-4612-8df1-b8cd244f0060" class=3D"conflue=
+nceTd">
+<p local-id=3D"72fb2f8f38b4">prepaymentVendor.beneficiary_account</p></td>
+<td data-local-id=3D"1128eb50-c5cb-4cb9-826e-783101a81ecc" class=3D"conflue=
+nceTd">
+<p local-id=3D"b18aff6bd1bf">fundstransferadd.depAcctIdTo.acctId</p></td>
+</tr>
+<tr data-local-id=3D"8b62127c-f1ad-4312-b144-d0f9e473b105">
+<td data-local-id=3D"abdd4ea3-e497-4fd5-a0cc-72b319dc017c" class=3D"conflue=
+nceTd">
+<p local-id=3D"4d311b89717f">T=C3=AAn th=E1=BB=A5 h=C6=B0=E1=BB=9Fng</p></t=
+d>
+<td data-local-id=3D"93b7bf8f-d82b-4e1e-ad07-3cba422021fd" class=3D"conflue=
+nceTd">
+<p local-id=3D"2aa9060a0b2c">prepaymentVendor.beneficiary_name</p></td>
+<td data-local-id=3D"408b7f8c-1c8f-4a38-8214-c0f9afab45d0" class=3D"conflue=
+nceTd">
+<p local-id=3D"77bd55fb6187">acct-inq.data.acctName</p></td>
+</tr>
+<tr data-local-id=3D"33556663-d70d-489a-823b-c756386497e6">
+<td data-local-id=3D"0c4c0254-995b-4b04-a287-0f517928efa4" class=3D"conflue=
+nceTd">
+<p local-id=3D"f888f204e296">Site NCC</p></td>
+<td data-local-id=3D"618cb7f2-52f0-40e6-ab19-a3ec12991365" class=3D"conflue=
+nceTd">
+<p local-id=3D"56bc6adfdcc4">vendorSite.ogl_site_code</p></td>
+<td data-local-id=3D"c261a701-a5c8-4186-880f-b239dddf2b3a" class=3D"conflue=
+nceTd">
+<p local-id=3D"a1e460b83f01">vendors/site-info.vendorSiteCode</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 local-id=3D"7effe6dc266c" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-7.2.MappingThanhto=C3=A1nOGL">7.2. Mapping Tha=
+nh to=C3=A1n OGL</h3>
+<div class=3D"table-wrap">
+<table data-layout=3D"default" data-local-id=3D"cf3496eb-f8ac-4105-8d77-c9a=
+e87b02ab0" class=3D"confluenceTable">
+<tbody>
+<tr data-local-id=3D"b3d707e3-1027-4ad9-b3f6-b674226cb417">
+<th data-local-id=3D"a62433a6-f84e-43c1-97e4-efa8a955a807" class=3D"conflue=
+nceTh">
+<p local-id=3D"d16ae2ea334c">Logic</p></th>
+<th data-local-id=3D"135c3207-76dc-4604-b596-acd8f2f1c650" class=3D"conflue=
+nceTh">
+<p local-id=3D"65cd7db7e8dc">Database</p></th>
+<th data-local-id=3D"6a4c79b0-c37f-4c42-9478-688b8e654994" class=3D"conflue=
+nceTh">
+<p local-id=3D"12f3457ebd70">API</p></th>
+</tr>
+<tr data-local-id=3D"fbba94c8-4592-4793-a574-16147e80fab1">
+<td data-local-id=3D"563978a9-7122-4583-81ac-e95680bfd556" class=3D"conflue=
+nceTd">
+<p local-id=3D"10bdeda4857a">Gi=C3=A1 tr=E1=BB=8B h=C3=B3a =C4=91=C6=A1n ch=
+=E1=BA=A5p nh=E1=BA=ADn</p></td>
+<td data-local-id=3D"f7b731f0-3bcb-4c97-8db9-3aaee8a8daaa" class=3D"conflue=
+nceTd">
+<p local-id=3D"dfaef1764462">paymentInvoice.deduction_amount</p></td>
+<td data-local-id=3D"79738dda-6803-4ea1-b5ea-30e4e4281357" class=3D"conflue=
+nceTd">
+<p local-id=3D"daba2dc25b46">ap/create-invoice.amount</p></td>
+</tr>
+<tr data-local-id=3D"7cb29982-59ea-45a7-ae28-aace7b9880d8">
+<td data-local-id=3D"4465e0dc-3682-4795-b174-e4d7fe0ae87f" class=3D"conflue=
+nceTd">
+<p local-id=3D"a12eb0f5b27f">S=E1=BB=91 ti=E1=BB=81n =C4=91=E1=BB=81 ngh=E1=
+=BB=8B thanh to=C3=A1n</p></td>
+<td data-local-id=3D"4ba1ee5d-86af-4ab4-8cc6-9929c2571468" class=3D"conflue=
+nceTd">
+<p local-id=3D"8d1456d7e754">paymentVendor.amount</p></td>
+<td data-local-id=3D"4c5a8422-60af-4bbc-abf4-bb9867b4259b" class=3D"conflue=
+nceTd">
+<p local-id=3D"2241bd6646af">ap/create-invoice.amountPay</p></td>
+</tr>
+<tr data-local-id=3D"e5193c41-51eb-4c40-b0bb-a0671119b1c1">
+<td data-local-id=3D"af0dcd0c-b8cb-4096-a263-35b7ae13be04" class=3D"conflue=
+nceTd">
+<p local-id=3D"85651358cdc7">S=E1=BB=91 ti=E1=BB=81n ho=C3=A0n =E1=BB=A9ng<=
+/p></td>
+<td data-local-id=3D"5f43b728-16ce-455f-9795-e424d53082e3" class=3D"conflue=
+nceTd">
+<p local-id=3D"7608a20889dd">paymentVendor.refund_amount</p></td>
+<td data-local-id=3D"d5f630aa-c29a-4479-802e-d1c17ab1a469" class=3D"conflue=
+nceTd">
+<p local-id=3D"f7f94506e210">ap/create-invoice.applyList.amount</p></td>
+</tr>
+<tr data-local-id=3D"cd9eff63-9ea1-4ba5-b531-e2fce1689d5a">
+<td data-local-id=3D"e612ed64-d79c-4e50-a896-647442152f85" class=3D"conflue=
+nceTd">
+<p local-id=3D"294c93cc257e">T=C3=A0i kho=E1=BA=A3n chi ph=C3=AD</p></td>
+<td data-local-id=3D"23c84cb9-c6c8-4d0f-97ea-70fc30214902" class=3D"conflue=
+nceTd">
+<p local-id=3D"4bbac5c1df2e">paymentCostDivision.account_number</p></td>
+<td data-local-id=3D"3f775a0b-ec39-4b22-a73c-5089e3057861" class=3D"conflue=
+nceTd">
+<p local-id=3D"03c37cc183e5">ap/create-invoice.invoiceLineList.segment3</p>=
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 local-id=3D"5418e57a1ee2" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-7.3.Mappingchuy=E1=BB=83nti=E1=BB=81nCoreBanki=
+ng">7.3. Mapping chuy=E1=BB=83n ti=E1=BB=81n CoreBanking</h3>
+<div class=3D"table-wrap">
+<table data-layout=3D"default" data-local-id=3D"4ba6afd6-896c-4e72-9ce2-4a5=
+60f088466" class=3D"confluenceTable">
+<tbody>
+<tr data-local-id=3D"8596c755-45ba-435a-816b-b3d4670110f8">
+<th data-local-id=3D"d8929d08-084f-4577-b140-1a04a21eb7b4" class=3D"conflue=
+nceTh">
+<p local-id=3D"f263bcbc402f">Logic</p></th>
+<th data-local-id=3D"6d47af25-c61d-4bd3-a03c-25caabc01619" class=3D"conflue=
+nceTh">
+<p local-id=3D"d5d7f9557d25">Database</p></th>
+<th data-local-id=3D"ea9be1ff-5e9d-4fc6-855e-512c921f8153" class=3D"conflue=
+nceTh">
+<p local-id=3D"1705a133111d">API</p></th>
+</tr>
+<tr data-local-id=3D"8a9eecff-0a05-4f77-90c9-8b2cc6aab65e">
+<td data-local-id=3D"79b4465a-e47a-43b1-bb01-f7bb6f3d3662" class=3D"conflue=
+nceTd">
+<p local-id=3D"39093b2c2eb3">STK ghi n=E1=BB=A3</p></td>
+<td data-local-id=3D"66d1ff40-b515-438d-b030-b73d5efc9df4" class=3D"conflue=
+nceTd">
+<p local-id=3D"1897bf156dc0">branch GL account</p></td>
+<td data-local-id=3D"ffbd3598-24c1-44af-998b-88622e830d37" class=3D"conflue=
+nceTd">
+<p local-id=3D"ce8190dcd0e1">fundstransferadd.depAcctIdFrom</p></td>
+</tr>
+<tr data-local-id=3D"32233f93-98b1-4239-85b4-8cc3da5762c2">
+<td data-local-id=3D"29cb1264-9ccd-4925-a992-d8587c5e66ba" class=3D"conflue=
+nceTd">
+<p local-id=3D"a309e767f989">STK th=E1=BB=A5 h=C6=B0=E1=BB=9Fng</p></td>
+<td data-local-id=3D"f6ac555d-770b-4b77-9060-10f8b537fdd0" class=3D"conflue=
+nceTd">
+<p local-id=3D"1bbf46f105f5">beneficiary_account</p></td>
+<td data-local-id=3D"4efd04f3-b34f-451b-8668-750c9a2ef2ff" class=3D"conflue=
+nceTd">
+<p local-id=3D"7aaae5c121ef">fundstransferadd.depAcctIdTo</p></td>
+</tr>
+<tr data-local-id=3D"2a24ed8a-d989-4425-b9d0-1ed1f8641bef">
+<td data-local-id=3D"ab277ac7-5f12-4e09-8133-8671c63df299" class=3D"conflue=
+nceTd">
+<p local-id=3D"0335a8a21c8a">N=E1=BB=99i dung</p></td>
+<td data-local-id=3D"2c97da01-88ff-4c65-88ce-fc0e2b4ceb4f" class=3D"conflue=
+nceTd">
+<p local-id=3D"6cda43de81be">transaction_des</p></td>
+<td data-local-id=3D"37d44b6e-0d87-4369-9769-4e69e47502b6" class=3D"conflue=
+nceTd">
+<p local-id=3D"236a8e7034e7">fundstransferadd.notes</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 local-id=3D"4e02ad6323df" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3c=C3=A1ck=
+=C3=AAnht=C3=ADchh=E1=BB=A3p-8.Th=C3=B4ngtint=E1=BB=95ngh=E1=BB=A3p">8. Th=
+=C3=B4ng tin t=E1=BB=95ng h=E1=BB=A3p</h2>
+<p local-id=3D"c811986f0b65">T=C3=A0i li=E1=BB=87u n=C3=A0y cung c=E1=BA=A5=
+p:</p>
+<ul local-id=3D"cbebd4ca-e99c-4861-9608-518c62e9e8de">
+<li local-id=3D"2a5c3d1e-81b6-4b1a-a577-a9125a85ec97">
+<p local-id=3D"52c7574bfc2c">Mapping chi ti=E1=BA=BFt</p>
+<ul local-id=3D"3fc3f5eac139">
+<li local-id=3D"98bd84e61272">
+<p local-id=3D"eae4c4c63f47"><strong>17 case Thanh to=C3=A1n</strong> mappi=
+ng v=E1=BB=9Bi <strong>API OGL/Core Banking</strong></p></li>
+<li local-id=3D"a91bd06f8585">
+<p local-id=3D"70aa28d87182"><strong>4 Case T=E1=BA=A1m =E1=BB=A9ng</strong=
+> mapping v=E1=BB=9Bi <strong>API OGL/Core Banking</strong></p></li>
+</ul></li>
+<li local-id=3D"67bc47a8-40f1-445d-9f69-4e3e3cdccf37">
+<p local-id=3D"262eb99b4410">Sequence diagram t=E1=BB=95ng h=E1=BB=A3p to=
+=C3=A0n b=E1=BB=99 lu=E1=BB=93ng x=E1=BB=AD l=C3=BD</p></li>
+<li local-id=3D"2afcb2d8-a969-4158-a0aa-bc3baaf9938a">
+<p local-id=3D"cd7284f067d9">Ph=C3=A2n lo=E1=BA=A1i case g=E1=BB=8Di invoic=
+e, payment, GL</p></li>
+</ul>
+<p local-id=3D"a0e9cce7b8f2">T=C3=A0i li=E1=BB=87u cung c=E1=BA=A5p =C4=91=
+=E1=BA=A7y =C4=91=E1=BB=A7 th=C3=B4ng tin =C4=91=E1=BB=83 =C4=91=E1=BB=99i =
+ph=C3=A1t tri=E1=BB=83n x=C3=A2y d=E1=BB=B1ng c=C3=A1c service t=C3=ADch h=
+=E1=BB=A3p gi=E1=BB=AFa QLTS =E2=80=93 OGL =E2=80=93 Core Banking, =C4=91=
+=E1=BA=A3m b=E1=BA=A3o lu=E1=BB=93ng nghi=E1=BB=87p v=E1=BB=A5 thanh to=C3=
+=A1n =E2=80=93 h=E1=BA=A1ch to=C3=A1n =E2=80=93 chuy=E1=BB=83n ti=E1=BB=81n=
+ =C4=91=C6=B0=E1=BB=A3c t=E1=BB=B1 =C4=91=E1=BB=99ng h=C3=B3a v=C3=A0 =C4=
+=91=E1=BB=93ng b=E1=BB=99.</p>
+<p local-id=3D"1e749042fa24"></p>
+    </div>
+</body>
+</html>
+------=_Part_94_1708008539.1785117194141
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+Content-Location: file:///C:/a02730a6f084478d351aa81b6dcb2e4d4f5d54832b3d51505f1b6e8b35ee4e83
+
+iVBORw0KGgoAAAANSUhEUgAAAIUAAAD6CAIAAAAAzBN/AABUBElEQVR4Ae3AA6AkWZbG8f937o3I
+zKdyS2Oubdu2bdu2bdu2bWmMnpZKr54yMyLu+Xa3anqmhztr1a/a5qr/MYL/ZLZba5nJC2Cb+9nO
+TC6znZlAay0zAdu8CGxnJg9gm/tlpu3M5AFaa/zPUPlPdvfdd//iL/7itddeO5vNgNOnT99+++1d
+143j+FIv9VJ//Md/DLzkS77kX/3VX9VaSymLxWJjY2NjY2NjY+PXfu3XXuqlXurixYsHBwcv9mIv
+Jukv/uIvrrvuus3Nzfl8ftddd738y7/8H//xH99yyy333HPPzs7OIx7xiL/+679urT384Q9/xjOe
+sb29vbu7e/z48cx8sRd7sfV6XUr5jd/4jWmatra2br755ld7tVd78pOfHBH/8A//cPr06f39/dba
+Yx/72B//8R9/8Rd/8c3Nzf39/QsXLpw4caLve0kv8zIvc+rUKf4zBf/JTp069TIv8zLDMPR9X2vd
+2dmZpulxj3vc4x73uIg4duzY2bNnSylnzpzZ2NgYx9H2HXfc8Xu/93tbW1t93+/t7T3ykY981KMe
+Zdv2jTfeuFqt/vZv/3aapu3t7a7rgLvuuuvSpUuHh4eSbLfWtre3Z7PZHXfccfHixaOjo+VyCWRm
+KeXkyZPXXnttrfXixYuHh4eZ2ff9zs7O+fPnDw4OVqvVcrm86aab9vb27rrrrmmaIsL2crn8nd/5
+nYsXL/KfTLb5LzcMQymllAK01iJCEvfLzHEcZ7OZbUncz7akzLRdSuFFZlsS/z7r9brve0n8Z5Jt
+ntMwDKWUUgpX/ZcLntPh4dFtt52/885zdnLVf7ngOWWmTWu2ueq/XuU5LRbzzc39jY0FV/13CJ5T
+a63va4Qyk6v+y8k2z+ng4GA+n9daueq/XOV5rNfrUkqtlX8N27u7+7a5n21JtrksImxLAjJTEmAb
+kGSbB5DEZbYBSbaBvu+2tzd5Hpm5u7vPMxlkW5JtLpNkm8skAbYBSbYB24vFbHNzg/9QR0fL5XIt
+iedkG5AESMrMUuL48Z3Kczo6OlosFuM4dl1Xa+VFNo7j2bN7UtfaVEptbeq6frVabWxsSMrMg4OD
+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
+zZd4iZfY3NystUYEYBuQBHRdd+rUKZ7T5uYml81mMy679tpr+d/JNi9A5b9JRJRSjo6OLly4cO21
+10rKzGmaDg4Ojh8/npnL5XJra+vw8PDw8HA2m9m+5pprJPF/WuW/VUTcd999f/mXf3nzzTf3fX/3
+3Xfv7++/7Mu+7G233bZer/u+P3ny5F/91V+97Mu+rKRrrrmG/+sq/61KKWfOnOm6LiIe+chHXnfd
+dZIkPfrRj16v1/P5vO/7a6+9dhiGcRwvXLiwWCw2Njb4X04SL0Dlv4+kg4ODJz7xieM4bm9v7+7u
+3n777bu7u621WuswDLaPHz++Wq2maVqv113XvfiLv/jGxkZm8q+UmZmZmfy3aq3t7+8vFgtegMp/
+E0mr1Wpvb+8Rj3hErVXSarU6c+bMNddcY1tSZgKSWmsRIam11lq7/fbb+dfLzNZa13X895E0TdOP
+/diPvembvumLvdiL8fxU/pvY7vv+QQ96UETYlsR/psycpqnve/5bZeZHfdRH2eYFqPx3s/1nf/Zn
+Gxsbs9nsxIkTT33qU2+55Zb1en10dFRKuXTp0vHjx8+ePdt13XXXXbe3tzcMQ9d1Xdc99KEP3d3d
+vXDhAjCO4ziOi8XirrvuuuGGG2xHRK31QQ960NOf/vT9/f2NjY2+7x/2sIfx3yoi+r5fr9e8AJX/
+Prb/+q//+uabb77xxhsvXLhwdHQEZKbt8+fPj+M4n8+Xy2VrbWdnZ29v74477tja2pqm6dKlS8eO
+HTs4OLh06dKFCxc2NjaOjo6maYqInZ2de++9d3Nzs+/7CxcuHD9+/NKlS5IuXrzYdd2DHvQg/gew
+DUjiecg2z2kYhlprRPCf5k/+5E9OnjzZ9/3P/dzPvezLvuzNN9+cmVwmKTMjghdMku1pmkopknjB
+WmulFCAzW2sRwf8Ambmzs/M3f/M3r/qqr7qxscEDyDbPaRiGWmtE8J/m3Llzd911V2bO5/PWGv/5
+MrO11nUd/wMMw1BK6fv+UY96lCQeQLZ5TsMw1Fojgv9kwzDUWiOC/3yZOU1T3/f8DzAMQ9d1knge
+lf8+ksZxPDg4yMydnZ2u65bLJTCfz3d3dyW11vq+397ePjo66vu+67rlctlay8xa6+bm5rlz52yf
+OHECWK1WwObmpiT+16r894mIixcv/s3f/M3e3t6ZM2euu+6622677ejo6JZbbrnnnnvW6/W11157
+ww033H777U972tNsv/RLv/Rf/MVfbG1tLZfLxWLxsIc97M///M+3t7cf9rCH3XnnnefOnTtx4sRr
+vMZrzOdz/teSbZ7TMAy11ojgP9nBwcHFixcPDw8zcz6fj+O4s7Nz/PjxiJA0jqPtUkpEDMMAlFJW
+q9Xm5mZrrbXW9/04jqWUvu8vXbq0Xq93dnbm83kpheeRmdM09X3P/wDr9brve0k8j8p/n67rVqvV
+qVOnjh8/npkHBwfDMCwWCy7r+577zWYzANjY2OABZrMZAJw8eZL/Eyr/faZp+s3f/M2Xe7mXs91a
+y8zjx4/z/5ts85yGYai1RgT/ycZxjIiIkMR/ssycpqnve/4HGIah6zpJPI/K85DEfxVJknh+bP/q
+r/5q13URYTszJUmyLQmwLUmSbduA7VKKbS6T1ForpdjOzMyUtFqt3uAN3mA2m/E/UgXOnz+/XC4l
+AZLW63WtNSL4zyRpvV7XWiOC5yFpvV4fHR1dvHgxIk6ePHnq1Kn1ej0Mw4kTJ/b29u6+++7HPOYx
+mfmUpzzlxIkT+/v711577XXXXfcXf/EXW1tbJ0+eHMfxrrvueqmXeqmnPe1pJ06cuHTp0sbGxmMe
+85i//uu/ftrTnnbs2DHb/DdZr9d930vifrb7vr/mmmsqsLu7u7u7GxFcNo5jKSUi+E82jmMpJSJ4
+HpJWq9U4jmfOnMnMpz71qfP5/Ny5c6vV6klPetLR0VHf99M0/cmf/EnXdeM4LpfLixcvLhYL2/fe
+e+/Tnva048ePr1ar1Wp18eLF22+/fZqmnZ2dRzziEZLuu+++9Xptm/8mwzB0XSeJ+9ne2Ng4c+aM
+bPOcxnEspUQE/8nGcSylRATPT2b+3M/93NbWliRJrTVJkoZhACJC0jiOi8XCNpdlpiRJ3C8zIwKw
+nZnA3t7em73Zm83nc/77DMPQdZ0knods85yGYai1RgT/yYZhqLVGBC9AZmYmz0OSbUCSbV4EmTlN
+U9/3ERER/LcahqHrOkk8j8rziIjd3d0777zz9OnTpZTFYrFcLre3ty9dujQMw7XXXnv+/Pmu6w4P
+D0+dOgXs7u7u7OwABwcHOzs76/W61rper7e2tjY3N/l3iIiI4D9CZgK1Vv4HsM0LUHkekg4ODi5e
+vHj77bdfd911EXHnnXf2fb9arTY2NnZ3d5/+9KcfO3bs4OBgZ2fn2muvPXfu3P7+vqRSyi233HLP
+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
+u894xjMy8/Tp062122677brrrlssFmfPnj06OnroQx/aWrtw4cJ8Pp+maRzHG2+88dprr+V/Odu8
+AJX/PrZrrZubm5l5zz33tNaOHTsWEV3XARsbG7aB9Xq9WCxKKRcuXJimicts27YtKSK4n21JmSnJ
+dkRwP9v8j1f57yNJ0u7u7t7enu1XeqVXetKTnnR4ePjEJz7x9OnTj33sY//mb/5md3f3xhtvPDo6
+euhDH3r77bc/7nGPe+ITnzgMw3w+X61WtdbW2ku8xEvcdttth4eHL/ESL3Hbbbc96EEPeupTn7qz
+s3Px4sUXe7EXO378OJdJ4n+8yn+f1trh4aGkkydPbm9vHxwczGazaZpOnTol6ezZs8eOHdvZ2RmG
+odZ6/vz5hz3sYZcuXQIyEzhx4oTtUsru7u58Pp/NZkdHR8De3t5sNgMWi8VqtVqv13fcccfe3t5L
+vMRL8D+DJF6Ayn+faZokPexhD4uIzLR94403SpJkexiG48ePR4SkzByGYTabnTp1igewDQzDUEop
+pdje2dnJzBMnTtgGbB8eHl64cOHOO+988Rd/cUn8D2CbF6Dy36frujNnzki6ePHi1taW7dlsdnR0
+FBG11uVyubGxERGSVqvVqVOnWmuSJAGr1arrutbabDbjX3Ly5MmXe7mXa63Z5n+2yn83SU95ylOW
+y+VsNjt+/PiTnvSkhz70offee+/58+df9mVf9tZbb+37frVa3XLLLc94xjPGcdzZ2bn++usf97jH
+HT9+HHiVV3mVvu/5v6LyP8AjH/nIYRhWq1XXdS//8i9/7NixM2fOdF0naRzHiFgsFhsbG5l57Nix
+rutms9nW1tZ6vV4sFsMwrFarzc3NUgovlCT+x6v8dxvH8fGPf/ze3t511123u7s7juNqtdrY2HjY
+wx527733HhwcHB0dzefzRz7yka21O+6449y5c/P5XNKxY8cuXbq0Xq8lveqrvurOzg7/S0jiBaj8
+N5E0juMP//APv8ZrvMYjH/nIaZpms9ktt9ySmdM0zWYzSVtbWxHRWstM27fccss4jjfddNN8Pj97
+9uz111+fmcMwAJKOjo54wWz3fc//DLZ5ASr/HST91V/9Vd/329vbt9566+7urm3bXCbJNg8gCbAN
+SLIdEU984hMBSUBm8kLZBoZh2Nzc5H8w2eY5DcNQa40I/tNk5nq9Xq/Xs9lMUmbynywzx3GczWbz
++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
+4uhnAQ32wAAAAABJRU5ErkJggg==
+------=_Part_94_1708008539.1785117194141
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+Content-Location: file:///C:/d3fea6114de58406d57122fdf2cdf67d3a813ff11b016999bfa0d9ec5ea1e440
+
+iVBORw0KGgoAAAANSUhEUgAAAPoAAAD6CAMAAAC/MqoPAAADAFBMVEX19fXv7+98fHx1dXV9fX23
+t7eenp5wcHDn5+f09PTz8/Pd3d2SkpLY2Njt7e3Q0NCioqJycnKqqqq7u7uurq6CgoKGhobOzs7D
+w8PR0dGNjY3Hx8fj4+PGxsbS0tKoqKgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAABYhwFnAAAFqUlEQVR4Xu3cCXPaOBQHcPmUA9iBmATaQFcfd7/ldnrM9txc5IAk
+ePVkyxbCZEJnsEv5/2YWm6cH6NnC7sYyjAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAOwBxw7sRrRcenZsg2fXfbBjeyzyg8iObRIF7qtz90AY2JGXBKEd2QnXDuzEq0e7
+4i3tyB7jduBlW6b/omb2+m/pgEvf6kv4y/xnO5KMw7k7PM3mdgNZT9+FlkqP77z7RcaeZ3Fd7Wvp
+e8w+bo34m3zlDY9XWxQ7fZ9ZtST+O7167CVmS66Z0ls5zA36H/Tq1fHAbGmSbweacHdfrc9b6UFz
+rBHsGf/TlNCB1mr/cwf8kZ9VT65b2+ttlP6bQOmHCKUfotZKb+YE9pLWSm8fSj9EKP0QofRDhNIP
+EUpvT6fTsUMNaaV0KvaxuJLsBXfsqJXq2yj9/iqSO7ufP4mXjGVXqwnNaKN01jlmd/2LMaO/yP+8
+Y+y4lb3eyoWnzH1g1x2v6w4v4kyWHtyvXlFv5sJTK6X3bjqPbMFi79a9eWSse99ZvfLWTOnNsP8u
+MeXGdJnIPa+eKHb6PlurJfW7ejXmqdlC1tL32HotU7c/io6OolHft/d5Xfr+qqklCXo+H/i9oGbm
+Xk363tqyli3Tf1Er5/XfA0rfseetpn5GzZzWmynd3aqY54Y6ZQd2ws22mR7cUOk1p5ZdONxJ4QAA
+AAAAAAAAAADQKGEHGiHsQMn863iSLp7+HjlzJvqFS3GpWpzQ93329kZnivv8cgqf5u2m4iXr+lXD
+ek4Q+L5LM2pkJ3y/X975OZ37PnXJaNCpeS8va3MqxqdulnA/dmKf51clhPHIXC92usPq2q/gU1pM
+edFuEnZAE7WruXOeJikfyY3MT7vOqPoknkYTj26ALBvKVLE5xyBWnm3Qy1/De2ohjEdmTn0hIt8M
+PBCMxQPOBxFNDJFSJghjqXzS68jME54xJh/4sMotcgwezaIL5RAMa66tRxQrG8pUUWXYObQfTxh9
+riN0z8pImVPh+cyOaf56YTzqppLo8Hd0331H0KB3krNTuQyjhF4rKOGcnycxD2l8dBkb82miRojO
+VTkmdQd/LF/NaTadheJVQ5kqZEFe8RMAVo7UlQNzxCf0UUXPdKRGsWvV9rNKD7jXPzfm9QkWeDTH
+U7cn1OniTVWIBiSbUP/oJn01UYhGiM4tVisZ3cCv3mVYDBeDRz/RUzZUqdNkMtRzkFZzyJSfF18L
+3bMior3uouajMwh/PBsvY4Hf7frqJuTugIuTBznEv58Oq036Jcsyny4bfqRntyw/oOrczR5uwkX4
+WEwizYXqc9Yb5h+vP/0YzDblfBx/Wn5Va7pnVcT2woBXzMOcrP3sNMi36dtJx5FL9i701BCnhHJc
+5c9oPEVGroqaqgFPL6ThUgq5+kmHsqFMVWj3r+covYxGgmBlz4qIZuz14IdafNv0e1H59tX8K33n
++ezTnSr0w+LZdxj7Rw241UvKNElOnQ6L3DzH8ET58ye5YjWwocOvaVk2lKnKcW0OSR/7TvFtKHpm
+RCx0cuvIk1v+uxnCeJRfoq4Te9VmKsL5Xg+TkTqEpVHyF+2VcYcObMMoSvW3Oi0PczqXclRb8V95
+xhpxeYLlb9Wbk7E+uZQNZSofT+TKSV2OfMuuHMQjeYwVZc90RDP2+jU/W9ym3qnagFp+HhpePIWL
+o/ysZ4uc+eWRXA5m2ZwGwvLiVrAvZzdZNtO/wPGz++3qG41TnatyTJ+Xs6sZfRG/9hbhIvi3bLh4
+M5YdiIyGMnVw8X0+6/1XlyP341P2mX2Nn2g/5j0zI7Um9nnsgKT2P1/+WI4deJHIF+/N2G6IfPHe
+jAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwOv9D7a1JNPEDbFgAAAAAElF
+TkSuQmCC
+------=_Part_94_1708008539.1785117194141
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+Content-Location: file:///C:/12b8d546634a59879e835fa22dc3ca105999dad5d5dec179374f2db2a38a2711
+
+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
+SUVORK5CYII=
+------=_Part_94_1708008539.1785117194141--
