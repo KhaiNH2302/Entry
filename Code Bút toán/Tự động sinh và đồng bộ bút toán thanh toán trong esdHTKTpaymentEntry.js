@@ -117,14 +117,14 @@ var TABLE_VENDOR = 'esdHTKTvendor';                           // Bảng danh m�
 var TABLE_VENDOR_SITE = 'esdHTKTvendorSite';                 // Bảng danh mục Địa điểm NCC (dùng chung)
 var TABLE_CATEGORY_ITEM = 'esdDMcategoryItems';               // Bảng thành phần danh mục (dùng chung)
 var TABLE_GL_ACCOUNT = 'esdDMglAccount';                      // Bảng danh mục tài khoản GL (dùng chung)
+var TABLE_CONTACT = 'contacts';
+var TABLE_ENTITY = 'esdDMentity';
 
 var ENTRY_TYPE = {
   AP: 'AP',
   GL: 'GL',
   CORE: 'CORE'
 };
-
-var LEGACY_ADDITIONAL_TYPE = 'additional';
 
 var AUTO_ENTRY_CODE = {
   COST:      'TT-BK-01',   // Ghi nhận chi phí        (Nợ)
@@ -166,8 +166,8 @@ var LEDGER_TYPE = {
 };
 
 var ACCOUNT_TYPE = {
-  DEBIT: 'nợ',
-  ASSET: 'tài sản'
+  DEBIT: 'DEBIT',
+  ASSET: 'ASSET'
 };
 
 var GENERATION_PHASE = {
@@ -180,6 +180,7 @@ var CATEGORY_TAX_DEDUCTION_TYPE = 'dmhd_loai_khau_tru';
 var DEDUCTION_TYPE_FULL = 'KHAUTRU_001';
 var DEDUCTION_TYPE_RATE = 'KHAUTRU_002';
 var DEDUCTION_TYPE_NONE = 'KHAUTRU_003';
+var GL_UNIT_TRANSACTION_CODE = '98';
 
 // =============================================================================
 // SECTION 02 - LOAD / SYNC: đọc, sinh lại, merge, validate và lưu tự động
@@ -200,13 +201,32 @@ function getListPaymentEntryByInputDetails(details) {
   var request = getPaymentRequest(paymentId);
   var currentPhase = request.current_phase;
   var userCheckerKttc = request.user_checker_kttc;
+  var initialRole = request.initial_role;
+  var createdBy = request.created_by;
+  var creatorUnit = getCreatorAccountingUnit(createdBy);
+  var glUnitOptions = getGlUnitOptions();
+  var transactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.lv1Id);
+  var defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(transactionOfficeOptions);
   var savedEntries = getSavedPaymentEntries(paymentId);
 
   // Entry đã có thì trả ngay; dữ liệu nguồn được kiểm tra khi trigger gọi sinh lại.
   if (savedEntries.length > 0) {
+    applyCreatorUnitToEntries(
+      savedEntries,
+      creatorUnit.code,
+      defaultTransactionOfficeCode,
+      transactionOfficeOptions
+    );
     return makeResult(savedEntries, 'saved', {
       currentPhase: currentPhase,
-      userCheckerKttc: userCheckerKttc
+      userCheckerKttc: userCheckerKttc,
+      initialRole: initialRole,
+      createdBy: createdBy,
+      additionalUnitCode: creatorUnit.code,
+      additionalUnitName: creatorUnit.name,
+      glUnitOptions: glUnitOptions,
+      transactionOfficeOptions: transactionOfficeOptions,
+      defaultTransactionOfficeCode: defaultTransactionOfficeCode
     });
   }
 
@@ -214,7 +234,14 @@ function getListPaymentEntryByInputDetails(details) {
     return makeResult([], 'empty', {
       locked: true,
       currentPhase: currentPhase,
-      userCheckerKttc: userCheckerKttc
+      userCheckerKttc: userCheckerKttc,
+      initialRole: initialRole,
+      createdBy: createdBy,
+      additionalUnitCode: creatorUnit.code,
+      additionalUnitName: creatorUnit.name,
+      glUnitOptions: glUnitOptions,
+      transactionOfficeOptions: transactionOfficeOptions,
+      defaultTransactionOfficeCode: defaultTransactionOfficeCode
     });
   }
 
@@ -222,6 +249,13 @@ function getListPaymentEntryByInputDetails(details) {
   var generatedResult = syncPaymentEntryNowByInputDetails(details);
   generatedResult.currentPhase = currentPhase;
   generatedResult.userCheckerKttc = userCheckerKttc;
+  generatedResult.initialRole = initialRole;
+  generatedResult.createdBy = createdBy;
+  generatedResult.additionalUnitCode = creatorUnit.code;
+  generatedResult.additionalUnitName = creatorUnit.name;
+  generatedResult.glUnitOptions = glUnitOptions;
+  generatedResult.transactionOfficeOptions = transactionOfficeOptions;
+  generatedResult.defaultTransactionOfficeCode = defaultTransactionOfficeCode;
   return generatedResult;
 }
 
@@ -487,10 +521,12 @@ function parseJsonArray(value) {
 }
 
 function makeResult(rows, mode, meta) {
+  var data = rows || [];
   var result = {
     success: true,
     mode: mode,
-    data: rows || []
+    data: data,
+    accountingItems: mapAccountingTableItems(data)
   };
 
   if (meta) {
@@ -530,7 +566,6 @@ function savePaymentEntryEdit(details) {
 
   if (!paymentId) return makeError('Missing paymentId.');
   if (!entries) return makeError('Missing entries array.');
-  if (entries.length === 0) return makeError('Entries array is empty.');
 
   // SAVE-2: kiểm tra giai đoạn và đúng cán bộ KTTC được phân công.
   var request = getPaymentRequest(paymentId);
@@ -538,13 +573,42 @@ function savePaymentEntryEdit(details) {
   if (!isAccountingEditablePhase(request.current_phase)) {
     return makeError('Giai đoạn hiện tại không cho phép chỉnh sửa bút toán.');
   }
-  if (!isCurrentUserAssignedKttc(request.user_checker_kttc)) {
-    return makeError('Chỉ cán bộ KTTC được phân công mới được chỉnh sửa hạch toán.');
+  var currentUser = getCurrentOperatorName();
+  var isKttcCreator =
+    normalizeText(request.initial_role) === 'kttc' &&
+    isSameUser(request.created_by, currentUser);
+  var isAssignedKttc = isSameUser(request.user_checker_kttc, currentUser);
+  if (!isKttcCreator && !isAssignedKttc) {
+    return makeError('Chỉ cán bộ KTTC khởi tạo hoặc được phân công mới được chỉnh sửa hạch toán.');
   }
 
   // SAVE-3: chuẩn hóa từng dòng và kiểm tra tổng Nợ = tổng Có.
   var normalized = normalizeEditedEntries(paymentId, entries, previousEntries);
   if (!normalized.success) return normalized;
+
+  if (normalized.entries.length === 0) {
+    var deletedAll = deletePaymentEntries(paymentId);
+    return makeResult([], 'saved', {
+      paymentId: paymentId,
+      deleted: deletedAll,
+      inserted: 0
+    });
+  }
+
+  var creatorUnit = getCreatorAccountingUnit(request.created_by);
+  var transactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.lv1Id);
+  var defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(transactionOfficeOptions);
+  applyCreatorUnitToEntries(
+    normalized.entries,
+    creatorUnit.code,
+    defaultTransactionOfficeCode,
+    transactionOfficeOptions
+  );
+  var transactionOfficeValidation = validateTransactionOfficeRows(
+    normalized.entries,
+    transactionOfficeOptions
+  );
+  if (!transactionOfficeValidation.success) return transactionOfficeValidation;
 
   var balanceValidation = validateAccountingBalanceRows(normalized.entries);
   if (!balanceValidation.success) return balanceValidation;
@@ -569,14 +633,11 @@ function savePaymentEntryEdit(details) {
     };
   }
 
-  return {
-    success: true,
-    mode: 'saved',
+  return makeResult(getSavedPaymentEntries(paymentId), 'saved', {
     paymentId: paymentId,
     deleted: deleted,
-    inserted: inserted,
-    data: getSavedPaymentEntries(paymentId)
-  };
+    inserted: inserted
+  });
 }
 
 function validateAccountingBalanceRows(rows) {
@@ -586,6 +647,7 @@ function validateAccountingBalanceRows(rows) {
 
   var totalDebit = 0;
   var totalCredit = 0;
+  var glGroups = {};
 
   for (var i = 0; i < rows.length; i++) {
     var accountSide = getAccountingSide(rows[i].account_type);
@@ -597,10 +659,38 @@ function validateAccountingBalanceRows(rows) {
 
     if (accountSide === 'debit') totalDebit += amount;
     if (accountSide === 'credit') totalCredit += amount;
+
+    if (isAdditionalEntryType(rows[i].type)) {
+      var glIdParts = getGlEntryIdParts(rows[i].payment_id, rows[i].id);
+      if (!glIdParts) {
+        return makeError('Bút toán GL dòng ' + (i + 1) + ' có ID không đúng cấu trúc mới.');
+      }
+      var groupOrder = glIdParts.groupOrder;
+      var groupKey = safeString(groupOrder);
+      if (!glGroups[groupKey]) {
+        glGroups[groupKey] = {
+          groupOrder: groupOrder,
+          totalDebit: 0,
+          totalCredit: 0
+        };
+      }
+      if (accountSide === 'debit') glGroups[groupKey].totalDebit += amount;
+      if (accountSide === 'credit') glGroups[groupKey].totalCredit += amount;
+    }
+  }
+
+  for (var glGroupKey in glGroups) {
+    if (!glGroups.hasOwnProperty(glGroupKey)) continue;
+    var glGroup = glGroups[glGroupKey];
+    if (Math.abs(glGroup.totalDebit - glGroup.totalCredit) > MONEY_EPSILON) {
+      return makeError(
+        'Bút toán GL ' + glGroup.groupOrder + ': tổng ghi nợ phải bằng tổng ghi có.'
+      );
+    }
   }
 
   // Validate tổng ghi nợ bằng tổng ghi có khi lưu chỉnh sửa bút toán.
-  if (Math.abs(totalDebit - totalCredit) > 0.001) {
+  if (Math.abs(totalDebit - totalCredit) > MONEY_EPSILON) {
     return makeError('Tổng ghi nợ phải bằng tổng ghi có.');
   }
 
@@ -613,9 +703,60 @@ function validateAccountingBalanceRows(rows) {
 
 function getAccountingSide(value) {
   var accountType = normalizeBusinessText(value).replace(/\s+/g, '');
-  if (accountType === 'no' || accountType === 'debit') return 'debit';
-  if (accountType === 'taisan' || accountType === 'co' || accountType === 'credit') return 'credit';
+  if (accountType === 'debit') return 'debit';
+  if (accountType === 'asset') return 'credit';
   return '';
+}
+
+function mapAccountingTableItems(rows) {
+  var apGroups = {};
+  var apKeys = [];
+  var glGroups = {};
+  var glKeys = [];
+  var list = rows || [];
+
+  for (var i = 0; i < list.length; i++) {
+    var row = list[i];
+    var isGl = isAdditionalEntryType(row.type);
+    var idParts = isGl ? getGlEntryIdParts(row.payment_id, row.id) : null;
+    var key = isGl
+      ? safeString(idParts ? idParts.groupOrder : 1)
+      : safeString(row.vendor_id).trim() + '|' +
+        safeString(row.vendor_site_id).trim() + '|' +
+        safeString(row.vendor_site_code).trim();
+    var groups = isGl ? glGroups : apGroups;
+    var keys = isGl ? glKeys : apKeys;
+
+    if (!groups[key]) {
+      groups[key] = { items: [], totalDebt: 0, totalCr: 0 };
+      keys.push(key);
+    }
+
+    var side = getAccountingSide(row.account_type);
+    var amount = toNumber(row.amount);
+    var debtAmount = side === 'debit' ? amount : 0;
+    var crAmount = side === 'credit' ? amount : 0;
+    groups[key].items.push({
+      stt: isGl && idParts ? idParts.rowOrder : toNumber(row.order),
+      accountNumner: safeString(row.account_number).trim(),
+      accountName: safeString(row.account_name).trim(),
+      bankName: '',
+      description: safeString(row.description).trim(),
+      debtAmount: debtAmount,
+      crAmount: crAmount
+    });
+    groups[key].totalDebt += debtAmount;
+    groups[key].totalCr += crAmount;
+  }
+
+  var result = [];
+  for (var apIndex = 0; apIndex < apKeys.length; apIndex++) {
+    result.push(apGroups[apKeys[apIndex]]);
+  }
+  for (var glIndex = 0; glIndex < glKeys.length; glIndex++) {
+    result.push(glGroups[glKeys[glIndex]]);
+  }
+  return result;
 }
 
 // -----------------------------------------------------------------------------
@@ -699,14 +840,16 @@ function normalizeEditedEntries(paymentId, entries, savedEntries) {
   var usedIds = {};
   var savedIds = makeEntryIdSet(savedEntries);
   var nextApSequence = getNextEntryIdSequence(paymentId, ENTRY_TYPE.AP, savedEntries);
-  var nextGlSequence = getNextEntryIdSequence(paymentId, ENTRY_TYPE.GL, savedEntries);
+  var nextGlRowSequence = getNextGlRowSequence(paymentId, 1, savedEntries);
 
   for (var i = 0; i < entries.length; i++) {
     var row = normalizeEditedEntry(entries[i]);
 
     if (!savedIds[row.id]) {
       if (isAdditionalEntryType(row.type)) {
-        row.id = makeSequentialEntryId(paymentId, ENTRY_TYPE.GL, nextGlSequence++);
+        if (!isStructuredGlEntryId(paymentId, row.id)) {
+          row.id = makeGlEntryId(paymentId, 1, nextGlRowSequence++);
+        }
       } else {
         row.id = makeSequentialEntryId(paymentId, ENTRY_TYPE.AP, nextApSequence++);
       }
@@ -730,17 +873,23 @@ function normalizeEditedEntry(raw) {
   var type = safeString(raw.type).trim();
   var isGlEntry = isAdditionalEntryType(type);
   var entryCode = getAutoEntryCode(raw.entry_type);
+  var selectedGlEntityCode = safeString(raw.branch_entity_code).trim();
+  var selectedGlBranchCode =
+    isGlEntry && selectedGlEntityCode
+      ? getGlBranchCodeByEntityCode(selectedGlEntityCode)
+      : safeString(raw.branch).trim();
 
   return {
     id: safeString(raw.id).trim(),
     payment_id: safeString(raw.payment_id).trim(),
-    entry_type: isGlEntry || !entryCode ? safeString(raw.entry_type).trim() : getAutoEntryName(entryCode),
+    entry_type: isGlEntry || !entryCode ? safeString(raw.entry_type).trim() : entryCode,
     ledger_type: isGlEntry ? ENTRY_TYPE.GL : entryCode ? getAutoLedgerType(entryCode) : safeString(raw.ledger_type).trim(),
     account_type: isGlEntry ? toStoredAccountType(raw.account_type) : entryCode ? getAutoAccountType(entryCode) : safeString(raw.account_type).trim(),
     account_number: safeString(raw.account_number).trim(),
     account_name: safeString(raw.account_name).trim(),
-    branch: safeString(raw.branch).trim(),
+    branch: selectedGlBranchCode,
     department: safeString(raw.department).trim(),
+    transaction_office: safeString(raw.transaction_office).trim(),
     amount: toNumber(raw.amount),
     currency: safeString(raw.currency).trim(),
     description: safeString(raw.description).trim(),
@@ -762,14 +911,19 @@ function validateEditedEntry(paymentId, row, index, usedIds) {
   if (!(row.amount > 0)) return prefix + 'amount must be greater than 0.';
   if (!row.currency) return prefix + 'missing currency.';
   if (!row.type) return prefix + 'missing type.';
+  if (isAdditionalEntryType(row.type) && !isStructuredGlEntryId(paymentId, row.id)) {
+    return prefix + 'invalid GL id structure.';
+  }
+  if (isAdditionalEntryType(row.type) && !/^[0-9]{3}$/.test(row.branch)) {
+    return prefix + 'missing or invalid GL branch.';
+  }
   if (!(row.order > 0)) return prefix + 'order must be greater than 0.';
 
   return '';
 }
 
 function isAdditionalEntryType(value) {
-  var type = normalizeText(value);
-  return type === normalizeText(ENTRY_TYPE.GL) || type === LEGACY_ADDITIONAL_TYPE;
+  return normalizeText(value) === normalizeText(ENTRY_TYPE.GL);
 }
 
 // =============================================================================
@@ -823,10 +977,8 @@ function getAutoAccountType(entryCode) {
 function toStoredAccountType(value) {
   var accountType = normalizeBusinessText(value).replace(/\s+/g, '');
 
-  if (accountType === 'debit' || accountType === 'no') return ACCOUNT_TYPE.DEBIT;
-  if (accountType === 'credit' || accountType === 'co' || accountType === 'taisan') {
-    return ACCOUNT_TYPE.ASSET;
-  }
+  if (accountType === 'debit') return ACCOUNT_TYPE.DEBIT;
+  if (accountType === 'asset') return ACCOUNT_TYPE.ASSET;
 
   return safeString(value).trim();
 }
@@ -841,16 +993,6 @@ function getAutoEntryCode(value) {
   if (raw === AUTO_ENTRY_CODE.PAYMENT) return raw;
   if (raw === AUTO_ENTRY_CODE.SUSPENDED) return raw;
   if (raw === AUTO_ENTRY_CODE.TRANSFER) return raw;
-
-  var normalized = normalizeBusinessText(value).replace(/\s+/g, '');
-  if (normalized === 'ghinhanchiphi') return AUTO_ENTRY_CODE.COST;
-  if (normalized === 'thue') return AUTO_ENTRY_CODE.TAX;
-  if (normalized === 'ghinhannghiavuthanhtoan') return AUTO_ENTRY_CODE.LIABILITY;
-  if (normalized === 'hoanung') return AUTO_ENTRY_CODE.REFUND_DR;
-  if (normalized === 'giamdutamung') return AUTO_ENTRY_CODE.REFUND_CR;
-  if (normalized === 'thanhtoan') return AUTO_ENTRY_CODE.PAYMENT;
-  if (normalized === 'trakhoantreo') return AUTO_ENTRY_CODE.SUSPENDED;
-  if (normalized === 'chuyentien') return AUTO_ENTRY_CODE.TRANSFER;
 
   return '';
 }
@@ -877,6 +1019,11 @@ function getAutoEntryCode(value) {
  */
 function buildExpectedPaymentEntries(paymentId, vendorId) {
   var request = getPaymentRequest(paymentId);
+  var creatorUnit = getCreatorAccountingUnit(request.created_by);
+  request.creator_unit_code = creatorUnit.code;
+  request.default_transaction_office_code = getDefaultTransactionOfficeCode(
+    getTransactionOfficeOptions(creatorUnit.lv1Id)
+  );
   var vendors = getPaymentVendors(paymentId, vendorId);
   var rows = [];
   var errors = [];
@@ -1648,16 +1795,18 @@ function buildEntryRow(params) {
   return {
     id: '',
     payment_id: params.paymentId,
-    entry_type: getAutoEntryName(params.entryCode),
+    entry_type: params.entryCode,
     ledger_type: getAutoLedgerType(params.entryCode),
     account_type: getAutoAccountType(params.entryCode),
     account_number: account.number,
     account_name: account.name,
-    branch: params.branchOverride || '',
+    branch: params.branchOverride || params.request.creator_unit_code || '',
     department: params.departmentOverride || params.request.department,
+    transaction_office: params.transactionOfficeOverride ||
+      params.request.default_transaction_office_code || '',
     amount: params.amount,
     currency: params.vendor.currency,
-    description: '',
+    description: params.request.description || '',
     vendor_id: params.vendor.vendor_id,
     type: ENTRY_TYPE.AP,
     order: params.order,
@@ -2112,8 +2261,11 @@ function getPaymentRequest(paymentId) {
       return {
         id: readText(record, 'id'),
         department: readText(record, 'department'),
+        description: readText(record, 'description'),
         current_phase: readText(record, 'current.phase'),
         user_checker_kttc: readText(record, 'user.checker.kttc'),
+        initial_role: readText(record, 'initial.role'),
+        created_by: readText(record, 'created.by'),
         total_advance_amount: readNumber(record, 'total.advance.amount'),
         total_amount_paid: readNumber(record, 'total.amount.paid'),
         total_refund_amount: readNumber(record, 'total.refund.amount'),
@@ -2121,6 +2273,197 @@ function getPaymentRequest(paymentId) {
       };
     }) || {}
   );
+}
+
+function getCreatorAccountingUnit(createdBy) {
+  var creator = safeString(createdBy).trim();
+  if (!creator) return { code: '', name: '', lv1Id: '' };
+
+  var lv1Id = selectOne(
+    TABLE_CONTACT,
+    'contact.name="' + escapeQueryValue(creator) + '"',
+    function (record) { return readText(record, 'lv1.id'); }
+  );
+  var psCode = removeFirstLeadingZero(lv1Id);
+  if (!psCode) return { code: '', name: '', lv1Id: '' };
+
+  return selectOne(
+    TABLE_ENTITY,
+    'ps.code="' + escapeQueryValue(psCode) + '"',
+    function (record) {
+      return {
+        code: removeFirstLeadingZero(readText(record, 'ogl.branch.code')).trim(),
+        name: getBranchNamePrefix(readText(record, 'branch.name')),
+        lv1Id: lv1Id
+      };
+    }
+  ) || { code: '', name: '', lv1Id: lv1Id };
+}
+
+function getGlUnitOptions() {
+  var seen = {};
+  var options = [];
+  var f = new SCFile(TABLE_ENTITY, SCFILE_READONLY);
+  var rc;
+  try {
+    rc = f.doSelect(
+      'org.transaction.code="' + escapeQueryValue(GL_UNIT_TRANSACTION_CODE) + '"'
+    );
+  } catch (e) {
+    closeFile(f);
+    return options;
+  }
+
+  while (rc === RC_SUCCESS) {
+    var entityCode = readText(f, 'entity.code').trim();
+    if (entityCode && !seen[entityCode]) {
+      seen[entityCode] = true;
+      var branchName = getBranchNamePrefix(readText(f, 'branch.name'));
+      options.push({
+        label: entityCode + (branchName ? ' - ' + branchName : ''),
+        value: entityCode,
+        entityCode: entityCode,
+        branchCode: normalizeGlBranchCode(readText(f, 'ogl.branch.code'))
+      });
+    }
+    rc = f.getNext();
+  }
+  closeFile(f);
+  options.sort(compareGlUnitOption);
+  return options;
+}
+
+function normalizeGlBranchCode(value) {
+  var code = safeString(value).replace(/\s+/g, '').trim();
+  if (!/^[0-9]+$/.test(code)) return '';
+  while (code.length > 3 && code.charAt(0) === '0') code = code.substring(1);
+  if (code.length > 3) return '';
+  while (code.length < 3) code = '0' + code;
+  return code;
+}
+
+function getGlBranchCodeByEntityCode(entityCode) {
+  var code = safeString(entityCode).trim();
+  if (!code) return '';
+  return selectOne(
+    TABLE_ENTITY,
+    'entity.code="' + escapeQueryValue(code) +
+      '" and org.transaction.code="' + escapeQueryValue(GL_UNIT_TRANSACTION_CODE) + '"',
+    function (record) {
+      return normalizeGlBranchCode(readText(record, 'ogl.branch.code'));
+    }
+  ) || '';
+}
+
+function compareGlUnitOption(left, right) {
+  var a = safeString(left.entityCode);
+  var b = safeString(right.entityCode);
+  return a === b ? 0 : a < b ? -1 : 1;
+}
+
+function getTransactionOfficeOptions(lv1Id) {
+  var rows = getLv2OrgUnitsByLv1(lv1Id);
+  var seen = {};
+  var options = [];
+  for (var i = 0; i < rows.length; i++) {
+    var lv2Id = safeString(rows[i]['unit.id']).trim();
+    var lv2Name = safeString(rows[i]['unit.name']).trim();
+    var entity = getTransactionOfficeByLv2(lv2Id);
+    var code = safeString(entity.code).trim();
+    if (!code || seen[code]) continue;
+    seen[code] = true;
+    options.push({
+      value: code,
+      label: code + ((lv2Name || entity.name) ? ' - ' + (lv2Name || entity.name) : ''),
+      name: lv2Name || entity.name,
+      unitId: lv2Id,
+      psCode: removeFirstLeadingZero(lv2Id)
+    });
+  }
+  options.sort(compareTransactionOfficeOption);
+  return options;
+}
+
+function getLv2OrgUnitsByLv1(lv1Id) {
+  var id = safeString(lv1Id).trim();
+  if (!id) return [];
+  return lib.ESD_Utils.fetchData(
+    'esdQTorgUnit',
+    'parent.id="' + escapeQueryValue(id) + '"',
+    ['unit.id', 'unit.name']
+  ) || [];
+}
+
+function getTransactionOfficeByLv2(lv2Id) {
+  var psCode = removeFirstLeadingZero(lv2Id);
+  if (!psCode) return { code: '', name: '' };
+  var record = lib.ESD_Utils.getOneRecord(
+    TABLE_ENTITY,
+    'ps.code="' + escapeQueryValue(psCode) + '"',
+    ['org.transaction.code', 'branch.name']
+  );
+  return record ? {
+    code: safeString(record['org.transaction.code']).trim(),
+    name: getBranchNamePrefix(record['branch.name'])
+  } : { code: '', name: '' };
+}
+
+function compareTransactionOfficeOption(left, right) {
+  var a = safeString(left.psCode) + '|' + safeString(left.value);
+  var b = safeString(right.psCode) + '|' + safeString(right.value);
+  return a === b ? 0 : a < b ? -1 : 1;
+}
+
+function getDefaultTransactionOfficeCode(options) {
+  return options && options.length ? safeString(options[0].value).trim() : '';
+}
+
+function validateTransactionOfficeRows(entries, options) {
+  if (!options || !options.length) return { success: true };
+  var allowed = {};
+  for (var i = 0; i < options.length; i++) {
+    allowed[safeString(options[i].value).trim()] = true;
+  }
+  for (var j = 0; j < entries.length; j++) {
+    var code = safeString(entries[j].transaction_office).trim();
+    if (code && !allowed[code]) {
+      return makeError('Phòng giao dịch dòng ' + (j + 1) + ' không thuộc đơn vị đã chọn.');
+    }
+  }
+  return { success: true };
+}
+
+function isTransactionOfficeCodeAllowed(value, options) {
+  var code = safeString(value).trim();
+  if (!code) return false;
+  if (!options || !options.length) return true;
+  for (var i = 0; i < options.length; i++) {
+    if (code === safeString(options[i].value).trim()) return true;
+  }
+  return false;
+}
+
+function applyCreatorUnitToEntries(entries, unitCode, defaultOffice, options) {
+  for (var i = 0; i < entries.length; i++) {
+    if (unitCode && !isAdditionalEntryType(entries[i].type)) {
+      entries[i].branch = unitCode;
+    }
+    if (defaultOffice &&
+        !isTransactionOfficeCodeAllowed(entries[i].transaction_office, options)) {
+      entries[i].transaction_office = defaultOffice;
+    }
+  }
+}
+
+function removeFirstLeadingZero(value) {
+  var text = safeString(value).trim();
+  return text.charAt(0) === '0' ? text.substring(1) : text;
+}
+
+function getBranchNamePrefix(value) {
+  var text = safeString(value).trim();
+  var index = text.indexOf('-');
+  return (index >= 0 ? text.substring(0, index) : text).trim();
 }
 
 function getPaymentVendors(paymentId, vendorId) {
@@ -2249,6 +2592,7 @@ function getPaymentEntryFields() {
     ['e.account.name', 'account_name', 'S'],
     ['e.branch', 'branch', 'S'],
     ['e.department', 'department', 'S'],
+    ['e.transaction.code', 'transaction_office', 'S'],
     ['e.amount', 'amount', 'N?'],
     ['e.currency', 'currency', 'S'],
     ['e.description', 'description', 'S'],
@@ -2292,7 +2636,7 @@ function mergeEditableAutoEntryFields(savedEntries, expectedEntries) {
 
     if (matched) {
       expected.id = safeString(matched.id);
-      expected.description = safeString(matched.description);
+      expected.description = safeString(matched.description).trim() || expected.description;
 
       // Giữ tài khoản chi phí (TT-BK-01) nếu người dùng đã sửa
       if (isEditableDebitAccountEntry(expected)) {
@@ -2373,6 +2717,7 @@ function toPaymentEntryRecord(row) {
     'account.name': row.account_name,
     branch: row.branch,
     department: row.department,
+    'transaction.code': row.transaction_office,
     amount: row.amount,
     currency: row.currency,
     description: row.description,
@@ -2440,16 +2785,19 @@ function isAccountingEditablePhase(currentPhase) {
   return normalizeText(currentPhase) === GENERATION_PHASE.KTTC;
 }
 
-function isCurrentUserAssignedKttc(userCheckerKttc) {
+function getCurrentOperatorName() {
   var currentOperator = vars.$lo_operator;
-  var currentUser = currentOperator ? safeString(currentOperator['contact.name']).trim() : '';
+  return currentOperator ? safeString(currentOperator['contact.name']).trim() : '';
+}
 
-  return !!currentUser && normalizeText(currentUser) === normalizeText(userCheckerKttc);
+function isSameUser(expectedUser, currentUser) {
+  var expected = safeString(expectedUser).trim();
+  var actual = safeString(currentUser).trim();
+  return !!expected && !!actual && normalizeText(expected) === normalizeText(actual);
 }
 
 function isAutoEntry(row) {
-  var type = normalizeText(row.type);
-  return type !== normalizeText(ENTRY_TYPE.GL) && type !== LEGACY_ADDITIONAL_TYPE;
+  return normalizeText(row.type) !== normalizeText(ENTRY_TYPE.GL);
 }
 
 // =============================================================================
@@ -2458,12 +2806,12 @@ function isAutoEntry(row) {
 
 function assignNewEntryIds(paymentId, rows, savedEntries) {
   var nextApSequence = getNextEntryIdSequence(paymentId, ENTRY_TYPE.AP, savedEntries);
-  var nextGlSequence = getNextEntryIdSequence(paymentId, ENTRY_TYPE.GL, savedEntries);
+  var nextGlRowSequence = getNextGlRowSequence(paymentId, 1, savedEntries);
 
   for (var i = 0; i < rows.length; i++) {
     if (!safeString(rows[i].id).trim()) {
       if (isAdditionalEntryType(rows[i].type)) {
-        rows[i].id = makeSequentialEntryId(paymentId, ENTRY_TYPE.GL, nextGlSequence++);
+        rows[i].id = makeGlEntryId(paymentId, 1, nextGlRowSequence++);
       } else {
         rows[i].id = makeSequentialEntryId(paymentId, ENTRY_TYPE.AP, nextApSequence++);
       }
@@ -2472,6 +2820,9 @@ function assignNewEntryIds(paymentId, rows, savedEntries) {
 }
 
 function getNextEntryIdSequence(paymentId, entryType, rows) {
+  if (entryType === ENTRY_TYPE.GL) {
+    return getNextGlRowSequence(paymentId, 1, rows);
+  }
   var prefix = getEntryIdPrefix(paymentId, entryType);
   var maxSequence = 0;
   var list = rows || [];
@@ -2491,12 +2842,52 @@ function getNextEntryIdSequence(paymentId, entryType, rows) {
 }
 
 function makeSequentialEntryId(paymentId, entryType, sequence) {
+  if (entryType === ENTRY_TYPE.GL) {
+    return makeGlEntryId(paymentId, 1, sequence);
+  }
   return getEntryIdPrefix(paymentId, entryType) + sequence;
 }
 
 function getEntryIdPrefix(paymentId, entryType) {
   var prefix = safeString(paymentId).trim() + '.';
   return entryType === ENTRY_TYPE.GL ? prefix + ENTRY_TYPE.GL + '.' : prefix;
+}
+
+function makeGlEntryId(paymentId, groupOrder, rowOrder) {
+  return getEntryIdPrefix(paymentId, ENTRY_TYPE.GL) + groupOrder + '.' + rowOrder;
+}
+
+function isStructuredGlEntryId(paymentId, entryId) {
+  return !!getGlEntryIdParts(paymentId, entryId);
+}
+
+function getGlEntryIdParts(paymentId, entryId) {
+  var prefix = getEntryIdPrefix(paymentId, ENTRY_TYPE.GL);
+  var id = safeString(entryId).trim();
+  if (id.indexOf(prefix) !== 0) return null;
+  var parts = id.substring(prefix.length).split('.');
+
+  if (parts.length === 2 &&
+      /^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]) &&
+      Number(parts[0]) > 0 && Number(parts[1]) > 0) {
+    return {
+      groupOrder: Number(parts[0]),
+      rowOrder: Number(parts[1])
+    };
+  }
+  return null;
+}
+
+function getNextGlRowSequence(paymentId, groupOrder, rows) {
+  var maxSequence = 0;
+  var list = rows || [];
+  for (var i = 0; i < list.length; i++) {
+    var parts = getGlEntryIdParts(paymentId, list[i].id);
+    if (parts && parts.groupOrder === groupOrder && parts.rowOrder > maxSequence) {
+      maxSequence = parts.rowOrder;
+    }
+  }
+  return maxSequence + 1;
 }
 
 function makeEntryIdSet(rows) {
