@@ -19,7 +19,8 @@
  *
  *  ĐÃ CHỐT TRONG CODE:
  *    - (1) approved.invoice.amount; (2) amount; (3) refund.amount.
- *    - Ba số tiền được dùng độc lập, không tính amount - refund.amount.
+ *    - refund.amount chỉ dùng phân case có tạm ứng; chưa dùng để sinh dòng
+ *      Có TK tạm ứng hoặc giảm công nợ trong paymentEntry.
  *    - TK phải trả NCC = vendorSite.credit.account.
  *    - TK tạm ứng khi hoàn ứng = vendorSite.debit.account.
  *    - Cost Division lọc theo payment.id và vendor.id.
@@ -120,10 +121,9 @@ var TABLE_GL_ACCOUNT = 'esdDMglAccount';                      // Bảng danh m�
 var TABLE_CONTACT = 'contacts';
 var TABLE_ENTITY = 'esdDMentity';
 
-var ENTRY_TYPE = {
+var TYPE = {
   AP: 'AP',
-  GL: 'GL',
-  CORE: 'CORE'
+  GL: 'GL'
 };
 
 var AUTO_ENTRY_CODE = {
@@ -148,26 +148,21 @@ var PAYMENT_CASE = {
 // Dùng khi so sánh số tiền để tránh sai số kiểu Number.
 var MONEY_EPSILON = 0.001;
 
-var AUTO_ENTRY_NAME = {
-  COST:      'Ghi nhận chi phí',
-  TAX:       'Thuế',
-  LIABILITY: 'Ghi nhận nghĩa vụ thanh toán',
-  REFUND_DR: 'Hoàn ứng',
-  REFUND_CR: 'Giảm dư tạm ứng',
-  PAYMENT:   'Thanh toán',
-  SUSPENDED: 'Trả khoản treo',
-  TRANSFER:  'Chuyển tiền'
-};
-
 var LEDGER_TYPE = {
-  STANDARD: 'Standard',
-  APPLY_PREPAYMENT: 'ApplyPrepayment',
-  PAYMENT: 'Payment'
+  STANDARD: 'Standard'
 };
 
 var ACCOUNT_TYPE = {
   DEBIT: 'DEBIT',
   ASSET: 'ASSET'
+};
+
+var ENTRY_TYPE = {
+  COST: 'COST',             // TK chi phí
+  PREPAYMENT: 'PREPAYMENT', // TK tạm ứng
+  TAX: 'TAX',               // TK thuế
+  PAYABLE: 'PAYABLE',       // TK phải trả
+  CUSTOMER: 'CUSTOMER'      // TK KH
 };
 
 var GENERATION_PHASE = {
@@ -839,7 +834,7 @@ function normalizeEditedEntries(paymentId, entries, savedEntries) {
   var result = [];
   var usedIds = {};
   var savedIds = makeEntryIdSet(savedEntries);
-  var nextApSequence = getNextEntryIdSequence(paymentId, ENTRY_TYPE.AP, savedEntries);
+  var nextApSequence = getNextEntryIdSequence(paymentId, TYPE.AP, savedEntries);
   var nextGlRowSequence = getNextGlRowSequence(paymentId, 1, savedEntries);
 
   for (var i = 0; i < entries.length; i++) {
@@ -851,7 +846,7 @@ function normalizeEditedEntries(paymentId, entries, savedEntries) {
           row.id = makeGlEntryId(paymentId, 1, nextGlRowSequence++);
         }
       } else {
-        row.id = makeSequentialEntryId(paymentId, ENTRY_TYPE.AP, nextApSequence++);
+        row.id = makeSequentialEntryId(paymentId, TYPE.AP, nextApSequence++);
       }
     }
 
@@ -872,7 +867,6 @@ function normalizeEditedEntries(paymentId, entries, savedEntries) {
 function normalizeEditedEntry(raw) {
   var type = safeString(raw.type).trim();
   var isGlEntry = isAdditionalEntryType(type);
-  var entryCode = getAutoEntryCode(raw.entry_type);
   var selectedGlEntityCode = safeString(raw.branch_entity_code).trim();
   var selectedGlBranchCode =
     isGlEntry && selectedGlEntityCode
@@ -882,9 +876,9 @@ function normalizeEditedEntry(raw) {
   return {
     id: safeString(raw.id).trim(),
     payment_id: safeString(raw.payment_id).trim(),
-    entry_type: isGlEntry || !entryCode ? safeString(raw.entry_type).trim() : entryCode,
-    ledger_type: isGlEntry ? ENTRY_TYPE.GL : entryCode ? getAutoLedgerType(entryCode) : safeString(raw.ledger_type).trim(),
-    account_type: isGlEntry ? toStoredAccountType(raw.account_type) : entryCode ? getAutoAccountType(entryCode) : safeString(raw.account_type).trim(),
+    entry_type: normalizeEntryType(raw.entry_type),
+    ledger_type: LEDGER_TYPE.STANDARD,
+    account_type: toStoredAccountType(raw.account_type),
     account_number: safeString(raw.account_number).trim(),
     account_name: safeString(raw.account_name).trim(),
     branch: selectedGlBranchCode,
@@ -894,7 +888,7 @@ function normalizeEditedEntry(raw) {
     currency: safeString(raw.currency).trim(),
     description: safeString(raw.description).trim(),
     vendor_id: safeString(raw.vendor_id).trim(),
-    type: isGlEntry ? ENTRY_TYPE.GL : ENTRY_TYPE.AP,
+    type: isGlEntry ? TYPE.GL : TYPE.AP,
     order: toNumber(raw.order),
     accounting_request_id: safeString(raw.accounting_request_id).trim()
   };
@@ -906,7 +900,7 @@ function validateEditedEntry(paymentId, row, index, usedIds) {
   if (!row.id) return prefix + 'missing id.';
   if (usedIds[row.id]) return prefix + 'duplicate id ' + row.id + '.';
   if (row.payment_id !== paymentId) return prefix + 'payment_id does not match paymentId.';
-  if (!isAdditionalEntryType(row.type) && !row.entry_type) return prefix + 'missing entry_type.';
+  if (!row.entry_type) return prefix + 'missing entry_type.';
   if (!row.account_number) return prefix + 'missing account_number.';
   if (!(row.amount > 0)) return prefix + 'amount must be greater than 0.';
   if (!row.currency) return prefix + 'missing currency.';
@@ -923,45 +917,14 @@ function validateEditedEntry(paymentId, row, index, usedIds) {
 }
 
 function isAdditionalEntryType(value) {
-  return normalizeText(value) === normalizeText(ENTRY_TYPE.GL);
+  return normalizeText(value) === normalizeText(TYPE.GL);
 }
 
 // =============================================================================
 // SUPPORT - QUY TẮC DÒNG: tên bút toán, ledger type và bên Nợ/Có
 // =============================================================================
 
-function getAutoEntryName(entryCode) {
-  if (entryCode === AUTO_ENTRY_CODE.COST) return AUTO_ENTRY_NAME.COST;
-  if (entryCode === AUTO_ENTRY_CODE.TAX) return AUTO_ENTRY_NAME.TAX;
-  if (entryCode === AUTO_ENTRY_CODE.LIABILITY) return AUTO_ENTRY_NAME.LIABILITY;
-  if (entryCode === AUTO_ENTRY_CODE.REFUND_DR) return AUTO_ENTRY_NAME.REFUND_DR;
-  if (entryCode === AUTO_ENTRY_CODE.REFUND_CR) return AUTO_ENTRY_NAME.REFUND_CR;
-  if (entryCode === AUTO_ENTRY_CODE.PAYMENT) return AUTO_ENTRY_NAME.PAYMENT;
-  if (entryCode === AUTO_ENTRY_CODE.SUSPENDED) return AUTO_ENTRY_NAME.SUSPENDED;
-  if (entryCode === AUTO_ENTRY_CODE.TRANSFER) return AUTO_ENTRY_NAME.TRANSFER;
-  return '';
-}
-
-/**
- * Chọn ledger.type theo nhóm nghiệp vụ:
- * - TT-BK-01/02/03: AP - Standard.
- * - TT-BK-04/05: AP - ApplyPrepayment.
- * - TT-BK-06/08: AP - Payment.
- * - TT-BK-07 chưa có dữ liệu/quy tắc nên chưa gán ledger.type.
- */
 function getAutoLedgerType(entryCode) {
-  if (entryCode === AUTO_ENTRY_CODE.REFUND_DR ||
-      entryCode === AUTO_ENTRY_CODE.REFUND_CR) {
-    return LEDGER_TYPE.APPLY_PREPAYMENT;
-  }
-
-  if (entryCode === AUTO_ENTRY_CODE.PAYMENT ||
-      entryCode === AUTO_ENTRY_CODE.TRANSFER) {
-    return LEDGER_TYPE.PAYMENT;
-  }
-
-  if (entryCode === AUTO_ENTRY_CODE.SUSPENDED) return '';
-
   return LEDGER_TYPE.STANDARD;
 }
 
@@ -983,17 +946,29 @@ function toStoredAccountType(value) {
   return safeString(value).trim();
 }
 
-function getAutoEntryCode(value) {
-  var raw = safeString(value).trim().toUpperCase();
-  if (raw === AUTO_ENTRY_CODE.COST) return raw;
-  if (raw === AUTO_ENTRY_CODE.TAX) return raw;
-  if (raw === AUTO_ENTRY_CODE.LIABILITY) return raw;
-  if (raw === AUTO_ENTRY_CODE.REFUND_DR) return raw;
-  if (raw === AUTO_ENTRY_CODE.REFUND_CR) return raw;
-  if (raw === AUTO_ENTRY_CODE.PAYMENT) return raw;
-  if (raw === AUTO_ENTRY_CODE.SUSPENDED) return raw;
-  if (raw === AUTO_ENTRY_CODE.TRANSFER) return raw;
+function normalizeEntryType(value) {
+  var type = safeString(value).trim().toUpperCase();
+  if (type === ENTRY_TYPE.COST) return ENTRY_TYPE.COST;
+  if (type === ENTRY_TYPE.PREPAYMENT) return ENTRY_TYPE.PREPAYMENT;
+  if (type === ENTRY_TYPE.TAX) return ENTRY_TYPE.TAX;
+  if (type === ENTRY_TYPE.PAYABLE) return ENTRY_TYPE.PAYABLE;
+  if (type === ENTRY_TYPE.CUSTOMER) return ENTRY_TYPE.CUSTOMER;
+  return '';
+}
 
+function getEntryTypeByRuleCode(entryCode) {
+  if (entryCode === AUTO_ENTRY_CODE.COST) return ENTRY_TYPE.COST;
+  if (entryCode === AUTO_ENTRY_CODE.TAX) return ENTRY_TYPE.TAX;
+  if (entryCode === AUTO_ENTRY_CODE.REFUND_CR) return ENTRY_TYPE.PREPAYMENT;
+  if (entryCode === AUTO_ENTRY_CODE.TRANSFER) return ENTRY_TYPE.CUSTOMER;
+  if (
+    entryCode === AUTO_ENTRY_CODE.LIABILITY ||
+    entryCode === AUTO_ENTRY_CODE.REFUND_DR ||
+    entryCode === AUTO_ENTRY_CODE.PAYMENT ||
+    entryCode === AUTO_ENTRY_CODE.SUSPENDED
+  ) {
+    return ENTRY_TYPE.PAYABLE;
+  }
   return '';
 }
 
@@ -1008,7 +983,8 @@ function getAutoEntryCode(value) {
  * 1) Xác định 5 biến: hasNewInvoice, hasRefund, hasSuspended, hasTax, remainingAmount
  * 2) Validate: phiếu phải có ≥ 1 nguồn (hóa đơn / hoàn ứng / khoản treo)
  * 3) Nhóm hóa đơn:    TT-BK-01 (chi phí), TT-BK-02 (thuế), TT-BK-03 (nghĩa vụ)
- * 4) Nhóm hoàn ứng:   TT-BK-04 (nợ), TT-BK-05 (có)
+ * 4) Hoàn ứng: refund.amount chỉ dùng phân case; dòng Có TK tạm ứng được xử lý
+ *    sau tại tab Công nợ theo "Số tiền hoàn ứng lần này".
  * 5) Thanh toán:       TT-BK-06 khi remainingAmount > 0
  * 6) Khoản treo:       TT-BK-07                                   [TODO-SUSPENDED]
  * 7) Chuyển tiền:      TT-BK-08 = TT-BK-06 + TT-BK-07
@@ -1314,7 +1290,7 @@ function buildPaymentCaseTT17(c) { return []; }
  * - Có PCCP: mỗi account.number duy nhất sinh một dòng chi phí.
  * - Không PCCP: sinh một dòng chi phí từ vendorSite.debit.account.
  * - Chi phí, đi tiền và phải trả để amount=null cho KT nhập.
- * - Có Tạm ứng giữ nguyên refund.amount (3).
+ * - refund.amount chỉ dùng phân case; không sinh Có TK tạm ứng tại đây.
  */
 function buildPersonalPaymentCase(c, includeRefund, includePayment) {
   var rows = [];
@@ -1340,20 +1316,11 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment) {
     }));
   }
 
-  if (includeRefund && moneyIsPositive(c.refundAmount)) {
-    rows.push(buildEntryRow({
-      paymentId: c.paymentId,
-      request: c.request,
-      vendor: c.vendor,
-      entryCode: AUTO_ENTRY_CODE.REFUND_CR,
-      amount: c.refundAmount,
-      order: order++,
-      accountOverride: {
-        number: c.vendor.debit_account,
-        name: getGlAccountName(c.vendor.debit_account)
-      }
-    }));
-  }
+  // SỬA NGHIỆP VỤ HOÀN ỨNG:
+  // refund.amount chỉ dùng để phân case có/không có tạm ứng.
+  // Không sinh dòng Có TK tạm ứng (TT-BK-05) tại paymentEntry.
+  // Dòng này sẽ được xử lý sau khi người dùng nhập "Số tiền hoàn ứng lần này"
+  // tại tab Công nợ.
 
   if (includePayment && moneyIsPositive(c.paymentAmount)) {
     rows.push(buildEntryRow({
@@ -1367,7 +1334,10 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment) {
     }));
   }
 
-  if (moneyGreaterThan(c.approvedAmount, c.paymentAmount + c.refundAmount)) {
+  // SỬA NGHIỆP VỤ HOÀN ỨNG:
+  // refund.amount chỉ phân case, không giảm công nợ paymentEntry. Số hoàn ứng
+  // thực tế sẽ được xử lý từ "Số tiền hoàn ứng lần này" tại tab Công nợ.
+  if (moneyGreaterThan(c.approvedAmount, c.paymentAmount)) {
     rows.push(buildEntryRow({
       paymentId: c.paymentId,
       request: c.request,
@@ -1418,12 +1388,13 @@ function getPersonalExpenseAccounts(c) {
 /**
  * Sinh đúng các dòng được hiển thị tại tab Hạch toán.
  *
- * Không lưu các cặp TK phải trả trung gian của Standard / ApplyPrepayment /
- * Payment. Chỉ lưu một dòng TK phải trả bằng số chênh lệch cuối cùng:
- *   Có phải trả - Nợ phải trả = (1) - (3) - (2).
+ * Không lưu các cặp TK phải trả trung gian của Standard / Payment.
+ * refund.amount chỉ dùng phân case, chưa tham gia hạch toán paymentEntry.
+ * Chỉ lưu một dòng TK phải trả bằng số chênh lệch:
+ *   Có phải trả - Nợ phải trả = (1) - (2).
  *
  * Thứ tự hiển thị:
- *   chi phí -> thuế -> Có tạm ứng -> Có tài khoản đi tiền -> phải trả còn lại.
+ *   chi phí -> thuế -> Có tài khoản đi tiền -> phải trả còn lại.
  */
 function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, includePayment) {
   var rows = [];
@@ -1464,22 +1435,10 @@ function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, 
 
   }
 
-  if (includeRefund && moneyIsPositive(c.refundAmount)) {
-    // Dòng Nợ phải trả của ApplyPrepayment được khử; chỉ hiển thị Có tạm ứng.
-    payableDebit += c.refundAmount;
-    rows.push(buildEntryRow({
-      paymentId: c.paymentId,
-      request: c.request,
-      vendor: c.vendor,
-      entryCode: AUTO_ENTRY_CODE.REFUND_CR,
-      amount: c.refundAmount,
-      order: order++,
-      accountOverride: {
-        number: c.vendor.debit_account,
-        name: getGlAccountName(c.vendor.debit_account)
-      }
-    }));
-  }
+  // SỬA NGHIỆP VỤ HOÀN ỨNG:
+  // Chỉ dùng refund.amount để phân case. Chưa cộng khoản này vào payableDebit
+  // và chưa sinh TT-BK-05, vì số tiền hạch toán phải lấy từ trường
+  // "Số tiền hoàn ứng lần này" tại tab Công nợ.
 
   if (includePayment && moneyIsPositive(c.paymentAmount)) {
     // Dòng Nợ phải trả của Payment được khử; chỉ hiển thị Có tài khoản đi tiền.
@@ -1692,32 +1651,7 @@ function buildExpectedPaymentEntriesLegacy(paymentId, vendorId) {
       }));
     }
 
-    // ---------- Nhóm hoàn ứng (TT-BK-04, 05) ----------
-    /*
-     * CODE CŨ ĐỂ ĐỐI CHIẾU: luồng mới dùng refund.amount và debit.account.
-     * Khi có thông tin, cài đặt:
-     *   var refundItems = getRefundItems(paymentId, vendor.vendor_id);
-     *   for (var ri = 0; ri < refundItems.length; ri++) {
-     *     // TT-BK-04: Hoàn ứng (Nợ) — TK phải trả NCC
-     *     vendorRows.push(buildEntryRow({
-     *       paymentId: paymentId, request: request, vendor: vendor,
-     *       entryCode: AUTO_ENTRY_CODE.REFUND_DR,
-     *       amount: refundItems[ri].amount,
-     *       order: orderCounter++
-     *     }));
-     *     // TT-BK-05: Giảm dư tạm ứng (Có) — TK tạm ứng của khoản được chọn
-     *     vendorRows.push(buildEntryRow({
-     *       paymentId: paymentId, request: request, vendor: vendor,
-     *       entryCode: AUTO_ENTRY_CODE.REFUND_CR,
-     *       amount: refundItems[ri].amount,
-     *       order: orderCounter++,
-     *       accountOverride: {
-     *         number: refundItems[ri].prepayment_account_number,
-     *         name: refundItems[ri].prepayment_account_name
-     *       }
-     *     }));
-     *   }
-     */
+    // Hoàn ứng không sinh tại paymentEntry; xử lý sau tại tab Công nợ.
 
     // ---------- TT-BK-06: Thanh toán ----------
     var actualPaymentAmount = 0;
@@ -1795,7 +1729,8 @@ function buildEntryRow(params) {
   return {
     id: '',
     payment_id: params.paymentId,
-    entry_type: params.entryCode,
+    entry_type: getEntryTypeByRuleCode(params.entryCode),
+    rule_code: params.entryCode,
     ledger_type: getAutoLedgerType(params.entryCode),
     account_type: getAutoAccountType(params.entryCode),
     account_number: account.number,
@@ -1808,7 +1743,7 @@ function buildEntryRow(params) {
     currency: params.vendor.currency,
     description: params.request.description || '',
     vendor_id: params.vendor.vendor_id,
-    type: ENTRY_TYPE.AP,
+    type: TYPE.AP,
     order: params.order,
     accounting_request_id: '',
     payment_method: params.vendor.payment_method,
@@ -1890,7 +1825,7 @@ function getAutoEntryRowsErrors(rows) {
 function getAutoEntryRowErrors(row) {
   var errors = [];
   var subject = row.entry_type ? 'Bút toán ' + row.entry_type : 'Bút toán tự động';
-  var entryCode = getAutoEntryCode(row.entry_type);
+  var entryCode = safeString(row.rule_code).trim();
   var entryFields = [];
   var paymentVendorFields = [];
   var vendorSiteFields = [];
@@ -1957,7 +1892,8 @@ function getVendorAutoEntryErrors(vendor) {
   if (!vendor.vendor_site_code) vendorSiteFields.push('ogl.site.code');
   // Tài khoản phải trả NCC = credit.account.
   if (!vendor.credit_account) vendorSiteFields.push('credit.account');
-  if (toNumber(vendor.refund_amount) > 0 && !vendor.debit_account) vendorSiteFields.push('debit.account');
+  // Không yêu cầu debit.account chỉ vì có refund.amount: paymentEntry chưa sinh
+  // dòng Có TK tạm ứng; tài khoản này được kiểm tra ở bước xử lý tab Công nợ.
 
   // Chỉ bắt buộc thông tin thụ hưởng khi case thực sự có đi tiền.
   if (toNumber(vendor.amount) > 0 && isBankTransfer(vendor.payment_method)) {
@@ -2657,27 +2593,21 @@ function mergeEditableAutoEntryFields(savedEntries, expectedEntries) {
 }
 
 function makeAutoEntryMatchKey(row) {
-  var entryCode = getAutoEntryCode(row.entry_type);
-  if (!entryCode) return '';
+  var entryType = normalizeEntryType(row.entry_type);
+  if (!entryType) return '';
 
-  var key = safeString(row.vendor_id).trim() + '|' + entryCode;
+  var key = safeString(row.vendor_id).trim() + '|' + entryType;
 
-  // Dùng account_number để phân biệt các dòng cùng loại (TT-BK-01 nhiều dòng, TT-BK-02 theo nhóm thuế)
-  if (entryCode === AUTO_ENTRY_CODE.COST || entryCode === AUTO_ENTRY_CODE.TAX) {
+  // Chi phí và thuế có thể có nhiều dòng nên phân biệt thêm theo tài khoản.
+  if (entryType === ENTRY_TYPE.COST || entryType === ENTRY_TYPE.TAX) {
     key += '|' + safeString(row.account_number).trim();
   }
-
-  // Hoàn ứng được phân biệt theo vendor.id; số tiền lấy từ vendor.refund.amount.
-  // if (entryCode === AUTO_ENTRY_CODE.REFUND_DR || entryCode === AUTO_ENTRY_CODE.REFUND_CR) {
-  //   key += '|' + safeString(row.account_number).trim();
-  // }
 
   return key;
 }
 
 function isEditableDebitAccountEntry(row) {
-  // TT-BK-01 (Chi phí): NSD có thể chọn lại tài khoản chi phí khác
-  return getAutoEntryCode(row.entry_type) === AUTO_ENTRY_CODE.COST;
+  return normalizeEntryType(row.entry_type) === ENTRY_TYPE.COST;
 }
 
 /**
@@ -2797,7 +2727,7 @@ function isSameUser(expectedUser, currentUser) {
 }
 
 function isAutoEntry(row) {
-  return normalizeText(row.type) !== normalizeText(ENTRY_TYPE.GL);
+  return normalizeText(row.type) !== normalizeText(TYPE.GL);
 }
 
 // =============================================================================
@@ -2805,7 +2735,7 @@ function isAutoEntry(row) {
 // =============================================================================
 
 function assignNewEntryIds(paymentId, rows, savedEntries) {
-  var nextApSequence = getNextEntryIdSequence(paymentId, ENTRY_TYPE.AP, savedEntries);
+  var nextApSequence = getNextEntryIdSequence(paymentId, TYPE.AP, savedEntries);
   var nextGlRowSequence = getNextGlRowSequence(paymentId, 1, savedEntries);
 
   for (var i = 0; i < rows.length; i++) {
@@ -2813,14 +2743,14 @@ function assignNewEntryIds(paymentId, rows, savedEntries) {
       if (isAdditionalEntryType(rows[i].type)) {
         rows[i].id = makeGlEntryId(paymentId, 1, nextGlRowSequence++);
       } else {
-        rows[i].id = makeSequentialEntryId(paymentId, ENTRY_TYPE.AP, nextApSequence++);
+        rows[i].id = makeSequentialEntryId(paymentId, TYPE.AP, nextApSequence++);
       }
     }
   }
 }
 
 function getNextEntryIdSequence(paymentId, entryType, rows) {
-  if (entryType === ENTRY_TYPE.GL) {
+  if (entryType === TYPE.GL) {
     return getNextGlRowSequence(paymentId, 1, rows);
   }
   var prefix = getEntryIdPrefix(paymentId, entryType);
@@ -2842,7 +2772,7 @@ function getNextEntryIdSequence(paymentId, entryType, rows) {
 }
 
 function makeSequentialEntryId(paymentId, entryType, sequence) {
-  if (entryType === ENTRY_TYPE.GL) {
+  if (entryType === TYPE.GL) {
     return makeGlEntryId(paymentId, 1, sequence);
   }
   return getEntryIdPrefix(paymentId, entryType) + sequence;
@@ -2850,11 +2780,11 @@ function makeSequentialEntryId(paymentId, entryType, sequence) {
 
 function getEntryIdPrefix(paymentId, entryType) {
   var prefix = safeString(paymentId).trim() + '.';
-  return entryType === ENTRY_TYPE.GL ? prefix + ENTRY_TYPE.GL + '.' : prefix;
+  return entryType === TYPE.GL ? prefix + TYPE.GL + '.' : prefix;
 }
 
 function makeGlEntryId(paymentId, groupOrder, rowOrder) {
-  return getEntryIdPrefix(paymentId, ENTRY_TYPE.GL) + groupOrder + '.' + rowOrder;
+  return getEntryIdPrefix(paymentId, TYPE.GL) + groupOrder + '.' + rowOrder;
 }
 
 function isStructuredGlEntryId(paymentId, entryId) {
@@ -2862,7 +2792,7 @@ function isStructuredGlEntryId(paymentId, entryId) {
 }
 
 function getGlEntryIdParts(paymentId, entryId) {
-  var prefix = getEntryIdPrefix(paymentId, ENTRY_TYPE.GL);
+  var prefix = getEntryIdPrefix(paymentId, TYPE.GL);
   var id = safeString(entryId).trim();
   if (id.indexOf(prefix) !== 0) return null;
   var parts = id.substring(prefix.length).split('.');
