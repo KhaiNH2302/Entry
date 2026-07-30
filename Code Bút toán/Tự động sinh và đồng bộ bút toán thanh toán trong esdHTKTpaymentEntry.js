@@ -15,11 +15,6 @@
  *  TODO-SUSPENDED:
  *    - Chưa có bảng/trường DB cho khoản treo nên chưa sinh TT-BK-07.
  *
- *  TODO-DISPLAY-NET:
- *    - Nếu tổng Nợ TK phải trả = tổng Có TK phải trả: ẩn các dòng phải trả.
- *    - Nếu khác nhau: chỉ hiển thị một dòng phải trả bằng trị tuyệt đối chênh lệch.
- *    - Đây là quy tắc hiển thị/netting, không phải quy tắc chọn ledger.type.
- *
  *  GIẢ THIẾT CẦN CHỐT:
  *    - Tài khoản quỹ tiền mặt chưa có trường DB riêng; tạm dùng credit.account.
  *
@@ -30,6 +25,7 @@
  *    - TK tạm ứng khi hoàn ứng = vendorSite.debit.account.
  *    - Cost Division lọc theo payment.id và vendor.id.
  *    - Invoice/thuế = Standard; hoàn ứng = ApplyPrepayment; đi tiền = Payment.
+ *    - paymentEntry lưu theo phần "Hiển thị tại tab Hạch toán": đã khử TK phải trả.
  * ===========================================================================
  */
 
@@ -1121,7 +1117,11 @@ function buildEntriesByPaymentCase(caseCode, context) {
 // -----------------------------------------------------------------------------
 // SECTION 05B - CASE ĐÃ CODE: 11 case hiện có thể sinh bút toán
 // -----------------------------------------------------------------------------
-// Mỗi hàm chỉ khai báo thành phần cần sinh; logic tạo dòng nằm ở REGION 07F.
+// Mỗi hàm chỉ khai báo thành phần cần sinh; logic tạo dòng nằm ở SECTION 05D.
+// Số dòng hiển thị (n = số Cost Division, t = số nhóm thuế):
+// TT-01 n+1; TT-03 n+t+1; TT-04 n+2; TT-06 n+t+2; TT-07 n(+t)+1;
+// TT-08 n+2; TT-09 n+t+2; TT-11 n+2; TT-12 n+t+2;
+// TT-14 n+3; TT-15 n+t+3.
 function buildPaymentCaseTT01(c) { return buildStandardPaymentCase(c, true, false, false, true); }
 function buildPaymentCaseTT03(c) { return buildStandardPaymentCase(c, true, true,  false, true); }
 function buildPaymentCaseTT04(c) { return buildStandardPaymentCase(c, true, false, false, true); }
@@ -1149,13 +1149,21 @@ function buildPaymentCaseTT17(c) { return []; }
 // SECTION 05D - ENTRY BUILDER DÙNG CHUNG: tạo dòng Nợ/Có, tránh lặp giữa case
 // -----------------------------------------------------------------------------
 /**
- * Bộ sinh dòng dùng chung, tránh lặp code giữa các case.
- * Thứ tự: chi phí -> thuế -> nghĩa vụ -> hoàn ứng -> thanh toán -> chuyển tiền.
+ * Sinh đúng các dòng được hiển thị tại tab Hạch toán.
+ *
+ * Không lưu các cặp TK phải trả trung gian của Standard / ApplyPrepayment /
+ * Payment. Chỉ lưu một dòng TK phải trả bằng số chênh lệch cuối cùng:
+ *   Có phải trả - Nợ phải trả = (1) - (3) - (2).
+ *
+ * Thứ tự hiển thị:
+ *   chi phí -> thuế -> Có tạm ứng -> Có tài khoản đi tiền -> phải trả còn lại.
  */
 function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, includePayment) {
   var rows = [];
   var order = c.firstOrder;
   var i;
+  var payableCredit = includeInvoice ? c.approvedAmount : 0;
+  var payableDebit = 0;
 
   if (includeInvoice) {
     for (i = 0; i < c.costDivisions.length; i++) {
@@ -1187,25 +1195,11 @@ function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, 
       }
     }
 
-    rows.push(buildEntryRow({
-      paymentId: c.paymentId,
-      request: c.request,
-      vendor: c.vendor,
-      entryCode: AUTO_ENTRY_CODE.LIABILITY,
-      amount: c.approvedAmount,
-      order: order++
-    }));
   }
 
   if (includeRefund && moneyIsPositive(c.refundAmount)) {
-    rows.push(buildEntryRow({
-      paymentId: c.paymentId,
-      request: c.request,
-      vendor: c.vendor,
-      entryCode: AUTO_ENTRY_CODE.REFUND_DR,
-      amount: c.refundAmount,
-      order: order++
-    }));
+    // Dòng Nợ phải trả của ApplyPrepayment được khử; chỉ hiển thị Có tạm ứng.
+    payableDebit += c.refundAmount;
     rows.push(buildEntryRow({
       paymentId: c.paymentId,
       request: c.request,
@@ -1221,20 +1215,27 @@ function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, 
   }
 
   if (includePayment && moneyIsPositive(c.paymentAmount)) {
-    rows.push(buildEntryRow({
-      paymentId: c.paymentId,
-      request: c.request,
-      vendor: c.vendor,
-      entryCode: AUTO_ENTRY_CODE.PAYMENT,
-      amount: c.paymentAmount,
-      order: order++
-    }));
+    // Dòng Nợ phải trả của Payment được khử; chỉ hiển thị Có tài khoản đi tiền.
+    payableDebit += c.paymentAmount;
     rows.push(buildEntryRow({
       paymentId: c.paymentId,
       request: c.request,
       vendor: c.vendor,
       entryCode: AUTO_ENTRY_CODE.TRANSFER,
       amount: c.paymentAmount,
+      order: order++
+    }));
+  }
+
+  // Chỉ hiển thị TK phải trả khi sau khử vẫn còn số dư Có.
+  var payableDifference = payableCredit - payableDebit;
+  if (moneyIsPositive(payableDifference)) {
+    rows.push(buildEntryRow({
+      paymentId: c.paymentId,
+      request: c.request,
+      vendor: c.vendor,
+      entryCode: AUTO_ENTRY_CODE.LIABILITY,
+      amount: payableDifference,
       order: order++
     }));
   }
