@@ -14,8 +14,7 @@
  *  TODO CÒN LẠI
  * ---------------------------------------------------------------------------
  *  TODO-CASE:
- *    - TT-02, TT-05, TT-10, TT-13, TT-16: chờ quy tắc thuế TNCN.
- *    - TT-17: chờ quy tắc hạch toán trường hợp không có hóa đơn.
+ *    - TT-17: chờ dữ liệu khoản phải trả của YCTT trước.
  *
  *  TODO-INTEGRATION:
  *    - Fill payload Invoice/AP, Apply Prepayment, Payment, GL và Core Banking.
@@ -35,6 +34,7 @@
  *    - Cost Division lọc theo payment.id và vendor.id.
  *    - Invoice/thuế = Standard; hoàn ứng = ApplyPrepayment; đi tiền = Payment.
  *    - paymentEntry lưu theo phần "Hiển thị tại tab Hạch toán": đã khử TK phải trả.
+ *    - NCC cá nhân: sinh tài khoản, amount=null để KT nhập; Có Tạm ứng giữ (3).
  * ===========================================================================
  */
 
@@ -605,6 +605,7 @@ function summarizeGeneratedPaymentEntries(rows, cases) {
   var countsByAccountType = {};
   var caseCodes = [];
   var totalAmount = 0;
+  var blankAmountRows = 0;
 
   for (var i = 0; i < rows.length; i++) {
     var entryCode = getAutoEntryCode(rows[i].entry_type) || safeString(rows[i].entry_type);
@@ -612,6 +613,9 @@ function summarizeGeneratedPaymentEntries(rows, cases) {
 
     countsByEntryCode[entryCode] = (countsByEntryCode[entryCode] || 0) + 1;
     countsByAccountType[accountType] = (countsByAccountType[accountType] || 0) + 1;
+    if (rows[i].amount === null || rows[i].amount === undefined || rows[i].amount === '') {
+      blankAmountRows++;
+    }
     totalAmount += toNumber(rows[i].amount);
   }
 
@@ -624,12 +628,13 @@ function summarizeGeneratedPaymentEntries(rows, cases) {
     caseCodes: caseCodes,
     countsByEntryCode: countsByEntryCode,
     countsByAccountType: countsByAccountType,
+    blankAmountRows: blankAmountRows,
     totalAmount: totalAmount
   };
 }
 
 /**
- * Chạy một lần toàn bộ 11 case hiện đã hoàn thành.
+ * Chạy một lần toàn bộ 16 case khởi tạo invoice đã hoàn thành.
  * Output là paymentEntry sau khi đã khử TK phải trả, đúng phần
  * "Hiển thị bút toán tại tab Hạch toán" trong tài liệu nghiệp vụ.
  */
@@ -650,7 +655,8 @@ function runCompletedPaymentCaseTests() {
       expected: {
         caseCodes: [definition.caseCode],
         totalRows: definition.expectedRows,
-        countsByEntryCode: definition.expectedCounts
+        countsByEntryCode: definition.expectedCounts,
+        blankAmountRows: definition.expectedBlankRows || 0
       }
     });
 
@@ -659,31 +665,122 @@ function runCompletedPaymentCaseTests() {
     reports.push(formatCompletedPaymentCaseOutput(definition, testResult));
   }
 
+  var personalAccountTests = runPersonalCostAccountTests();
+  reports.push(personalAccountTests.output);
   reports.push('KẾT QUẢ: ' + passed + '/' + definitions.length + ' case đạt.');
+  reports.push(
+    'QUY TẮC TK CHI PHÍ CÁ NHÂN: ' +
+    personalAccountTests.passed + '/' + personalAccountTests.total + ' test đạt.'
+  );
 
   return {
-    success: passed === definitions.length,
+    success: passed === definitions.length && personalAccountTests.success,
     mode: 'completed-case-report',
     passed: passed,
     total: definitions.length,
     output: reports.join('\n'),
-    results: results
+    results: results,
+    personalAccountTests: personalAccountTests
+  };
+}
+
+function runPersonalCostAccountTests() {
+  var definition = {
+    caseCode: 'TT-02',
+    title: 'Cá nhân',
+    personal: true,
+    approved: 1000000,
+    payment: 1000000,
+    refund: 0,
+    tax: 0
+  };
+  var reports = ['KIỂM THỬ QUY TẮC TÀI KHOẢN CHI PHÍ CÁ NHÂN', ''];
+  var passed = 0;
+
+  // TH1: 6 dòng PCCP nhưng chỉ có 5 account.number duy nhất.
+  var groupedDb = createPaymentCaseDbObjects(definition);
+  var baseDivision = groupedDb[TABLE_COST_DIVISION][0];
+  var accounts = ['6421', '6422', '6423', '6424', '6425', '6425'];
+  groupedDb[TABLE_COST_DIVISION] = [];
+  for (var i = 0; i < accounts.length; i++) {
+    var division = copyObject({}, baseDivision);
+    division.id = 'PCCP-' + (i + 1);
+    division['account.number'] = accounts[i];
+    division['account.name'] = 'Chi phí ' + accounts[i];
+    groupedDb[TABLE_COST_DIVISION].push(division);
+    groupedDb[TABLE_GL_ACCOUNT].push({
+      account: accounts[i],
+      name: 'Chi phí ' + accounts[i],
+      'account.type': 'Dư nợ',
+      'apply.currency': 'VND'
+    });
+  }
+  var groupedResult = testPaymentEntryObjects({
+    paymentId: definition.caseCode,
+    dbObjects: groupedDb,
+    expected: {
+      caseCodes: ['TT-02'],
+      totalRows: 6,
+      blankAmountRows: 6,
+      countsByEntryCode: makeExpectedDisplayCounts(5, 0, 0, 1, 0)
+    }
+  });
+  if (groupedResult.success) passed++;
+  reports.push('TH1 - 6 dòng PCCP / 5 tài khoản: ' + (groupedResult.success ? 'ĐẠT' : 'KHÔNG ĐẠT'));
+
+  // TH2: không có PCCP, dùng đúng một dòng vendorSite.debit.account.
+  var fallbackDb = createPaymentCaseDbObjects(definition);
+  fallbackDb[TABLE_COST_DIVISION] = [];
+  var fallbackResult = testPaymentEntryObjects({
+    paymentId: definition.caseCode,
+    dbObjects: fallbackDb,
+    expected: {
+      caseCodes: ['TT-02'],
+      totalRows: 2,
+      blankAmountRows: 2,
+      countsByEntryCode: makeExpectedDisplayCounts(1, 0, 0, 1, 0)
+    }
+  });
+  var fallbackAccountOk = false;
+  for (var rowIndex = 0; rowIndex < fallbackResult.data.length; rowIndex++) {
+    if (getAutoEntryCode(fallbackResult.data[rowIndex].entry_type) === AUTO_ENTRY_CODE.COST &&
+        fallbackResult.data[rowIndex].account_number === '141') {
+      fallbackAccountOk = true;
+    }
+  }
+  var fallbackPassed = fallbackResult.success && fallbackAccountOk;
+  if (fallbackPassed) passed++;
+  reports.push('TH2 - Không PCCP / dùng vendorSite.debit.account: ' + (fallbackPassed ? 'ĐẠT' : 'KHÔNG ĐẠT'));
+  reports.push('');
+
+  return {
+    success: passed === 2,
+    passed: passed,
+    total: 2,
+    output: reports.join('\n'),
+    grouped: groupedResult,
+    fallback: fallbackResult
   };
 }
 
 function getCompletedPaymentCaseDefinitions() {
   return [
     { caseCode: 'TT-01', title: 'Không hoàn ứng, thanh toán toàn bộ, không thuế', approved: 1000000, payment: 1000000, refund: 0, tax: 0, expectedRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 0) },
+    { caseCode: 'TT-02', title: 'Cá nhân, thanh toán toàn bộ', personal: true, approved: 1000000, payment: 1000000, refund: 0, tax: 0, expectedRows: 2, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 0) },
     { caseCode: 'TT-03', title: 'Không hoàn ứng, thanh toán toàn bộ, NCC có thuế', approved: 1100000, payment: 1100000, refund: 0, tax: 100000, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 1, 0) },
     { caseCode: 'TT-04', title: 'Không hoàn ứng, thanh toán một phần, không thuế', approved: 1000000, payment: 600000, refund: 0, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
+    { caseCode: 'TT-05', title: 'Cá nhân, thanh toán một phần, còn phải trả', personal: true, approved: 1000000, payment: 600000, refund: 0, tax: 0, expectedRows: 3, expectedBlankRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-06', title: 'Không hoàn ứng, thanh toán một phần, NCC có thuế', approved: 1100000, payment: 600000, refund: 0, tax: 100000, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 1, 1) },
     { caseCode: 'TT-07', title: 'Hoàn ứng toàn bộ, không thanh toán thêm', approved: 1000000, payment: 0, refund: 1000000, tax: 0, expectedRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 1, 0, 0) },
     { caseCode: 'TT-08', title: 'Hoàn ứng một phần, thanh toán phần còn lại, không thuế', approved: 1000000, payment: 600000, refund: 400000, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 1, 1, 0) },
     { caseCode: 'TT-09', title: 'Hoàn ứng một phần, thanh toán phần còn lại, NCC có thuế', approved: 1100000, payment: 600000, refund: 500000, tax: 100000, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 1, 1, 1, 0) },
+    { caseCode: 'TT-10', title: 'Cá nhân, hoàn ứng và thanh toán hết', personal: true, approved: 1000000, payment: 600000, refund: 400000, tax: 0, expectedRows: 3, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 1, 1, 0) },
     { caseCode: 'TT-11', title: 'Hoàn ứng một phần, còn phải trả, không thuế', approved: 1000000, payment: 0, refund: 400000, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 1, 0, 1) },
     { caseCode: 'TT-12', title: 'Hoàn ứng một phần, còn phải trả, NCC có thuế', approved: 1100000, payment: 0, refund: 400000, tax: 100000, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 1, 1, 0, 1) },
+    { caseCode: 'TT-13', title: 'Cá nhân, hoàn ứng một phần, còn phải trả', personal: true, approved: 1000000, payment: 0, refund: 400000, tax: 0, expectedRows: 3, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 1, 0, 1) },
     { caseCode: 'TT-14', title: 'Hoàn ứng một phần, thanh toán một phần, còn phải trả, không thuế', approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 0, 1, 1, 1) },
-    { caseCode: 'TT-15', title: 'Hoàn ứng một phần, thanh toán một phần, còn phải trả, NCC có thuế', approved: 1100000, payment: 200000, refund: 300000, tax: 100000, expectedRows: 5, expectedCounts: makeExpectedDisplayCounts(1, 1, 1, 1, 1) }
+    { caseCode: 'TT-15', title: 'Hoàn ứng một phần, thanh toán một phần, còn phải trả, NCC có thuế', approved: 1100000, payment: 200000, refund: 300000, tax: 100000, expectedRows: 5, expectedCounts: makeExpectedDisplayCounts(1, 1, 1, 1, 1) },
+    { caseCode: 'TT-16', title: 'Cá nhân, hoàn ứng và thanh toán một phần, còn phải trả', personal: true, approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 4, expectedBlankRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 1, 1, 1) }
   ];
 }
 
@@ -723,7 +820,7 @@ function createPaymentCaseDbObjects(definition) {
     'approved.invoice.amount': definition.approved,
     amount: definition.payment,
     'refund.amount': definition.refund,
-    'vendor.type': 'NCC',
+    'vendor.type': definition.personal ? 'CN' : 'NCC',
     currency: 'VND',
     'payment.method': 'Chuyển khoản',
     'beneficiary.account': '0123456789',
@@ -761,7 +858,7 @@ function createPaymentCaseDbObjects(definition) {
     id: vendorId,
     'vendor.name': 'Nhà cung cấp kiểm thử',
     'vendor.number': '0100000001',
-    'vendor.type': 'NCC'
+    'vendor.type': definition.personal ? 'CN' : 'NCC'
   }];
   objects[TABLE_VENDOR_SITE] = [{
     id: vendorSiteId,
@@ -841,6 +938,9 @@ function formatCompletedPaymentCaseOutput(definition, testResult) {
 }
 
 function formatReportMoney(value) {
+  if (value === null || value === undefined || value === '') {
+    return '(để trống - KT nhập)';
+  }
   var text = String(Math.round(toNumber(value)));
   return text.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' VND';
 }
@@ -855,6 +955,14 @@ function comparePaymentTestExpectation(actual, expectedInput) {
 
   if (expected.totalRows !== undefined && toNumber(expected.totalRows) !== actual.totalRows) {
     failures.push('totalRows: expected ' + expected.totalRows + ', actual ' + actual.totalRows + '.');
+  }
+
+  if (expected.blankAmountRows !== undefined &&
+      toNumber(expected.blankAmountRows) !== actual.blankAmountRows) {
+    failures.push(
+      'blankAmountRows: expected ' + expected.blankAmountRows +
+      ', actual ' + actual.blankAmountRows + '.'
+    );
   }
 
   if (expected.caseCodes && !sameTextArray(expected.caseCodes, actual.caseCodes)) {
@@ -1368,13 +1476,18 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
   var taxInfo = getInvoiceTaxInfo(paymentId, vendor, vendorCount);
   var hasInvoice = hasLinkedInvoicesForVendor(paymentId, vendor, vendorCount);
   var costDivisions = hasInvoice ? getPaymentCostDivisions(paymentId, vendor.vendor_id) : [];
-  var errors = taxInfo.errors.slice(0);
+  var isPersonal = isPersonalPaymentVendor(vendor.vendor_type);
+  // Cá nhân không dùng thuế GTGT tự động; thuế TNCN và số tiền do KT nhập.
+  var errors = isPersonal ? [] : taxInfo.errors.slice(0);
 
   if (toNumber(vendor.approved_invoice_amount) > 0 && !hasInvoice) {
     errors.push('NCC ' + (vendor.vendor_id || '?') + ': có Giá trị hóa đơn chấp nhận nhưng chưa gắn hóa đơn.');
   }
-  if (hasInvoice && costDivisions.length === 0) {
+  if (hasInvoice && costDivisions.length === 0 && !isPersonal) {
     errors.push('NCC ' + (vendor.vendor_id || '?') + ': có hóa đơn nhưng chưa có phân bổ chi phí tại ' + TABLE_COST_DIVISION + '.');
+  }
+  if (hasInvoice && costDivisions.length === 0 && isPersonal && !vendor.debit_account) {
+    errors.push('NCC cá nhân ' + (vendor.vendor_id || '?') + ': không có PCCP và thiếu debit.account tại ' + TABLE_VENDOR_SITE + '.');
   }
 
   return {
@@ -1387,7 +1500,7 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
     refundAmount: toNumber(vendor.refund_amount),              // (3)
     hasInvoice: hasInvoice,
     hasTax: hasInvoice && taxInfo.hasDeductibleTax,
-    isPersonal: isPersonalPaymentVendor(vendor.vendor_type),
+    isPersonal: isPersonal,
     taxInfo: taxInfo,
     costDivisions: costDivisions,
     firstOrder: firstOrder,
@@ -1414,14 +1527,16 @@ function classifyPaymentCase(c) {
 
   // Không hoàn ứng: (1) = (2).
   if (moneyIsZero(refund) && moneyEquals(invoice, payment)) {
+    if (personal) return PAYMENT_CASE.TT02;
     if (!tax) return PAYMENT_CASE.TT01;
-    return personal ? PAYMENT_CASE.TT02 : PAYMENT_CASE.TT03;
+    return PAYMENT_CASE.TT03;
   }
 
   // Không hoàn ứng: (1) > (2).
   if (moneyIsZero(refund) && moneyGreaterThan(invoice, payment)) {
+    if (personal) return PAYMENT_CASE.TT05;
     if (!tax) return PAYMENT_CASE.TT04;
-    return personal ? PAYMENT_CASE.TT05 : PAYMENT_CASE.TT06;
+    return PAYMENT_CASE.TT06;
   }
 
   // Chỉ hoàn ứng: (1) = (3), không đi tiền.
@@ -1431,20 +1546,23 @@ function classifyPaymentCase(c) {
 
   // Vừa hoàn ứng vừa đi tiền: (1) = (2) + (3).
   if (moneyIsPositive(refund) && moneyIsPositive(payment) && moneyEquals(invoice, payment + refund)) {
+    if (personal) return PAYMENT_CASE.TT10;
     if (!tax) return PAYMENT_CASE.TT08;
-    return personal ? PAYMENT_CASE.TT10 : PAYMENT_CASE.TT09;
+    return PAYMENT_CASE.TT09;
   }
 
   // Chỉ hoàn ứng một phần: (1) > (3), không đi tiền.
   if (moneyIsPositive(refund) && moneyIsZero(payment) && moneyGreaterThan(invoice, refund)) {
+    if (personal) return PAYMENT_CASE.TT13;
     if (!tax) return PAYMENT_CASE.TT11;
-    return personal ? PAYMENT_CASE.TT13 : PAYMENT_CASE.TT12;
+    return PAYMENT_CASE.TT12;
   }
 
   // Hoàn ứng và đi tiền một phần: (1) > (2) + (3).
   if (moneyIsPositive(refund) && moneyIsPositive(payment) && moneyGreaterThan(invoice, payment + refund)) {
+    if (personal) return PAYMENT_CASE.TT16;
     if (!tax) return PAYMENT_CASE.TT14;
-    return personal ? PAYMENT_CASE.TT16 : PAYMENT_CASE.TT15;
+    return PAYMENT_CASE.TT15;
   }
 
   return '';
@@ -1475,16 +1593,21 @@ function isPersonalPaymentVendor(vendorType) {
 // Chỉ cho phép sinh DB đối với các case đã được hoàn thiện.
 function isImplementedPaymentCase(caseCode) {
   return caseCode === PAYMENT_CASE.TT01 ||
+    caseCode === PAYMENT_CASE.TT02 ||
     caseCode === PAYMENT_CASE.TT03 ||
     caseCode === PAYMENT_CASE.TT04 ||
+    caseCode === PAYMENT_CASE.TT05 ||
     caseCode === PAYMENT_CASE.TT06 ||
     caseCode === PAYMENT_CASE.TT07 ||
     caseCode === PAYMENT_CASE.TT08 ||
     caseCode === PAYMENT_CASE.TT09 ||
+    caseCode === PAYMENT_CASE.TT10 ||
     caseCode === PAYMENT_CASE.TT11 ||
     caseCode === PAYMENT_CASE.TT12 ||
+    caseCode === PAYMENT_CASE.TT13 ||
     caseCode === PAYMENT_CASE.TT14 ||
-    caseCode === PAYMENT_CASE.TT15;
+    caseCode === PAYMENT_CASE.TT15 ||
+    caseCode === PAYMENT_CASE.TT16;
 }
 
 // -----------------------------------------------------------------------------
@@ -1512,7 +1635,7 @@ function buildEntriesByPaymentCase(caseCode, context) {
 }
 
 // -----------------------------------------------------------------------------
-// SECTION 05B - CASE ĐÃ CODE: 11 case hiện có thể sinh bút toán
+// SECTION 05B - CASE ĐÃ CODE: 16 case khởi tạo invoice
 // -----------------------------------------------------------------------------
 // Mỗi hàm chỉ khai báo thành phần cần sinh; logic tạo dòng nằm ở SECTION 05D.
 // Số dòng hiển thị (n = số Cost Division, t = số nhóm thuế):
@@ -1531,16 +1654,121 @@ function buildPaymentCaseTT12(c) { return buildStandardPaymentCase(c, true, true
 function buildPaymentCaseTT14(c) { return buildStandardPaymentCase(c, true, false, true, true); }
 function buildPaymentCaseTT15(c) { return buildStandardPaymentCase(c, true, true,  true, true); }
 
+// Case cá nhân: sinh tài khoản, để trống số tiền KT phải nhập.
+function buildPaymentCaseTT02(c) { return buildPersonalPaymentCase(c, false, true); }
+function buildPaymentCaseTT05(c) { return buildPersonalPaymentCase(c, false, true); }
+function buildPaymentCaseTT10(c) { return buildPersonalPaymentCase(c, true,  true); }
+function buildPaymentCaseTT13(c) { return buildPersonalPaymentCase(c, true,  false); }
+function buildPaymentCaseTT16(c) { return buildPersonalPaymentCase(c, true,  true); }
+
 // -----------------------------------------------------------------------------
 // SECTION 05C - CASE CHỜ BỔ SUNG: giữ hàm rỗng để fill sau
 // -----------------------------------------------------------------------------
-// TT-02/05/10/13/16 chờ quy tắc thuế TNCN; TT-17 chờ quy tắc không hóa đơn.
-function buildPaymentCaseTT02(c) { return []; }
-function buildPaymentCaseTT05(c) { return []; }
-function buildPaymentCaseTT10(c) { return []; }
-function buildPaymentCaseTT13(c) { return []; }
-function buildPaymentCaseTT16(c) { return []; }
+// TT-17 chờ dữ liệu khoản phải trả của YCTT trước.
 function buildPaymentCaseTT17(c) { return []; }
+
+/**
+ * Sinh paymentEntry cho NCC cá nhân.
+ * - Có PCCP: mỗi account.number duy nhất sinh một dòng chi phí.
+ * - Không PCCP: sinh một dòng chi phí từ vendorSite.debit.account.
+ * - Chi phí, đi tiền và phải trả để amount=null cho KT nhập.
+ * - Có Tạm ứng giữ nguyên refund.amount (3).
+ */
+function buildPersonalPaymentCase(c, includeRefund, includePayment) {
+  var rows = [];
+  var order = c.firstOrder;
+  var expenseAccounts = getPersonalExpenseAccounts(c);
+  var i;
+
+  for (i = 0; i < expenseAccounts.length; i++) {
+    rows.push(buildEntryRow({
+      paymentId: c.paymentId,
+      request: c.request,
+      vendor: c.vendor,
+      entryCode: AUTO_ENTRY_CODE.COST,
+      amount: null,
+      allowBlankAmount: true,
+      order: order++,
+      accountOverride: {
+        number: expenseAccounts[i].account_number,
+        name: expenseAccounts[i].account_name
+      },
+      departmentOverride: expenseAccounts[i].department,
+      branchOverride: expenseAccounts[i].branch
+    }));
+  }
+
+  if (includeRefund && moneyIsPositive(c.refundAmount)) {
+    rows.push(buildEntryRow({
+      paymentId: c.paymentId,
+      request: c.request,
+      vendor: c.vendor,
+      entryCode: AUTO_ENTRY_CODE.REFUND_CR,
+      amount: c.refundAmount,
+      order: order++,
+      accountOverride: {
+        number: c.vendor.debit_account,
+        name: getGlAccountName(c.vendor.debit_account)
+      }
+    }));
+  }
+
+  if (includePayment && moneyIsPositive(c.paymentAmount)) {
+    rows.push(buildEntryRow({
+      paymentId: c.paymentId,
+      request: c.request,
+      vendor: c.vendor,
+      entryCode: AUTO_ENTRY_CODE.TRANSFER,
+      amount: null,
+      allowBlankAmount: true,
+      order: order++
+    }));
+  }
+
+  if (moneyGreaterThan(c.approvedAmount, c.paymentAmount + c.refundAmount)) {
+    rows.push(buildEntryRow({
+      paymentId: c.paymentId,
+      request: c.request,
+      vendor: c.vendor,
+      entryCode: AUTO_ENTRY_CODE.LIABILITY,
+      amount: null,
+      allowBlankAmount: true,
+      order: order++
+    }));
+  }
+
+  return rows;
+}
+
+function getPersonalExpenseAccounts(c) {
+  var result = [];
+  var usedAccounts = {};
+
+  for (var i = 0; i < c.costDivisions.length; i++) {
+    var division = c.costDivisions[i];
+    var accountNumber = safeString(division.account_number).trim();
+    if (!accountNumber || usedAccounts[accountNumber]) continue;
+
+    usedAccounts[accountNumber] = true;
+    result.push({
+      account_number: accountNumber,
+      account_name: division.account_name || getGlAccountName(accountNumber),
+      department: division.department,
+      branch: division.branch
+    });
+  }
+
+  if (result.length === 0) {
+    result.push({
+      account_number: c.vendor.debit_account,
+      account_name: getGlAccountName(c.vendor.debit_account),
+      department: c.request.department,
+      branch: ''
+    });
+  }
+
+  return result;
+}
 
 // -----------------------------------------------------------------------------
 // SECTION 05D - ENTRY BUILDER DÙNG CHUNG: tạo dòng Nợ/Có, tránh lặp giữa case
@@ -1939,7 +2167,9 @@ function buildEntryRow(params) {
     type: ENTRY_TYPE.AP,
     order: params.order,
     accounting_request_id: '',
-    payment_method: params.vendor.payment_method
+    payment_method: params.vendor.payment_method,
+    // Chỉ dùng trong bước validate lúc khởi tạo case cá nhân; không lưu DB.
+    allow_blank_amount: params.allowBlankAmount === true
   };
 }
 
@@ -2056,7 +2286,10 @@ function getAutoEntryRowErrors(row) {
   addMissingFieldsError(errors, subject, TABLE_CATEGORY_ITEM, categoryItemFields);
   addMissingFieldsError(errors, subject, TABLE_COST_DIVISION, costDivisionFields);
 
-  if (toNumber(row.amount) <= 0) errors.push(subject + ': số tiền phải lớn hơn 0.');
+  var amountIsBlank = row.amount === null || row.amount === undefined || row.amount === '';
+  if (!(row.allow_blank_amount && amountIsBlank) && toNumber(row.amount) <= 0) {
+    errors.push(subject + ': số tiền phải lớn hơn 0.');
+  }
 
   return errors;
 }
@@ -2588,7 +2821,7 @@ function getPaymentEntryFields() {
     ['e.account.name', 'account_name', 'S'],
     ['e.branch', 'branch', 'S'],
     ['e.department', 'department', 'S'],
-    ['e.amount', 'amount', 'N'],
+    ['e.amount', 'amount', 'N?'],
     ['e.currency', 'currency', 'S'],
     ['e.description', 'description', 'S'],
     ['e.vendor.id', 'vendor_id', 'S'],
@@ -2924,7 +3157,11 @@ function mapSqlRow(record, fields) {
     var key = fields[i][1];
     var type = fields[i][2];
     var value = record[i];
-    item[key] = type === 'N' ? toNumber(value) : safeString(value);
+    if (type === 'N?') {
+      item[key] = value === null || value === undefined || value === '' ? null : toNumber(value);
+    } else {
+      item[key] = type === 'N' ? toNumber(value) : safeString(value);
+    }
   }
 
   return item;
