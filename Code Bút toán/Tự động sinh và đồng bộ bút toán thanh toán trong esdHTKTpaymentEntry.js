@@ -87,7 +87,7 @@ function run() {
     } else if (action === 'savePaymentEntryEdit') {
       result = savePaymentEntryEdit(details);
     // lay tai khoan GL
-    } else if (action === 'getListGlAccount') {
+    } else if (action === 'getListGLAccount') {
       result = getListGlAccount();
     } else {
       result = { success: false, error: 'Invalid action: ' + action };
@@ -657,10 +657,8 @@ function validateAccountingBalanceRows(rows) {
 
     if (isAdditionalEntryType(rows[i].type)) {
       var glIdParts = getGlEntryIdParts(rows[i].payment_id, rows[i].id);
-      if (!glIdParts) {
-        return makeError('Bút toán GL dòng ' + (i + 1) + ' có ID không đúng cấu trúc mới.');
-      }
-      var groupOrder = glIdParts.groupOrder;
+      // ID GL một cấp cũ và hai cấp mới đều được quy về groupOrder/rowOrder.
+      var groupOrder = glIdParts ? glIdParts.groupOrder : 1;
       var groupKey = safeString(groupOrder);
       if (!glGroups[groupKey]) {
         glGroups[groupKey] = {
@@ -732,6 +730,7 @@ function mapAccountingTableItems(rows) {
     var debtAmount = side === 'debit' ? amount : 0;
     var crAmount = side === 'credit' ? amount : 0;
     groups[key].items.push({
+      id: safeString(row.id).trim(),
       stt: isGl && idParts ? idParts.rowOrder : toNumber(row.order),
       accountNumner: safeString(row.account_number).trim(),
       accountName: safeString(row.account_name).trim(),
@@ -905,9 +904,6 @@ function validateEditedEntry(paymentId, row, index, usedIds) {
   if (!(row.amount > 0)) return prefix + 'amount must be greater than 0.';
   if (!row.currency) return prefix + 'missing currency.';
   if (!row.type) return prefix + 'missing type.';
-  if (isAdditionalEntryType(row.type) && !isStructuredGlEntryId(paymentId, row.id)) {
-    return prefix + 'invalid GL id structure.';
-  }
   if (isAdditionalEntryType(row.type) && !/^[0-9]{3}$/.test(row.branch)) {
     return prefix + 'missing or invalid GL branch.';
   }
@@ -1093,18 +1089,20 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
 function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstOrder) {
   var taxInfo = getInvoiceTaxInfo(paymentId, vendor, vendorCount);
   var hasInvoice = hasLinkedInvoicesForVendor(paymentId, vendor, vendorCount);
-  var costDivisions = hasInvoice ? getPaymentCostDivisions(paymentId, vendor.vendor_id) : [];
+  var approvedAmount = toNumber(vendor.approved_invoice_amount);
+  // Phân bổ chi phí phục vụ hạch toán giá trị được chấp nhận (1), không phụ
+  // thuộc việc phiếu đã gắn bản ghi hóa đơn hay chưa.
+  var costDivisions = approvedAmount > 0
+    ? getPaymentCostDivisions(paymentId, vendor.vendor_id)
+    : [];
   var isPersonal = isPersonalPaymentVendor(vendor.vendor_type);
   // Cá nhân không dùng thuế GTGT tự động; thuế TNCN và số tiền do KT nhập.
   var errors = isPersonal ? [] : taxInfo.errors.slice(0);
 
-  if (toNumber(vendor.approved_invoice_amount) > 0 && !hasInvoice) {
-    errors.push('NCC ' + (vendor.vendor_id || '?') + ': có Giá trị hóa đơn chấp nhận nhưng chưa gắn hóa đơn.');
+  if (approvedAmount > 0 && costDivisions.length === 0 && !isPersonal) {
+    errors.push('NCC ' + (vendor.vendor_id || '?') + ': có Giá trị hóa đơn chấp nhận nhưng chưa có phân bổ chi phí tại ' + TABLE_COST_DIVISION + '.');
   }
-  if (hasInvoice && costDivisions.length === 0 && !isPersonal) {
-    errors.push('NCC ' + (vendor.vendor_id || '?') + ': có hóa đơn nhưng chưa có phân bổ chi phí tại ' + TABLE_COST_DIVISION + '.');
-  }
-  if (hasInvoice && costDivisions.length === 0 && isPersonal && !vendor.debit_account) {
+  if (approvedAmount > 0 && costDivisions.length === 0 && isPersonal && !vendor.debit_account) {
     errors.push('NCC cá nhân ' + (vendor.vendor_id || '?') + ': không có PCCP và thiếu debit.account tại ' + TABLE_VENDOR_SITE + '.');
   }
 
@@ -1113,7 +1111,7 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
     request: request,
     vendor: vendor,
     vendorCount: vendorCount,
-    approvedAmount: toNumber(vendor.approved_invoice_amount), // (1)
+    approvedAmount: approvedAmount,                            // (1)
     paymentAmount: toNumber(vendor.amount),                    // (2)
     refundAmount: toNumber(vendor.refund_amount),              // (3)
     hasInvoice: hasInvoice,
@@ -1905,11 +1903,6 @@ function getVendorAutoEntryErrors(vendor) {
   addMissingFieldsError(errors, subject, TABLE_PAYMENT_VENDOR, paymentVendorFields);
   addMissingFieldsError(errors, subject, TABLE_VENDOR, vendorFields);
   addMissingFieldsError(errors, subject, TABLE_VENDOR_SITE, vendorSiteFields);
-
-  // Case hoàn ứng thuần có amount = 0; chỉ lỗi khi cả thanh toán và hoàn ứng đều bằng 0.
-  if (toNumber(vendor.amount) <= 0 && toNumber(vendor.refund_amount) <= 0) {
-    errors.push(subject + ': amount và refund.amount tại ' + TABLE_PAYMENT_VENDOR + ' không được đồng thời bằng 0.');
-  }
 
   return errors;
 }
@@ -2788,7 +2781,8 @@ function makeGlEntryId(paymentId, groupOrder, rowOrder) {
 }
 
 function isStructuredGlEntryId(paymentId, entryId) {
-  return !!getGlEntryIdParts(paymentId, entryId);
+  var parts = getGlEntryIdParts(paymentId, entryId);
+  return !!parts && !parts.legacy;
 }
 
 function getGlEntryIdParts(paymentId, entryId) {
@@ -2802,9 +2796,22 @@ function getGlEntryIdParts(paymentId, entryId) {
       Number(parts[0]) > 0 && Number(parts[1]) > 0) {
     return {
       groupOrder: Number(parts[0]),
-      rowOrder: Number(parts[1])
+      rowOrder: Number(parts[1]),
+      legacy: false
     };
   }
+
+  // Tương thích ID GL cũ: <paymentId>.GL.<dòng>, mặc định thuộc nhóm 1.
+  if (parts.length === 1 &&
+      /^\d+$/.test(parts[0]) &&
+      Number(parts[0]) > 0) {
+    return {
+      groupOrder: 1,
+      rowOrder: Number(parts[0]),
+      legacy: true
+    };
+  }
+
   return null;
 }
 

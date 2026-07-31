@@ -53,6 +53,7 @@ var TABLE_GL_ACCOUNT = 'esdDMglAccount';                    // Bảng danh mục
 var TABLE_CONTACT = 'contacts';
 var TABLE_ENTITY = 'esdDMentity';
 var TABLE_BANK = 'esdDMbank';
+var TABLE_COST_CENTER = 'esdDMcostCenter';
 
 var ENTRY_TYPE = {
   AP: 'AP',
@@ -83,12 +84,19 @@ var GENERATION_PHASE = {
   KTTC: 'initial_kttc'
 };
 
-var CATEGORY_TAX_ACCOUNT_NUMBER = 'htkt_loai_khau_tru';
+var CATEGORY_TAX_ACCOUNT_NUMBER = 'dmhtkt_stk_loai_khau_tru';
 var CATEGORY_TAX_DEDUCTION_TYPE = 'dmhd_loai_khau_tru';
 var DEDUCTION_TYPE_FULL = 'KHAUTRU_001';
 var DEDUCTION_TYPE_RATE = 'KHAUTRU_002';
 var DEDUCTION_TYPE_NONE = 'KHAUTRU_003';
 var GL_UNIT_TRANSACTION_CODE = '98';
+var GL_DEFAULT_ENTITY_CODE = '0000000';
+var GL_DEFAULT_BRANCH_CODE = '000';
+var GL_DEFAULT_COST_CENTER = '000000';
+var GL_DEFAULT_TRANSACTION_OFFICE = '0000000';
+var GL_UNIT_PREFERRED_PS_CODE = {
+  '1010098': '99901000'
+};
 
 // Load and synchronize entries
 /** Lấy bút toán đã lưu hoặc sinh mới khi chưa có dữ liệu. */
@@ -110,8 +118,10 @@ function getListPrepaymentEntryByInputDetails(details) {
   var createdBy = request.created_by;
   var additionalUnit = getCreatorAccountingUnit(createdBy);
   var glUnitOptions = getGlUnitOptions();
-  var transactionOfficeOptions = getTransactionOfficeOptions(additionalUnit.lv1Id);
-  var defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(transactionOfficeOptions);
+  var glCostCenterOptions = getGlCostCenterOptions();
+  var creatorTransactionOfficeOptions = getTransactionOfficeOptions(additionalUnit.lv1Id);
+  var transactionOfficeOptions = getGlTransactionOfficeOptions();
+  var defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(creatorTransactionOfficeOptions);
   var savedEntries = getSavedPrepaymentEntries(prepaymentId);
 
   // Entry đã có thì trả ngay; dữ liệu nguồn được kiểm tra khi trigger gọi sinh lại.
@@ -120,7 +130,7 @@ function getListPrepaymentEntryByInputDetails(details) {
       savedEntries,
       additionalUnit.code,
       defaultTransactionOfficeCode,
-      transactionOfficeOptions
+      creatorTransactionOfficeOptions
     );
 
     return makeResult(savedEntries, 'saved', {
@@ -131,6 +141,7 @@ function getListPrepaymentEntryByInputDetails(details) {
       additionalUnitCode: additionalUnit.code,
       additionalUnitName: additionalUnit.name,
       glUnitOptions: glUnitOptions,
+      glCostCenterOptions: glCostCenterOptions,
       transactionOfficeOptions: transactionOfficeOptions,
       defaultTransactionOfficeCode: defaultTransactionOfficeCode
     });
@@ -146,6 +157,7 @@ function getListPrepaymentEntryByInputDetails(details) {
       additionalUnitCode: additionalUnit.code,
       additionalUnitName: additionalUnit.name,
       glUnitOptions: glUnitOptions,
+      glCostCenterOptions: glCostCenterOptions,
       transactionOfficeOptions: transactionOfficeOptions,
       defaultTransactionOfficeCode: defaultTransactionOfficeCode
     });
@@ -160,6 +172,7 @@ function getListPrepaymentEntryByInputDetails(details) {
   generatedResult.additionalUnitCode = additionalUnit.code;
   generatedResult.additionalUnitName = additionalUnit.name;
   generatedResult.glUnitOptions = glUnitOptions;
+  generatedResult.glCostCenterOptions = glCostCenterOptions;
   generatedResult.transactionOfficeOptions = transactionOfficeOptions;
   generatedResult.defaultTransactionOfficeCode = defaultTransactionOfficeCode;
   return generatedResult;
@@ -492,21 +505,15 @@ function savePrepaymentEntryEdit(details) {
   }
 
   var creatorUnit = getCreatorAccountingUnit(request.created_by);
-  var transactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.lv1Id);
-  var defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(transactionOfficeOptions);
+  var creatorTransactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.lv1Id);
+  var defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(creatorTransactionOfficeOptions);
 
   applyCreatorUnitToEntries(
     normalized.entries,
     creatorUnit.code,
     defaultTransactionOfficeCode,
-    transactionOfficeOptions
+    creatorTransactionOfficeOptions
   );
-
-  var transactionOfficeValidation = validateTransactionOfficeRows(
-    normalized.entries,
-    transactionOfficeOptions
-  );
-  if (!transactionOfficeValidation.success) return transactionOfficeValidation;
 
   var balanceValidation = validateAccountingBalanceRows(normalized.entries);
   if (!balanceValidation.success) return balanceValidation;
@@ -823,9 +830,11 @@ function normalizeEditedEntry(raw) {
   var entryCode = getAutoEntryCode(raw.entry_type);
   var selectedGlEntityCode = safeString(raw.branch_entity_code).trim();
   var selectedGlBranchCode =
-    isGlEntry && selectedGlEntityCode
+    isGlEntry && selectedGlEntityCode === GL_DEFAULT_ENTITY_CODE
+      ? GL_DEFAULT_BRANCH_CODE
+      : isGlEntry && selectedGlEntityCode
       ? getGlBranchCodeByEntityCode(selectedGlEntityCode)
-      : safeString(raw.branch).trim();
+      : safeString(raw.branch).trim() || (isGlEntry ? GL_DEFAULT_BRANCH_CODE : '');
 
   return {
     id: safeString(raw.id).trim(),
@@ -836,8 +845,14 @@ function normalizeEditedEntry(raw) {
     account_number: safeString(raw.account_number).trim(),
     account_name: safeString(raw.account_name).trim(),
     branch: selectedGlBranchCode,
-    department: safeString(raw.department).trim(),
-    transaction_office: safeString(raw.transaction_office).trim(),
+    department:
+      isGlEntry
+        ? safeString(raw.department).trim() || GL_DEFAULT_COST_CENTER
+        : safeString(raw.department).trim(),
+    transaction_office:
+      isGlEntry
+        ? safeString(raw.transaction_office).trim() || GL_DEFAULT_TRANSACTION_OFFICE
+        : safeString(raw.transaction_office).trim(),
     amount: toNumber(raw.amount),
     currency: safeString(raw.currency).trim(),
     description: safeString(raw.description).trim(),
@@ -1197,40 +1212,142 @@ function getCreatorAccountingUnit(createdBy) {
 function getGlUnitOptions() {
   var optionMap = {};
   var options = [];
-  var f = new SCFile(TABLE_ENTITY, SCFILE_READONLY);
-  var rc;
+  var fields = [
+    ['d.ps.code', 'ps_code', 'S'],
+    ['d.entity.code', 'entity_code', 'S'],
+    ['d.ogl.branch.code', 'branch_code', 'S'],
+    ['d.branch.name', 'branch_name', 'S']
+  ];
+  var sql =
+    'SELECT ' +
+    selectFields(fields) +
+    ' FROM ' +
+    TABLE_ENTITY +
+    ' d WHERE d.org.transaction.code="' +
+    escapeQueryValue(GL_UNIT_TRANSACTION_CODE) +
+    '"';
+  var rows;
 
   try {
-    rc = f.doSelect(
-      'org.transaction.code="' +
-        escapeQueryValue(GL_UNIT_TRANSACTION_CODE) +
-        '"'
-    );
+    rows = selectList(TABLE_ENTITY, sql, fields);
   } catch (e) {
-    closeFile(f);
     return options;
   }
 
-  while (rc === RC_SUCCESS) {
-    var entityCode = readText(f, 'entity.code').trim();
-    var branchCode = normalizeGlBranchCode(readText(f, 'ogl.branch.code'));
-    var branchName = getBranchNamePrefix(readText(f, 'branch.name'));
+  for (var i = 0; i < rows.length; i++) {
+    var psCode = safeString(rows[i].ps_code).trim();
+    var entityCode = safeString(rows[i].entity_code).trim();
+    var rawBranchCode = safeString(rows[i].branch_code).trim();
+    var branchCode = normalizeGlBranchCode(rawBranchCode);
+    var matchBranchCode = rawBranchCode;
+    var branchName = getBranchNamePrefix(rows[i].branch_name);
+    var currentOption = optionMap[entityCode];
+    var preferredPsCode = GL_UNIT_PREFERRED_PS_CODE[entityCode] || '';
+    var currentIsPreferred =
+      preferredPsCode &&
+      currentOption &&
+      currentOption.psCode === preferredPsCode;
+    var candidateIsPreferred =
+      preferredPsCode &&
+      psCode === preferredPsCode;
 
-    if (entityCode && !optionMap[entityCode]) {
-      optionMap[entityCode] = true;
-      options.push({
+    // map entity.code bị trùng theo ps.code ưu tiên; nếu chưa cấu hình thì lấy ps.code nhỏ nhất.
+    if (
+      entityCode &&
+      (
+        !currentOption ||
+        (candidateIsPreferred && !currentIsPreferred) ||
+        (
+          !currentIsPreferred &&
+          !candidateIsPreferred &&
+          (
+            (!currentOption.psCode && psCode) ||
+            (psCode && currentOption.psCode && psCode < currentOption.psCode)
+          )
+        )
+      )
+    ) {
+      optionMap[entityCode] = {
         label: entityCode + (branchName ? ' - ' + branchName : ''),
         value: entityCode,
         entityCode: entityCode,
-        branchCode: branchCode
-      });
+        branchCode: branchCode,
+        matchBranchCode: matchBranchCode,
+        psCode: psCode
+      };
     }
-
-    rc = f.getNext();
   }
 
-  closeFile(f);
+  for (var optionKey in optionMap) {
+    if (!optionMap.hasOwnProperty(optionKey)) continue;
+
+    options.push({
+      label: optionMap[optionKey].label,
+      value: optionMap[optionKey].value,
+      entityCode: optionMap[optionKey].entityCode,
+      branchCode: optionMap[optionKey].branchCode,
+      matchBranchCode: optionMap[optionKey].matchBranchCode
+    });
+  }
+
   options.sort(compareGlUnitOption);
+  return options;
+}
+
+/** map danh sách Phòng ban GL từ esdDMcostCenter để lọc theo Đơn vị trên giao diện. */
+function getGlCostCenterOptions() {
+  var optionMap = {};
+  var options = [];
+  var fields = [
+    ['d.org.code', 'org_code', 'S'],
+    ['d.cost.center', 'cost_center', 'S'],
+    ['d.name', 'name', 'S']
+  ];
+  var sql =
+    'SELECT ' +
+    selectFields(fields) +
+    ' FROM ' +
+    TABLE_COST_CENTER +
+    ' d';
+  var rows;
+
+  try {
+    rows = selectList(TABLE_COST_CENTER, sql, fields);
+  } catch (e) {
+    return options;
+  }
+
+  for (var i = 0; i < rows.length; i++) {
+    var orgCode = safeString(rows[i].org_code).trim();
+    var costCenter = safeString(rows[i].cost_center).trim();
+    var name = safeString(rows[i].name).trim();
+    var optionKey = orgCode + '|' + costCenter;
+
+    if (!costCenter || optionMap[optionKey]) continue;
+
+    optionMap[optionKey] = true;
+    options.push({
+      value: costCenter,
+      label: costCenter + (name ? ' - ' + name : ''),
+      name: name,
+      orgCode: orgCode
+    });
+  }
+
+  options.sort(function (left, right) {
+    var leftValue = safeString(left.value);
+    var rightValue = safeString(right.value);
+
+    if (leftValue < rightValue) return -1;
+    if (leftValue > rightValue) return 1;
+
+    var leftOrgCode = safeString(left.orgCode);
+    var rightOrgCode = safeString(right.orgCode);
+    if (leftOrgCode < rightOrgCode) return -1;
+    if (leftOrgCode > rightOrgCode) return 1;
+    return 0;
+  });
+
   return options;
 }
 
@@ -1295,6 +1412,63 @@ function getTransactionOfficeOptions(lv1Id) {
 
   options.sort(compareTransactionOfficeOption);
 
+  return options;
+}
+
+/** map danh sách PGD segment6 của GL khác mã 98, 00 và kèm ogl.branch.code để lọc theo Đơn vị. */
+function getGlTransactionOfficeOptions() {
+  var optionMap = {};
+  var options = [];
+  var fields = [
+    ['d.entity.code', 'entity_code', 'S'],
+    ['d.org.transaction.code', 'transaction_code', 'S'],
+    ['d.ogl.branch.code', 'branch_code', 'S'],
+    ['d.branch.name', 'branch_name', 'S']
+  ];
+  var sql =
+    'SELECT ' +
+    selectFields(fields) +
+    ' FROM ' +
+    TABLE_ENTITY +
+    ' d';
+  var rows;
+
+  try {
+    rows = selectList(TABLE_ENTITY, sql, fields);
+  } catch (e) {
+    return options;
+  }
+
+  for (var i = 0; i < rows.length; i++) {
+    var transactionCode = safeString(rows[i].transaction_code).trim();
+    var branchCode = safeString(rows[i].branch_code).trim();
+    var branchName = safeString(rows[i].branch_name).trim();
+    var branchNameSeparatorIndex = branchName.indexOf('-');
+    var optionKey = branchCode + '|' + transactionCode;
+
+    // map tên PGD bằng phần bên phải dấu "-" trong branch.name.
+    if (branchNameSeparatorIndex >= 0) {
+      branchName = branchName.substring(branchNameSeparatorIndex + 1).trim();
+    }
+
+    if (
+      transactionCode &&
+      transactionCode !== GL_UNIT_TRANSACTION_CODE &&
+      transactionCode !== '00' &&
+      branchCode &&
+      !optionMap[optionKey]
+    ) {
+      optionMap[optionKey] = true;
+      options.push({
+        value: transactionCode,
+        label: transactionCode + (branchName ? ' - ' + branchName : ''),
+        name: branchName,
+        branchCode: branchCode
+      });
+    }
+  }
+
+  options.sort(compareTransactionOfficeOption);
   return options;
 }
 
@@ -1365,24 +1539,6 @@ function getDefaultTransactionOfficeCode(options) {
   return options && options.length > 0 ? safeString(options[0].value).trim() : '';
 }
 
-function validateTransactionOfficeRows(entries, options) {
-  if (!options || options.length === 0) return { success: true };
-
-  var allowed = {};
-  for (var i = 0; i < options.length; i++) {
-    allowed[safeString(options[i].value).trim()] = true;
-  }
-
-  for (var j = 0; j < entries.length; j++) {
-    var officeCode = safeString(entries[j].transaction_office).trim();
-    if (officeCode && !allowed[officeCode]) {
-      return makeError('Phong giao dich dong ' + (j + 1) + ' khong thuoc don vi da chon.');
-    }
-  }
-
-  return { success: true };
-}
-
 function isTransactionOfficeCodeAllowed(value, options) {
   var code = safeString(value).trim();
   if (!code) return false;
@@ -1409,15 +1565,15 @@ function getBranchNamePrefix(value) {
 function applyCreatorUnitToEntries(entries, unitCode, defaultTransactionOfficeCode, transactionOfficeOptions) {
   for (var i = 0; i < entries.length; i++) {
     // map đơn vị người tạo cho AP; GL giữ branch do người dùng chọn.
-    if (unitCode && !isAdditionalEntryType(entries[i].type)) {
-      entries[i].branch = unitCode;
-    }
+    if (!isAdditionalEntryType(entries[i].type)) {
+      if (unitCode) entries[i].branch = unitCode;
 
-    if (
-      defaultTransactionOfficeCode &&
-      !isTransactionOfficeCodeAllowed(entries[i].transaction_office, transactionOfficeOptions)
-    ) {
-      entries[i].transaction_office = defaultTransactionOfficeCode;
+      if (
+        defaultTransactionOfficeCode &&
+        !isTransactionOfficeCodeAllowed(entries[i].transaction_office, transactionOfficeOptions)
+      ) {
+        entries[i].transaction_office = defaultTransactionOfficeCode;
+      }
     }
   }
 }
@@ -1575,37 +1731,28 @@ function getTaxDeductionAccount(deductionType) {
   var itemId = safeString(deductionType).trim();
   var deductionItem = null;
   var accountItem = null;
-  var accountNumber = '';
-  var accountName = '';
 
   if (itemId) {
     deductionItem = selectOne(
       TABLE_CATEGORY_ITEM,
       'category.id="' + escapeQueryValue(CATEGORY_TAX_DEDUCTION_TYPE) + '" and item.id="' + escapeQueryValue(itemId) + '"',
       function (record) {
-        return {
-          itemId: readText(record, 'item.id'),
-          itemName: readText(record, 'item.name')
-        };
+        return { itemName: readText(record, 'item.name') };
       }
     );
 
-    if (deductionItem) {
-      accountName = deductionItem.itemName;
-      accountItem = selectOne(
-        TABLE_CATEGORY_ITEM,
-        'category.id="' + escapeQueryValue(CATEGORY_TAX_ACCOUNT_NUMBER) + '" and item.id="' + escapeQueryValue(deductionItem.itemId) + '"',
-        function (record) {
-          return { itemName: readText(record, 'item.name') };
-        }
-      );
-      accountNumber = accountItem ? accountItem.itemName : '';
-    }
+    accountItem = selectOne(
+      TABLE_CATEGORY_ITEM,
+      'category.id="' + escapeQueryValue(CATEGORY_TAX_ACCOUNT_NUMBER) + '" and item.id="' + escapeQueryValue(itemId) + '"',
+      function (record) {
+        return { itemName: readText(record, 'item.name') };
+      }
+    );
   }
 
   return {
-    number: accountNumber,
-    name: accountName
+    number: accountItem ? safeString(accountItem.itemName).trim() : '',
+    name: deductionItem ? safeString(deductionItem.itemName).trim() : ''
   };
 }
 
