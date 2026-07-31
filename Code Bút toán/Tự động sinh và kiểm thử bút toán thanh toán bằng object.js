@@ -260,10 +260,19 @@ function syncPaymentEntryNowByInputDetails(details) {
   var expectedEntries = expectedResult.rows;
   var canGenerate = expectedResult.canGenerate;
   var generationErrors = expectedResult.errors || [];
+  var successfulVendorIds = expectedResult.successfulVendorIds || [];
+  var hasPartialSuccess = successfulVendorIds.length > 0;
 
-  // Nếu dữ liệu thiếu/không đủ điều kiện tự động sinh bút toán -> Giữ nguyên CSDL
-  if (!canGenerate) {
+  // Chỉ giữ nguyên toàn bộ CSDL khi không có NCC nào sinh thành công.
+  if (!canGenerate && !hasPartialSuccess) {
     return makeResult(savedEntries, savedEntries.length > 0 ? 'saved' : 'empty', makeGenerationErrorMeta(generationErrors));
+  }
+
+  // NCC lỗi giữ nguyên bút toán đã lưu; chỉ NCC thành công được thay bằng kết quả mới.
+  if (hasPartialSuccess) {
+    expectedEntries = expectedEntries.concat(
+      getPreservedAutoEntriesForOtherVendors(savedEntries, successfulVendorIds)
+    );
   }
 
   if (isGenerationPhaseLocked(expectedResult.currentPhase)) {
@@ -286,6 +295,9 @@ function syncPaymentEntryNowByInputDetails(details) {
     var inserted = insertPaymentEntries(expectedEntries);
 
     return makeResult(getSavedPaymentEntries(paymentId), 'generated', {
+      canGenerate: canGenerate,
+      partial: !canGenerate,
+      errors: generationErrors,
       sync: {
         inserted: inserted,
         updated: 0,
@@ -301,7 +313,30 @@ function syncPaymentEntryNowByInputDetails(details) {
   // Tiến hành xóa bút toán cũ và chèn lại bộ bút toán đã merge mới
   var syncResult = replaceAutoPaymentEntries(paymentId, mergedExpectedEntries);
 
-  return makeResult(getSavedPaymentEntries(paymentId), 'synced', { sync: syncResult });
+  return makeResult(getSavedPaymentEntries(paymentId), 'synced', {
+    canGenerate: canGenerate,
+    partial: !canGenerate,
+    errors: generationErrors,
+    sync: syncResult
+  });
+}
+
+function getPreservedAutoEntriesForOtherVendors(savedEntries, successfulVendorIds) {
+  var successfulMap = {};
+  var result = [];
+
+  for (var i = 0; i < successfulVendorIds.length; i++) {
+    successfulMap[safeString(successfulVendorIds[i]).trim()] = true;
+  }
+
+  for (var j = 0; j < savedEntries.length; j++) {
+    var saved = savedEntries[j];
+    if (!isAutoEntry(saved)) continue;
+    if (successfulMap[safeString(saved.vendor_id).trim()]) continue;
+    result.push(copyObject({}, saved));
+  }
+
+  return result;
 }
 
 // -----------------------------------------------------------------------------
@@ -1410,6 +1445,7 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
   var rows = [];
   var errors = [];
   var cases = [];
+  var successfulVendorIds = [];
   var canGenerate = true;
 
   if (!request.id) {
@@ -1482,6 +1518,7 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
     }
 
     rows = rows.concat(vendorRows);
+    successfulVendorIds.push(vendor.vendor_id);
   }
 
   return {
@@ -1489,6 +1526,7 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
     canGenerate: canGenerate,
     errors: makeUniqueTextList(errors),
     cases: cases,
+    successfulVendorIds: successfulVendorIds,
     currentPhase: request.current_phase
   };
 }
@@ -1509,9 +1547,6 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
   // Cá nhân không dùng thuế GTGT tự động; thuế TNCN và số tiền do KT nhập.
   var errors = isPersonal ? [] : taxInfo.errors.slice(0);
 
-  if (approvedAmount > 0 && costDivisions.length === 0 && !isPersonal) {
-    errors.push('NCC ' + (vendor.vendor_id || '?') + ': có Giá trị hóa đơn chấp nhận nhưng chưa có phân bổ chi phí tại ' + TABLE_COST_DIVISION + '.');
-  }
   if (approvedAmount > 0 && costDivisions.length === 0 && isPersonal && !vendor.debit_account) {
     errors.push('NCC cá nhân ' + (vendor.vendor_id || '?') + ': không có PCCP và thiếu debit.account tại ' + TABLE_VENDOR_SITE + '.');
   }
@@ -1789,6 +1824,47 @@ function getPersonalExpenseAccounts(c) {
   return result;
 }
 
+/**
+ * Gom PCCP theo tài khoản để mỗi tài khoản chỉ sinh một dòng chi phí.
+ * Khi không có PCCP, dùng đúng một dòng từ vendorSite.debit.account.
+ */
+function getStandardExpenseAllocations(c) {
+  var result = [];
+  var allocationByAccount = {};
+
+  for (var i = 0; i < c.costDivisions.length; i++) {
+    var division = c.costDivisions[i];
+    var accountNumber = safeString(division.account_number).trim();
+    if (!accountNumber) continue;
+
+    var allocation = allocationByAccount[accountNumber];
+    if (!allocation) {
+      allocation = {
+        account_number: accountNumber,
+        account_name: division.account_name || getGlAccountName(accountNumber),
+        department: division.department,
+        branch: division.branch,
+        amount: 0
+      };
+      allocationByAccount[accountNumber] = allocation;
+      result.push(allocation);
+    }
+    allocation.amount += toNumber(division.amount_before_tax);
+  }
+
+  if (result.length === 0) {
+    result.push({
+      account_number: c.vendor.debit_account,
+      account_name: getGlAccountName(c.vendor.debit_account),
+      department: c.request.department,
+      branch: '',
+      amount: c.approvedAmount - (c.hasTax ? c.taxInfo.totalDeductibleTax : 0)
+    });
+  }
+
+  return result;
+}
+
 // -----------------------------------------------------------------------------
 // SECTION 05D - ENTRY BUILDER DÙNG CHUNG: tạo dòng Nợ/Có, tránh lặp giữa case
 // -----------------------------------------------------------------------------
@@ -1811,14 +1887,15 @@ function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, 
   var payableDebit = 0;
 
   if (includeInvoice) {
-    for (i = 0; i < c.costDivisions.length; i++) {
-      var division = c.costDivisions[i];
+    var expenseAllocations = getStandardExpenseAllocations(c);
+    for (i = 0; i < expenseAllocations.length; i++) {
+      var division = expenseAllocations[i];
       rows.push(buildEntryRow({
         paymentId: c.paymentId,
         request: c.request,
         vendor: c.vendor,
         entryCode: AUTO_ENTRY_CODE.COST,
-        amount: toNumber(division.amount_before_tax),
+        amount: toNumber(division.amount),
         order: order++,
         accountOverride: { number: division.account_number, name: division.account_name },
         departmentOverride: division.department,
