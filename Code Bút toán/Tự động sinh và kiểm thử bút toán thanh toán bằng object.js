@@ -82,6 +82,7 @@ function run() {
     var action = input.name || '';
     var details = getInputDetails(input);
     var result;
+    debugPaymentEntry('RUN', 'Bắt đầu action=' + action + ', paymentId=' + safeString(details.paymentId));
 
     // danh sach hach toan
     if (action === 'getListPaymentEntry') {
@@ -108,11 +109,13 @@ function run() {
       result = { success: false, error: 'Invalid action: ' + action };
     }
 
+    debugPaymentEntry('RUN', 'Kết thúc action=' + action + ', mode=' + safeString(result && result.mode) + ', success=' + safeString(result && result.success));
     input.queryReturn =
       action === 'runCompletedPaymentCaseTests'
         ? result.output
         : JSON.stringify(result);
   } catch (e) {
+    debugPaymentEntry('RUN-ERROR', e.toString());
     if (vars['$L.file']) {
       vars['$L.file'].queryReturn = JSON.stringify({
         success: false,
@@ -120,6 +123,14 @@ function run() {
       });
     }
   }
+}
+
+function debugPaymentEntry(point, message) {
+  try {
+    if (typeof print === 'function') {
+      print('[PAYMENT-ENTRY][' + safeString(point) + '] ' + safeString(message));
+    }
+  } catch (ignore) {}
 }
 
 // =============================================================================
@@ -202,9 +213,10 @@ var GL_UNIT_TRANSACTION_CODE = '98';
 // SECTION 02 - LOAD / SYNC: đọc, sinh lại, merge, validate và lưu tự động
 // =============================================================================
 
-/** Lấy bút toán đã lưu hoặc sinh mới khi chưa có dữ liệu. */
+/** Chỉ lấy bút toán đã lưu; việc sinh mới được thực hiện qua action syncPaymentEntry. */
 function getListPaymentEntryByInputDetails(details) {
   var paymentId = safeString(details.paymentId).trim();
+  debugPaymentEntry('GET-LIST', 'Bắt đầu paymentId=' + paymentId);
 
   if (!paymentId) {
     return makeResult([], 'empty', {
@@ -218,9 +230,11 @@ function getListPaymentEntryByInputDetails(details) {
   var currentPhase = request.current_phase;
   var userCheckerKttc = request.user_checker_kttc;
   var savedEntries = getSavedPaymentEntries(paymentId);
+  debugPaymentEntry('GET-LIST', 'Đã đọc ' + savedEntries.length + ' dòng đã lưu, phase=' + currentPhase);
 
   // Entry đã có thì trả ngay; dữ liệu nguồn được kiểm tra khi trigger gọi sinh lại.
   if (savedEntries.length > 0) {
+    debugPaymentEntry('GET-LIST', 'Trả dữ liệu đã lưu, không sinh lại');
     return makeResult(savedEntries, 'saved', {
       currentPhase: currentPhase,
       userCheckerKttc: userCheckerKttc
@@ -228,6 +242,7 @@ function getListPaymentEntryByInputDetails(details) {
   }
 
   if (isGenerationPhaseLocked(currentPhase)) {
+    debugPaymentEntry('GET-LIST', 'Không có dữ liệu và phase đang khóa');
     return makeResult([], 'empty', {
       locked: true,
       currentPhase: currentPhase,
@@ -235,17 +250,18 @@ function getListPaymentEntryByInputDetails(details) {
     });
   }
 
-  // Nếu DB chưa có bút toán -> Tiến hành đồng bộ và sinh mới.
-  var generatedResult = syncPaymentEntryNowByInputDetails(details);
-  generatedResult.currentPhase = currentPhase;
-  generatedResult.userCheckerKttc = userCheckerKttc;
-  return generatedResult;
+  debugPaymentEntry('GET-LIST', 'Không có dữ liệu, trả empty và không tự động sinh');
+  return makeResult([], 'empty', {
+    currentPhase: currentPhase,
+    userCheckerKttc: userCheckerKttc
+  });
 }
 
 /** Tính lại dữ liệu nguồn, giữ trường được sửa và đồng bộ entry khi chưa khóa. */
 function syncPaymentEntryNowByInputDetails(details) {
   var paymentId = safeString(details.paymentId).trim();
   var vendorId = safeString(details.vendorId).trim();
+  debugPaymentEntry('SYNC', 'Bắt đầu paymentId=' + paymentId + ', vendorId=' + vendorId);
 
   if (!paymentId) {
     return makeResult([], 'empty', {
@@ -262,20 +278,24 @@ function syncPaymentEntryNowByInputDetails(details) {
   var generationErrors = expectedResult.errors || [];
   var successfulVendorIds = expectedResult.successfulVendorIds || [];
   var hasPartialSuccess = successfulVendorIds.length > 0;
+  debugPaymentEntry('SYNC', 'Build xong: rows=' + expectedEntries.length + ', NCC thành công=' + successfulVendorIds.length + ', errors=' + generationErrors.length);
 
   // Chỉ giữ nguyên toàn bộ CSDL khi không có NCC nào sinh thành công.
   if (!canGenerate && !hasPartialSuccess) {
+    debugPaymentEntry('SYNC', 'Không có NCC nào thành công, giữ nguyên CSDL');
     return makeResult(savedEntries, savedEntries.length > 0 ? 'saved' : 'empty', makeGenerationErrorMeta(generationErrors));
   }
 
   // NCC lỗi giữ nguyên bút toán đã lưu; chỉ NCC thành công được thay bằng kết quả mới.
   if (hasPartialSuccess) {
+    debugPaymentEntry('SYNC', 'Giữ bút toán cũ của NCC lỗi và thay bút toán NCC thành công');
     expectedEntries = expectedEntries.concat(
       getPreservedAutoEntriesForOtherVendors(savedEntries, successfulVendorIds)
     );
   }
 
   if (isGenerationPhaseLocked(expectedResult.currentPhase)) {
+    debugPaymentEntry('SYNC', 'Dừng do phase đang khóa: ' + expectedResult.currentPhase);
     return makeResult(savedEntries, savedEntries.length > 0 ? 'saved' : 'empty', {
       locked: true,
       currentPhase: expectedResult.currentPhase
@@ -696,6 +716,12 @@ function runCompletedPaymentCaseTests() {
       }
     });
 
+    var beneficiaryErrors = getBeneficiaryEntryTypeErrors(testResult.data || []);
+    if (beneficiaryErrors.length > 0) {
+      testResult.success = false;
+      testResult.errors = (testResult.errors || []).concat(beneficiaryErrors);
+    }
+
     results.push(testResult);
     if (testResult.success) passed++;
     reports.push(formatCompletedPaymentCaseOutput(definition, testResult));
@@ -718,6 +744,30 @@ function runCompletedPaymentCaseTests() {
     results: results,
     personalAccountTests: personalAccountTests
   };
+}
+
+function getBeneficiaryEntryTypeErrors(rows) {
+  var errors = [];
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var entryType = normalizeEntryType(row.entry_type);
+    var account = safeString(row.beneficiary_account).trim();
+    var name = safeString(row.beneficiary_name).trim();
+    var bank = safeString(row.beneficiary_bank).trim();
+
+    if (entryType === ENTRY_TYPE.COST && (account || name !== 'VietinBank' || bank)) {
+      errors.push('Dòng COST phải để trống beneficiary_account/beneficiary_bank và beneficiary_name=VietinBank.');
+    }
+    if (entryType === ENTRY_TYPE.TAX && (account || name || bank)) {
+      errors.push('Dòng TAX phải để trống toàn bộ thông tin beneficiary.');
+    }
+    if (entryType === ENTRY_TYPE.CUSTOMER && (!account || !name || !bank)) {
+      errors.push('Dòng CUSTOMER phải giữ đủ thông tin beneficiary của NCC.');
+    }
+  }
+
+  return makeUniqueTextList(errors);
 }
 
 function runPersonalCostAccountTests() {
@@ -811,6 +861,7 @@ function getCompletedPaymentCaseDefinitions() {
     // không giảm công nợ; số hoàn ứng thực tế được xử lý tại tab Công nợ.
     { caseCode: 'TT-07', title: 'Hoàn ứng toàn bộ, không thanh toán thêm', approved: 1000000, payment: 0, refund: 1000000, tax: 0, expectedRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 0, 1) },
     { caseCode: 'TT-08', title: 'Hoàn ứng một phần, thanh toán phần còn lại, không thuế', approved: 1000000, payment: 600000, refund: 400000, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
+    { caseCode: 'TT-08', title: 'Kiểm thử giá trị lớn: (1)=100 triệu, (2)=90 triệu, (3)=10 triệu', approved: 100000000, payment: 90000000, refund: 10000000, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-09', title: 'Hoàn ứng một phần, thanh toán phần còn lại, NCC có thuế', approved: 1100000, payment: 600000, refund: 500000, tax: 100000, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 1, 1) },
     { caseCode: 'TT-10', title: 'Cá nhân, hoàn ứng và thanh toán hết', personal: true, approved: 1000000, payment: 600000, refund: 400000, tax: 0, expectedRows: 3, expectedBlankRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-11', title: 'Hoàn ứng một phần, còn phải trả, không thuế', approved: 1000000, payment: 0, refund: 400000, tax: 0, expectedRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 0, 1) },
@@ -1440,8 +1491,10 @@ function getEntryTypeByRuleCode(entryCode) {
  * Các case chưa đủ quy tắc được giữ bằng hàm rỗng để bổ sung sau.
  */
 function buildExpectedPaymentEntries(paymentId, vendorId) {
+  debugPaymentEntry('BUILD', 'Bắt đầu paymentId=' + paymentId + ', vendorId=' + safeString(vendorId));
   var request = getPaymentRequest(paymentId);
   var vendors = getPaymentVendors(paymentId, vendorId);
+  debugPaymentEntry('BUILD', 'Tìm thấy ' + vendors.length + ' NCC');
   var rows = [];
   var errors = [];
   var cases = [];
@@ -1470,8 +1523,10 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
 
   for (var i = 0; i < vendors.length; i++) {
     var vendor = vendors[i];
+    debugPaymentEntry('BUILD-VENDOR', 'Bắt đầu NCC ' + (vendor.vendor_id || '?') + ' (' + (i + 1) + '/' + vendors.length + ')');
     var vendorErrors = getVendorAutoEntryErrors(vendor);
     if (vendorErrors.length > 0) {
+      debugPaymentEntry('BUILD-VENDOR-ERROR', 'NCC ' + (vendor.vendor_id || '?') + ': ' + vendorErrors.join(' | '));
       canGenerate = false;
       errors = errors.concat(vendorErrors);
       continue;
@@ -1487,6 +1542,7 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
     );
 
     if (context.errors.length > 0) {
+      debugPaymentEntry('BUILD-VENDOR-ERROR', 'NCC ' + (vendor.vendor_id || '?') + ': ' + context.errors.join(' | '));
       canGenerate = false;
       errors = errors.concat(context.errors);
       continue;
@@ -1494,6 +1550,7 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
 
     // Bước 2: chỉ phân case tại đây; không rải điều kiện case sang phần save.
     var caseCode = classifyPaymentCase(context);
+    debugPaymentEntry('BUILD-CASE', 'NCC ' + (vendor.vendor_id || '?') + ' => ' + (caseCode || 'NO_CASE'));
     cases.push({ vendorId: vendor.vendor_id, caseCode: caseCode });
 
     if (!caseCode) {
@@ -1512,6 +1569,7 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
     var vendorRows = buildEntriesByPaymentCase(caseCode, context);
     var rowErrors = getAutoEntryRowsErrors(vendorRows);
     if (rowErrors.length > 0) {
+      debugPaymentEntry('BUILD-VENDOR-ERROR', 'NCC ' + (vendor.vendor_id || '?') + ': ' + rowErrors.join(' | '));
       canGenerate = false;
       errors = errors.concat(rowErrors);
       continue;
@@ -1519,7 +1577,10 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
 
     rows = rows.concat(vendorRows);
     successfulVendorIds.push(vendor.vendor_id);
+    debugPaymentEntry('BUILD-VENDOR', 'NCC ' + (vendor.vendor_id || '?') + ' sinh thành công ' + vendorRows.length + ' dòng');
   }
+
+  debugPaymentEntry('BUILD', 'Kết thúc: rows=' + rows.length + ', NCC thành công=' + successfulVendorIds.length + ', errors=' + errors.length);
 
   return {
     rows: rows,
@@ -2209,11 +2270,13 @@ function buildExpectedPaymentEntriesLegacy(paymentId, vendorId) {
 
 function buildEntryRow(params) {
   var account = params.accountOverride || resolveAccount(params.entryCode, params.vendor, params.taxInfo || {});
+  var entryType = getEntryTypeByRuleCode(params.entryCode);
+  var beneficiary = getBeneficiaryByEntryType(entryType, params.vendor);
 
   return {
     id: '',
     payment_id: params.paymentId,
-    entry_type: getEntryTypeByRuleCode(params.entryCode),
+    entry_type: entryType,
     rule_code: params.entryCode,
     ledger_type: getAutoLedgerType(params.entryCode),
     account_type: getAutoAccountType(params.entryCode),
@@ -2230,9 +2293,45 @@ function buildEntryRow(params) {
     order: params.order,
     accounting_request_id: '',
     payment_method: params.vendor.payment_method,
+    beneficiary_account: beneficiary.account,
+    beneficiary_name: beneficiary.name,
+    beneficiary_bank: beneficiary.bank,
     // Chỉ dùng trong bước validate lúc khởi tạo case cá nhân; không lưu DB.
     allow_blank_amount: params.allowBlankAmount === true
   };
+}
+
+/** Chuẩn hóa thông tin thụ hưởng theo loại bút toán hiển thị. */
+function getBeneficiaryByEntryType(entryType, vendor) {
+  var normalizedType = normalizeEntryType(entryType);
+
+  if (normalizedType === ENTRY_TYPE.CUSTOMER) {
+    return {
+      account: safeString(vendor && vendor.beneficiary_account).trim(),
+      name: safeString(vendor && vendor.beneficiary_name).trim(),
+      bank: safeString(vendor && vendor.beneficiary_bank).trim()
+    };
+  }
+
+  if (normalizedType === ENTRY_TYPE.COST) {
+    return { account: '', name: 'VietinBank', bank: '' };
+  }
+
+  // TAX, PAYABLE, PREPAYMENT và các loại còn lại không lấy thông tin NCC.
+  return { account: '', name: '', bank: '' };
+}
+
+function applyBeneficiaryByEntryType(rows) {
+  var list = rows || [];
+
+  for (var i = 0; i < list.length; i++) {
+    var beneficiary = getBeneficiaryByEntryType(list[i].entry_type, list[i]);
+    list[i].beneficiary_account = beneficiary.account;
+    list[i].beneficiary_name = beneficiary.name;
+    list[i].beneficiary_bank = beneficiary.bank;
+  }
+
+  return list;
 }
 
 // -----------------------------------------------------------------------------
@@ -2868,7 +2967,7 @@ function getSavedPaymentEntries(paymentId) {
     escapeQueryValue(paymentId) +
     '" ORDER BY e.order ASC';
 
-  return selectList(TABLE_PAYMENT_ENTRY, sql, fields);
+  return applyBeneficiaryByEntryType(selectList(TABLE_PAYMENT_ENTRY, sql, fields));
 }
 
 function getPaymentEntryFields() {
