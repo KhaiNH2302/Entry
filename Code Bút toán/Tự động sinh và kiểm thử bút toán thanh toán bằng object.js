@@ -204,9 +204,9 @@ var GENERATION_PHASE = {
 
 var CATEGORY_TAX_ACCOUNT_NUMBER = 'htkt_loai_khau_tru';
 var CATEGORY_TAX_DEDUCTION_TYPE = 'dmhd_loai_khau_tru';
-var DEDUCTION_TYPE_FULL = 'KHAUTRU_001';
-var DEDUCTION_TYPE_RATE = 'KHAUTRU_002';
-var DEDUCTION_TYPE_NONE = 'KHAUTRU_003';
+var DEDUCTION_TYPE_FULL = 'KHAU_TRU_TOAN_BO';
+var DEDUCTION_TYPE_RATE = 'KHAU_TRU_TY_LE';
+var DEDUCTION_TYPE_NONE = 'KHONG_KHAU_TRU';
 var GL_UNIT_TRANSACTION_CODE = '98';
 
 // =============================================================================
@@ -728,21 +728,78 @@ function runCompletedPaymentCaseTests() {
   }
 
   var personalAccountTests = runPersonalCostAccountTests();
+  var taxRateTests = runTaxDeductionRateTests();
   reports.push(personalAccountTests.output);
+  reports.push(taxRateTests.output);
   reports.push('KẾT QUẢ: ' + passed + '/' + definitions.length + ' case đạt.');
   reports.push(
     'QUY TẮC TK CHI PHÍ CÁ NHÂN: ' +
     personalAccountTests.passed + '/' + personalAccountTests.total + ' test đạt.'
   );
+  reports.push(
+    'QUY TẮC THUẾ KHẤU TRỪ TỶ LỆ: ' +
+    taxRateTests.passed + '/' + taxRateTests.total + ' test đạt.'
+  );
 
   return {
-    success: passed === definitions.length && personalAccountTests.success,
+    success: passed === definitions.length && personalAccountTests.success && taxRateTests.success,
     mode: 'completed-case-report',
     passed: passed,
     total: definitions.length,
     output: reports.join('\n'),
     results: results,
-    personalAccountTests: personalAccountTests
+    personalAccountTests: personalAccountTests,
+    taxRateTests: taxRateTests
+  };
+}
+
+function runTaxDeductionRateTests() {
+  var rates = [0.5, 1.5];
+  var expectedTaxes = [50000, 100000];
+  var passed = 0;
+  var reports = ['KIỂM THỬ THUẾ KHẤU TRỪ THEO EXCHANGE.RATE', ''];
+  var results = [];
+
+  for (var i = 0; i < rates.length; i++) {
+    var definition = {
+      caseCode: 'TT-03-RATE-' + (i + 1),
+      approved: 1100000,
+      payment: 1100000,
+      refund: 0,
+      tax: 100000,
+      exchangeRate: rates[i]
+    };
+    var db = createPaymentCaseDbObjects(definition);
+    db[TABLE_PAYMENT_INVOICE][0]['deduction.type'] = DEDUCTION_TYPE_RATE;
+    db[TABLE_CATEGORY_ITEM].push(
+      { 'category.id': CATEGORY_TAX_DEDUCTION_TYPE, 'item.id': DEDUCTION_TYPE_RATE, 'item.name': 'Thuế GTGT khấu trừ tỷ lệ' },
+      { 'category.id': CATEGORY_TAX_ACCOUNT_NUMBER, 'item.id': DEDUCTION_TYPE_RATE, 'item.name': '1331' }
+    );
+
+    var result = testPaymentEntryObjects({ paymentId: definition.caseCode, dbObjects: db });
+    var actualTax = -1;
+    for (var rowIndex = 0; rowIndex < result.data.length; rowIndex++) {
+      if (normalizeEntryType(result.data[rowIndex].entry_type) === ENTRY_TYPE.TAX) {
+        actualTax = toNumber(result.data[rowIndex].amount);
+      }
+    }
+
+    var testPassed = result.canGenerate && moneyEquals(actualTax, expectedTaxes[i]);
+    if (testPassed) passed++;
+    results.push(result);
+    reports.push(
+      'exchange.rate=' + rates[i] + ' => thuế=' + actualTax +
+      ', kỳ vọng=' + expectedTaxes[i] + ': ' + (testPassed ? 'ĐẠT' : 'KHÔNG ĐẠT')
+    );
+  }
+  reports.push('');
+
+  return {
+    success: passed === rates.length,
+    passed: passed,
+    total: rates.length,
+    output: reports.join('\n'),
+    results: results
   };
 }
 
@@ -925,6 +982,7 @@ function createPaymentCaseDbObjects(definition) {
   objects[TABLE_INVOICE] = [{
     id: invoiceId,
     'total.tax': definition.tax,
+    'exchange.rate': definition.exchangeRate === undefined ? 1 : definition.exchangeRate,
     'seller.tax.code': '0100000001'
   }];
   objects[TABLE_COST_DIVISION] = [{
@@ -1919,7 +1977,7 @@ function getStandardExpenseAllocations(c) {
       account_name: getGlAccountName(c.vendor.debit_account),
       department: c.request.department,
       branch: '',
-      amount: c.approvedAmount - (c.hasTax ? c.taxInfo.totalDeductibleTax : 0)
+      amount: Math.max(0, c.approvedAmount - (c.hasTax ? c.taxInfo.totalDeductibleTax : 0))
     });
   }
 
@@ -2536,7 +2594,8 @@ function getInvoiceTaxInfo(paymentId, vendor, vendorCount) {
     var invoice = getInvoiceById(links[i].invoice_id);
     if (!isInvoiceForVendor(invoice, vendor, vendorCount)) continue;
 
-    // Tiền thuế của một hóa đơn luôn lấy từ bảng hóa đơn gốc.
+    // Khấu trừ toàn bộ lấy nguyên total.tax; khấu trừ tỷ lệ nhân exchange.rate,
+    // trong đó tỷ lệ được chặn trong khoảng 0..1.
     var taxAmount = toNumber(invoice.total_tax);
     if (taxAmount <= 0) continue;
 
@@ -2554,7 +2613,13 @@ function getInvoiceTaxInfo(paymentId, vendor, vendorCount) {
       continue;
     }
 
-    // Gom total.tax theo loại khấu trừ để sinh đúng tài khoản TT-BK-02.
+    if (deductionTypeCode === DEDUCTION_TYPE_RATE) {
+      var deductionRate = Math.max(0, Math.min(1, toNumber(invoice.exchange_rate)));
+      taxAmount = taxAmount * deductionRate;
+      debugPaymentEntry('TAX-RATE', 'Hóa đơn ' + links[i].invoice_id + ': totalTax=' + invoice.total_tax + ', exchangeRate=' + deductionRate + ', deductibleTax=' + taxAmount);
+    }
+
+    // Gom số thuế được khấu trừ theo loại để sinh đúng tài khoản TT-BK-02.
     taxAmounts[deductionTypeCode] += taxAmount;
   }
 
@@ -2722,6 +2787,7 @@ function getInvoiceById(invoiceId) {
       return {
         id: readText(record, 'id'),
         total_tax: readNumber(record, 'total.tax'),
+        exchange_rate: readNumber(record, 'exchange.rate'),
         seller_tax_code: readText(record, 'seller.tax.code')
       };
     }) || {}
