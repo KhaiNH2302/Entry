@@ -83,7 +83,7 @@ function inspectPayment(paymentId) {
   result.costDivisions = selectMany('esdHTKTpaymentCostDivision',
     'payment.id="' + escapeValue(paymentId) + '"', [
       'id', 'payment.id', 'vendor.id', 'order', 'account.number', 'account.name',
-      'amount.before.tax', 'amount.after.tax', 'currency', 'department',
+      'amount', 'currency', 'department',
       'department.name', 'branch', 'description'
     ], result.errors);
 

@@ -871,7 +871,7 @@ function runPersonalCostAccountTests() {
     expected: {
       caseCodes: ['TT-02'],
       totalRows: 6,
-      blankAmountRows: 6,
+      blankAmountRows: 1,
       countsByEntryCode: makeExpectedDisplayCounts(5, 0, 0, 1, 0)
     }
   });
@@ -916,10 +916,10 @@ function runPersonalCostAccountTests() {
 function getCompletedPaymentCaseDefinitions() {
   return [
     { caseCode: 'TT-01', title: 'Không hoàn ứng, thanh toán toàn bộ, không thuế', approved: 1000000, payment: 1000000, refund: 0, tax: 0, expectedRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 0) },
-    { caseCode: 'TT-02', title: 'Cá nhân, thanh toán toàn bộ', personal: true, approved: 1000000, payment: 1000000, refund: 0, tax: 0, expectedRows: 2, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 0) },
+    { caseCode: 'TT-02', title: 'Cá nhân, thanh toán toàn bộ', personal: true, approved: 1000000, payment: 1000000, refund: 0, tax: 0, expectedRows: 2, expectedBlankRows: 1, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 0) },
     { caseCode: 'TT-03', title: 'Không hoàn ứng, thanh toán toàn bộ, NCC có thuế', approved: 1100000, payment: 1100000, refund: 0, tax: 100000, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 1, 0) },
     { caseCode: 'TT-04', title: 'Không hoàn ứng, thanh toán một phần, không thuế', approved: 1000000, payment: 600000, refund: 0, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
-    { caseCode: 'TT-05', title: 'Cá nhân, thanh toán một phần, còn phải trả', personal: true, approved: 1000000, payment: 600000, refund: 0, tax: 0, expectedRows: 3, expectedBlankRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
+    { caseCode: 'TT-05', title: 'Cá nhân, thanh toán một phần, còn phải trả', personal: true, approved: 1000000, payment: 600000, refund: 0, tax: 0, expectedRows: 3, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-06', title: 'Không hoàn ứng, thanh toán một phần, NCC có thuế', approved: 1100000, payment: 600000, refund: 0, tax: 100000, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 1, 1) },
     // refund.amount vẫn phân case TT-07..TT-16 nhưng không sinh TT-BK-05 và
     // không giảm công nợ; số hoàn ứng thực tế được xử lý tại tab Công nợ.
@@ -927,13 +927,13 @@ function getCompletedPaymentCaseDefinitions() {
     { caseCode: 'TT-08', title: 'Hoàn ứng một phần, thanh toán phần còn lại, không thuế', approved: 1000000, payment: 600000, refund: 400000, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-08', title: 'Kiểm thử giá trị lớn: (1)=100 triệu, (2)=90 triệu, (3)=10 triệu', approved: 100000000, payment: 90000000, refund: 10000000, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-09', title: 'Hoàn ứng một phần, thanh toán phần còn lại, NCC có thuế', approved: 1100000, payment: 600000, refund: 500000, tax: 100000, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 1, 1) },
-    { caseCode: 'TT-10', title: 'Cá nhân, hoàn ứng và thanh toán hết', personal: true, approved: 1000000, payment: 600000, refund: 400000, tax: 0, expectedRows: 3, expectedBlankRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
+    { caseCode: 'TT-10', title: 'Cá nhân, hoàn ứng và thanh toán hết', personal: true, approved: 1000000, payment: 600000, refund: 400000, tax: 0, expectedRows: 3, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-11', title: 'Hoàn ứng một phần, còn phải trả, không thuế', approved: 1000000, payment: 0, refund: 400000, tax: 0, expectedRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 0, 1) },
     { caseCode: 'TT-12', title: 'Hoàn ứng một phần, còn phải trả, NCC có thuế', approved: 1100000, payment: 0, refund: 400000, tax: 100000, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 0, 1) },
-    { caseCode: 'TT-13', title: 'Cá nhân, hoàn ứng một phần, còn phải trả', personal: true, approved: 1000000, payment: 0, refund: 400000, tax: 0, expectedRows: 2, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 0, 1) },
+    { caseCode: 'TT-13', title: 'Cá nhân, hoàn ứng một phần, còn phải trả', personal: true, approved: 1000000, payment: 0, refund: 400000, tax: 0, expectedRows: 2, expectedBlankRows: 1, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 0, 1) },
     { caseCode: 'TT-14', title: 'Hoàn ứng một phần, thanh toán một phần, còn phải trả, không thuế', approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-15', title: 'Hoàn ứng một phần, thanh toán một phần, còn phải trả, NCC có thuế', approved: 1100000, payment: 200000, refund: 300000, tax: 100000, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 1, 1) },
-    { caseCode: 'TT-16', title: 'Cá nhân, hoàn ứng và thanh toán một phần, còn phải trả', personal: true, approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 3, expectedBlankRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
+    { caseCode: 'TT-16', title: 'Cá nhân, hoàn ứng và thanh toán một phần, còn phải trả', personal: true, approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 3, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-17', title: 'Không có hóa đơn, chỉ đi tiền; Nợ Phải trả xử lý tại tab Công nợ', approved: 0, payment: 600000, refund: 0, tax: 0, expectedRows: 1, expectedCounts: makeExpectedDisplayCounts(0, 0, 0, 1, 0) }
   ];
 }
@@ -999,8 +999,7 @@ function createPaymentCaseDbObjects(definition) {
     'vendor.id': vendorId,
     'account.number': '6428',
     'account.name': 'Chi phí quản lý',
-    'amount.before.tax': costAmount,
-    'amount.after.tax': definition.approved,
+    'amount': costAmount,
     currency: 'VND',
     department: 'KTTC',
     branch: 'HO',
@@ -1677,6 +1676,15 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
   if (approvedAmount > 0 && costDivisions.length === 0 && isPersonal && !vendor.debit_account) {
     errors.push('NCC cá nhân ' + (vendor.vendor_id || '?') + ': không có PCCP và thiếu debit.account tại ' + TABLE_VENDOR_SITE + '.');
   }
+  for (var costIndex = 0; costIndex < costDivisions.length; costIndex++) {
+    if (!moneyIsPositive(costDivisions[costIndex].amount)) {
+      errors.push(
+        'NCC ' + (vendor.vendor_id || '?') + ': dòng PCCP ' +
+        (costDivisions[costIndex].id || costIndex + 1) +
+        ' thiếu hoặc có amount không hợp lệ tại ' + TABLE_COST_DIVISION + '.'
+      );
+    }
+  }
 
   return {
     paymentId: paymentId,
@@ -1866,7 +1874,9 @@ function buildPaymentCaseTT17(c) {
  * Sinh paymentEntry cho NCC cá nhân.
  * - Có PCCP: mỗi account.number duy nhất sinh một dòng chi phí.
  * - Không PCCP: sinh một dòng chi phí từ vendorSite.debit.account.
- * - Chi phí, đi tiền và phải trả để amount=null cho KT nhập.
+ * - Có PCCP: tiền chi phí lấy từ tổng amount theo tài khoản.
+ * - Không PCCP: tiền chi phí để trống cho KT nhập.
+ * - Dòng đi tiền và phải trả vẫn để amount=null cho KT nhập.
  * - refund.amount chỉ dùng phân case; không sinh Có TK tạm ứng tại đây.
  */
 function buildPersonalPaymentCase(c, includeRefund, includePayment) {
@@ -1881,8 +1891,10 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment) {
       request: c.request,
       vendor: c.vendor,
       entryCode: AUTO_ENTRY_CODE.COST,
-      amount: null,
-      allowBlankAmount: true,
+      amount: expenseAccounts[i].from_cost_division
+        ? expenseAccounts[i].amount
+        : null,
+      allowBlankAmount: !expenseAccounts[i].from_cost_division,
       order: order++,
       accountOverride: {
         number: expenseAccounts[i].account_number,
@@ -1930,20 +1942,27 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment) {
 
 function getPersonalExpenseAccounts(c) {
   var result = [];
-  var usedAccounts = {};
+  var allocationByAccount = {};
 
   for (var i = 0; i < c.costDivisions.length; i++) {
     var division = c.costDivisions[i];
     var accountNumber = safeString(division.account_number).trim();
-    if (!accountNumber || usedAccounts[accountNumber]) continue;
+    if (!accountNumber) continue;
 
-    usedAccounts[accountNumber] = true;
-    result.push({
-      account_number: accountNumber,
-      account_name: division.account_name || getGlAccountName(accountNumber),
-      department: division.department,
-      branch: division.branch
-    });
+    var allocation = allocationByAccount[accountNumber];
+    if (!allocation) {
+      allocation = {
+        account_number: accountNumber,
+        account_name: division.account_name || getGlAccountName(accountNumber),
+        department: division.department,
+        branch: division.branch,
+        amount: 0,
+        from_cost_division: true
+      };
+      allocationByAccount[accountNumber] = allocation;
+      result.push(allocation);
+    }
+    allocation.amount += toNumber(division.amount);
   }
 
   if (result.length === 0) {
@@ -1951,7 +1970,9 @@ function getPersonalExpenseAccounts(c) {
       account_number: c.vendor.debit_account,
       account_name: getGlAccountName(c.vendor.debit_account),
       department: c.request.department,
-      branch: ''
+      branch: '',
+      amount: null,
+      from_cost_division: false
     });
   }
 
@@ -1983,7 +2004,7 @@ function getStandardExpenseAllocations(c) {
       allocationByAccount[accountNumber] = allocation;
       result.push(allocation);
     }
-    allocation.amount += toNumber(division.amount_before_tax);
+    allocation.amount += toNumber(division.amount);
   }
 
   if (result.length === 0) {
@@ -2219,7 +2240,7 @@ function buildExpectedPaymentEntriesLegacy(paymentId, vendorId) {
       var totalCostAmount = 0;
       for (var cdIndex = 0; cdIndex < costDivisions.length; cdIndex++) {
         var cd = costDivisions[cdIndex];
-        var costAmount = toNumber(cd.amount_before_tax);
+        var costAmount = toNumber(cd.amount);
         totalCostAmount += costAmount;
 
         vendorRows.push(buildEntryRow({
@@ -2827,8 +2848,7 @@ function getPaymentCostDivisions(paymentId, vendorId) {
         payment_id: readText(objectRow, 'payment.id'),
         account_number: readText(objectRow, 'account.number'),
         account_name: readText(objectRow, 'account.name'),
-        amount_before_tax: readNumber(objectRow, 'amount.before.tax'),
-        amount_after_tax: readNumber(objectRow, 'amount.after.tax'),
+        amount: readNumber(objectRow, 'amount'),
         currency: readText(objectRow, 'currency'),
         department: readText(objectRow, 'department'),
         department_name: readText(objectRow, 'department.name'),
@@ -2862,8 +2882,7 @@ function getPaymentCostDivisions(paymentId, vendorId) {
       payment_id: readText(f, 'payment.id'),
       account_number: readText(f, 'account.number'),
       account_name: readText(f, 'account.name'),
-      amount_before_tax: readNumber(f, 'amount.before.tax'),
-      amount_after_tax: readNumber(f, 'amount.after.tax'),
+      amount: readNumber(f, 'amount'),
       currency: readText(f, 'currency'),
       department: readText(f, 'department'),
       department_name: readText(f, 'department.name'),

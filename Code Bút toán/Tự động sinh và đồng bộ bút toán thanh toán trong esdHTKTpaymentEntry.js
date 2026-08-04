@@ -1190,6 +1190,15 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
   if (approvedAmount > 0 && costDivisions.length === 0 && isPersonal && !vendor.debit_account) {
     errors.push('NCC cá nhân ' + (vendor.vendor_id || '?') + ': không có PCCP và thiếu debit.account tại ' + TABLE_VENDOR_SITE + '.');
   }
+  for (var costIndex = 0; costIndex < costDivisions.length; costIndex++) {
+    if (!moneyIsPositive(costDivisions[costIndex].amount)) {
+      errors.push(
+        'NCC ' + (vendor.vendor_id || '?') + ': dòng PCCP ' +
+        (costDivisions[costIndex].id || costIndex + 1) +
+        ' thiếu hoặc có amount không hợp lệ tại ' + TABLE_COST_DIVISION + '.'
+      );
+    }
+  }
 
   return {
     paymentId: paymentId,
@@ -1498,7 +1507,9 @@ function buildPaymentCaseTT17(c) {
  * Sinh paymentEntry cho NCC cá nhân.
  * - Có PCCP: mỗi account.number duy nhất sinh một dòng chi phí.
  * - Không PCCP: sinh một dòng chi phí từ vendorSite.debit.account.
- * - Chi phí và đi tiền để amount=null cho KT nhập.
+ * - Có PCCP: tiền chi phí lấy từ tổng amount theo tài khoản.
+ * - Không PCCP: tiền chi phí để trống cho KT nhập.
+ * - Dòng đi tiền vẫn để amount=null cho KT nhập.
  * - Phải trả được tính từ ((1) - thuế) - (2) - tổng PREPAYMENT.
  * - Case có hoàn ứng không tự sinh Có TK tạm ứng; sau khi có AP/PREPAYMENT,
  *   chỉ sinh Phải trả nếu vẫn còn chênh lệch.
@@ -1515,8 +1526,10 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment) {
       request: c.request,
       vendor: c.vendor,
       entryCode: AUTO_ENTRY_CODE.COST,
-      amount: null,
-      allowBlankAmount: true,
+      amount: expenseAccounts[i].from_cost_division
+        ? expenseAccounts[i].amount
+        : null,
+      allowBlankAmount: !expenseAccounts[i].from_cost_division,
       order: order++,
       accountOverride: {
         number: expenseAccounts[i].account_number,
@@ -1578,20 +1591,27 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment) {
 
 function getPersonalExpenseAccounts(c) {
   var result = [];
-  var usedAccounts = {};
+  var allocationByAccount = {};
 
   for (var i = 0; i < c.costDivisions.length; i++) {
     var division = c.costDivisions[i];
     var accountNumber = safeString(division.account_number).trim();
-    if (!accountNumber || usedAccounts[accountNumber]) continue;
+    if (!accountNumber) continue;
 
-    usedAccounts[accountNumber] = true;
-    result.push({
-      account_number: accountNumber,
-      account_name: division.account_name || getGlAccountName(accountNumber),
-      department: division.department,
-      branch: division.branch
-    });
+    var allocation = allocationByAccount[accountNumber];
+    if (!allocation) {
+      allocation = {
+        account_number: accountNumber,
+        account_name: division.account_name || getGlAccountName(accountNumber),
+        department: division.department,
+        branch: division.branch,
+        amount: 0,
+        from_cost_division: true
+      };
+      allocationByAccount[accountNumber] = allocation;
+      result.push(allocation);
+    }
+    allocation.amount += toNumber(division.amount);
   }
 
   if (result.length === 0) {
@@ -1599,7 +1619,9 @@ function getPersonalExpenseAccounts(c) {
       account_number: c.vendor.debit_account,
       account_name: getGlAccountName(c.vendor.debit_account),
       department: c.request.department,
-      branch: ''
+      branch: '',
+      amount: null,
+      from_cost_division: false
     });
   }
 
@@ -1631,7 +1653,7 @@ function getStandardExpenseAllocations(c) {
       allocationByAccount[accountNumber] = allocation;
       result.push(allocation);
     }
-    allocation.amount += toNumber(division.amount_before_tax);
+    allocation.amount += toNumber(division.amount);
   }
 
   if (result.length === 0) {
@@ -1874,7 +1896,7 @@ function buildExpectedPaymentEntriesLegacy(paymentId, vendorId) {
       var totalCostAmount = 0;
       for (var cdIndex = 0; cdIndex < costDivisions.length; cdIndex++) {
         var cd = costDivisions[cdIndex];
-        var costAmount = toNumber(cd.amount_before_tax);
+        var costAmount = toNumber(cd.amount);
         totalCostAmount += costAmount;
 
         vendorRows.push(buildEntryRow({
@@ -2460,8 +2482,7 @@ function getPaymentCostDivisions(paymentId, vendorId) {
       payment_id: readText(f, 'payment.id'),
       account_number: readText(f, 'account.number'),
       account_name: readText(f, 'account.name'),
-      amount_before_tax: readNumber(f, 'amount.before.tax'),
-      amount_after_tax: readNumber(f, 'amount.after.tax'),
+      amount: readNumber(f, 'amount'),
       currency: readText(f, 'currency'),
       department: readText(f, 'department'),
       department_name: readText(f, 'department.name'),

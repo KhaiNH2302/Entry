@@ -26,7 +26,7 @@ var TABLES = [
   {
     name: 'esdHTKTpaymentCostDivision',
     fields: ['id', 'payment.id', 'vendor.id', 'account.number', 'account.name',
-      'amount.before.tax', 'amount.after.tax', 'currency', 'department',
+      'amount', 'currency', 'department',
       'department.name', 'branch', 'description', 'order']
   },
   {
