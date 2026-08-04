@@ -4,9 +4,6 @@
  * ===========================================================================
  *  TODO CÒN LẠI
  * ---------------------------------------------------------------------------
- *  TODO-CASE:
- *    - TT-17: chờ dữ liệu khoản phải trả của YCTT trước.
- *
  *  TODO-INTEGRATION:
  *    - Fill payload Invoice/AP, Apply Prepayment, Payment, GL và Core Banking.
  *    - Hiện tại chưa gọi hoặc gửi dữ liệu sang hệ thống tích hợp.
@@ -23,6 +20,7 @@
  *      NCC cá nhân = ((1) - thuế) - (2) - tổng PREPAYMENT.
  *    - TK phải trả NCC = vendorSite.credit.account.
  *    - TK Khách hàng/TRANSFER = paymentVendor.beneficiary.account do người dùng nhập.
+ *      Riêng phương thức Tiền mặt tạm dùng cố định STK 99999999.
  *    - Nội dung hạch toán tự động = paymentVendor.transaction.des.
  *    - TK tạm ứng lấy từ dòng AP/PREPAYMENT được tạo tại tab Công nợ;
  *      code sinh tự động không tạo dòng Có TK tạm ứng.
@@ -191,6 +189,8 @@ var DEDUCTION_TYPE_FULL = 'KHAU_TRU_TOAN_BO';
 var DEDUCTION_TYPE_RATE = 'KHAU_TRU_TY_LE';
 var DEDUCTION_TYPE_NONE = 'KHONG_KHAU_TRU';
 var GL_UNIT_TRANSACTION_CODE = '98';
+var CASH_CUSTOMER_ACCOUNT_NUMBER = '99999999';
+var CASH_CUSTOMER_ACCOUNT_NAME = 'Tài khoản tiền mặt';
 
 // =============================================================================
 // SECTION 02 - LOAD / SYNC: đọc, sinh lại, merge, validate và lưu tự động
@@ -1427,7 +1427,8 @@ function isImplementedPaymentCase(caseCode) {
     caseCode === PAYMENT_CASE.TT13 ||
     caseCode === PAYMENT_CASE.TT14 ||
     caseCode === PAYMENT_CASE.TT15 ||
-    caseCode === PAYMENT_CASE.TT16;
+    caseCode === PAYMENT_CASE.TT16 ||
+    caseCode === PAYMENT_CASE.TT17;
 }
 
 // -----------------------------------------------------------------------------
@@ -1481,11 +1482,17 @@ function buildPaymentCaseTT10(c) { return buildPersonalPaymentCase(c, true,  tru
 function buildPaymentCaseTT13(c) { return buildPersonalPaymentCase(c, true,  false); }
 function buildPaymentCaseTT16(c) { return buildPersonalPaymentCase(c, true,  true); }
 
-// -----------------------------------------------------------------------------
-// SECTION 05C - CASE CHỜ BỔ SUNG: giữ hàm rỗng để fill sau
-// -----------------------------------------------------------------------------
-// TT-17 chờ dữ liệu khoản phải trả của YCTT trước.
-function buildPaymentCaseTT17(c) { return []; }
+// TT-17: Nợ Phải trả được tạo từ tab Công nợ; tại đây chỉ sinh Có TK Khách hàng.
+function buildPaymentCaseTT17(c) {
+  return [buildEntryRow({
+    paymentId: c.paymentId,
+    request: c.request,
+    vendor: c.vendor,
+    entryCode: AUTO_ENTRY_CODE.TRANSFER,
+    amount: c.paymentAmount,
+    order: c.firstOrder
+  })];
+}
 
 /**
  * Sinh paymentEntry cho NCC cá nhân.
@@ -2081,9 +2088,16 @@ function resolveAccount(entryCode, vendor, taxInfo) {
     };
   }
 
-  // TT-BK-08 / CUSTOMER: lấy tài khoản người dùng nhập và đã lưu tại
-  // esdHTKTpaymentVendor.beneficiary.account; không dùng TK phải trả Vendor Site.
+  // TT-BK-08 / CUSTOMER:
+  // - Chuyển khoản: lấy tài khoản người dùng nhập tại paymentVendor.
+  // - Tiền mặt: tạm dùng tài khoản cố định 99999999.
   if (entryCode === AUTO_ENTRY_CODE.TRANSFER) {
+    if (isCashPayment(vendor.payment_method)) {
+      return {
+        number: CASH_CUSTOMER_ACCOUNT_NUMBER,
+        name: CASH_CUSTOMER_ACCOUNT_NAME
+      };
+    }
     return {
       number: safeString(vendor.beneficiary_account).trim(),
       name: safeString(vendor.beneficiary_name).trim()
@@ -2139,7 +2153,8 @@ function getAutoEntryRowErrors(row) {
       vendorSiteFields.push('credit.account');
     } else if (entryCode === AUTO_ENTRY_CODE.REFUND_CR) {
       vendorSiteFields.push('debit.account');
-    } else if (entryCode === AUTO_ENTRY_CODE.TRANSFER) {
+    } else if (entryCode === AUTO_ENTRY_CODE.TRANSFER &&
+               !isCashPayment(row.payment_method)) {
       paymentVendorFields.push('beneficiary.account');
     } else {
       errors.push(subject + ': không xác định được tài khoản.');
@@ -2184,12 +2199,13 @@ function getVendorAutoEntryErrors(vendor) {
 
   // Chỉ bắt buộc thông tin thụ hưởng khi case thực sự có đi tiền.
   if (toNumber(vendor.amount) > 0) {
-    // TK Khách hàng/TRANSFER luôn lấy từ tài khoản người dùng nhập tại
-    // esdHTKTpaymentVendor.beneficiary.account.
-    if (!vendor.beneficiary_account) paymentVendorFields.push('beneficiary.account');
     if (isBankTransfer(vendor.payment_method)) {
+      if (!vendor.beneficiary_account) paymentVendorFields.push('beneficiary.account');
       if (!vendor.beneficiary_name) paymentVendorFields.push('beneficiary.name');
       if (!vendor.beneficiary_bank) paymentVendorFields.push('beneficiary.bank');
+    } else if (!isCashPayment(vendor.payment_method)) {
+      // Phương thức khác Tiền mặt chưa có mapping cố định.
+      if (!vendor.beneficiary_account) paymentVendorFields.push('beneficiary.account');
     }
   }
 
@@ -2963,6 +2979,8 @@ function deleteAutoPaymentEntries(paymentId) {
 
   while (rc === RC_SUCCESS) {
     if (isAutoEntry({
+      payment_id: f['payment.id'],
+      vendor_id: f['vendor.id'],
       type: f['type'],
       entry_type: f['entry.type']
     })) {
@@ -3026,7 +3044,36 @@ function isAutoEntry(row) {
   // dòng phát sinh sau từ xử lý hoàn ứng và phải được giữ khi sinh lại.
   if (normalizeEntryType(row.entry_type) === ENTRY_TYPE.PREPAYMENT) return false;
 
+  // TT-17: dòng AP/PAYABLE là Nợ TK phải trả được tạo tại tab Công nợ,
+  // không thuộc bộ tự động và phải được giữ khi sinh lại.
+  if (normalizeEntryType(row.entry_type) === ENTRY_TYPE.PAYABLE &&
+      isPaymentCaseTT17(row.payment_id, row.vendor_id)) {
+    return false;
+  }
+
   return true;
+}
+
+function isPaymentCaseTT17(paymentId, vendorId) {
+  var id = safeString(paymentId).trim();
+  var vendor = safeString(vendorId).trim();
+  if (!id || !vendor) return false;
+
+  var source = selectOne(
+    TABLE_PAYMENT_VENDOR,
+    'payment.id="' + escapeQueryValue(id) + '"' +
+      ' and vendor.id="' + escapeQueryValue(vendor) + '"',
+    function (record) {
+      return {
+        approvedAmount: readNumber(record, 'approved.invoice.amount'),
+        paymentAmount: readNumber(record, 'amount')
+      };
+    }
+  );
+
+  return !!source &&
+    moneyIsZero(source.approvedAmount) &&
+    moneyIsPositive(source.paymentAmount);
 }
 
 // =============================================================================

@@ -13,8 +13,8 @@
  * ===========================================================================
  *  TODO CÒN LẠI
  * ---------------------------------------------------------------------------
- *  TODO-CASE:
- *    - TT-17: chờ dữ liệu khoản phải trả của YCTT trước.
+ *  TT-17 ĐÃ CHỐT:
+ *    - Chỉ tự sinh Có TK Khách hàng; Nợ TK Phải trả xử lý tại tab Công nợ.
  *
  *  TODO-INTEGRATION:
  *    - Fill payload Invoice/AP, Apply Prepayment, Payment, GL và Core Banking.
@@ -23,8 +23,9 @@
  *  TODO-SUSPENDED:
  *    - Chưa có bảng/trường DB cho khoản treo nên chưa sinh TT-BK-07.
  *
- *  GIẢ THIẾT CẦN CHỐT:
- *    - Tài khoản quỹ tiền mặt chưa có trường DB riêng; tạm dùng credit.account.
+ *  ĐÃ CHỐT TẠM:
+ *    - Dòng CUSTOMER thanh toán Tiền mặt dùng cố định STK 99999999.
+ *    - Dòng CUSTOMER Chuyển khoản lấy paymentVendor.beneficiary.account.
  *
  *  ĐÃ CHỐT TRONG CODE:
  *    - (1) approved.invoice.amount; (2) amount; (3) refund.amount.
@@ -208,6 +209,8 @@ var DEDUCTION_TYPE_FULL = 'KHAU_TRU_TOAN_BO';
 var DEDUCTION_TYPE_RATE = 'KHAU_TRU_TY_LE';
 var DEDUCTION_TYPE_NONE = 'KHONG_KHAU_TRU';
 var GL_UNIT_TRANSACTION_CODE = '98';
+var CASH_CUSTOMER_ACCOUNT_NUMBER = '99999999';
+var CASH_CUSTOMER_ACCOUNT_NAME = 'Tài khoản tiền mặt';
 
 // =============================================================================
 // SECTION 02 - LOAD / SYNC: đọc, sinh lại, merge, validate và lưu tự động
@@ -819,8 +822,12 @@ function getBeneficiaryEntryTypeErrors(rows) {
     if (entryType === ENTRY_TYPE.TAX && (account || name || bank)) {
       errors.push('Dòng TAX phải để trống toàn bộ thông tin beneficiary.');
     }
-    if (entryType === ENTRY_TYPE.CUSTOMER && (!account || !name || !bank)) {
-      errors.push('Dòng CUSTOMER phải giữ đủ thông tin beneficiary của NCC.');
+    if (entryType === ENTRY_TYPE.CUSTOMER && isCashPayment(row.payment_method)) {
+      if (safeString(row.account_number).trim() !== CASH_CUSTOMER_ACCOUNT_NUMBER) {
+        errors.push('Dòng CUSTOMER Tiền mặt phải dùng STK 99999999.');
+      }
+    } else if (entryType === ENTRY_TYPE.CUSTOMER && (!account || !name || !bank)) {
+      errors.push('Dòng CUSTOMER Chuyển khoản phải giữ đủ thông tin beneficiary của NCC.');
     }
   }
 
@@ -926,7 +933,8 @@ function getCompletedPaymentCaseDefinitions() {
     { caseCode: 'TT-13', title: 'Cá nhân, hoàn ứng một phần, còn phải trả', personal: true, approved: 1000000, payment: 0, refund: 400000, tax: 0, expectedRows: 2, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 0, 1) },
     { caseCode: 'TT-14', title: 'Hoàn ứng một phần, thanh toán một phần, còn phải trả, không thuế', approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-15', title: 'Hoàn ứng một phần, thanh toán một phần, còn phải trả, NCC có thuế', approved: 1100000, payment: 200000, refund: 300000, tax: 100000, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 1, 1) },
-    { caseCode: 'TT-16', title: 'Cá nhân, hoàn ứng và thanh toán một phần, còn phải trả', personal: true, approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 3, expectedBlankRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) }
+    { caseCode: 'TT-16', title: 'Cá nhân, hoàn ứng và thanh toán một phần, còn phải trả', personal: true, approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 3, expectedBlankRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
+    { caseCode: 'TT-17', title: 'Không có hóa đơn, chỉ đi tiền; Nợ Phải trả xử lý tại tab Công nợ', approved: 0, payment: 600000, refund: 0, tax: 0, expectedRows: 1, expectedCounts: makeExpectedDisplayCounts(0, 0, 0, 1, 0) }
   ];
 }
 
@@ -1787,7 +1795,8 @@ function isImplementedPaymentCase(caseCode) {
     caseCode === PAYMENT_CASE.TT13 ||
     caseCode === PAYMENT_CASE.TT14 ||
     caseCode === PAYMENT_CASE.TT15 ||
-    caseCode === PAYMENT_CASE.TT16;
+    caseCode === PAYMENT_CASE.TT16 ||
+    caseCode === PAYMENT_CASE.TT17;
 }
 
 // -----------------------------------------------------------------------------
@@ -1841,11 +1850,17 @@ function buildPaymentCaseTT10(c) { return buildPersonalPaymentCase(c, true,  tru
 function buildPaymentCaseTT13(c) { return buildPersonalPaymentCase(c, true,  false); }
 function buildPaymentCaseTT16(c) { return buildPersonalPaymentCase(c, true,  true); }
 
-// -----------------------------------------------------------------------------
-// SECTION 05C - CASE CHỜ BỔ SUNG: giữ hàm rỗng để fill sau
-// -----------------------------------------------------------------------------
-// TT-17 chờ dữ liệu khoản phải trả của YCTT trước.
-function buildPaymentCaseTT17(c) { return []; }
+// TT-17: Nợ Phải trả được tạo từ tab Công nợ; tại đây chỉ sinh Có TK Khách hàng.
+function buildPaymentCaseTT17(c) {
+  return [buildEntryRow({
+    paymentId: c.paymentId,
+    request: c.request,
+    vendor: c.vendor,
+    entryCode: AUTO_ENTRY_CODE.TRANSFER,
+    amount: c.paymentAmount,
+    order: c.firstOrder
+  })];
+}
 
 /**
  * Sinh paymentEntry cho NCC cá nhân.
@@ -2430,18 +2445,16 @@ function resolveAccount(entryCode, vendor, taxInfo) {
   }
 
   // TT-BK-08: Chuyển tiền
-  if (entryCode === AUTO_ENTRY_CODE.TRANSFER && isBankTransfer(vendor.payment_method)) {
+  if (entryCode === AUTO_ENTRY_CODE.TRANSFER) {
+    if (isCashPayment(vendor.payment_method)) {
+      return {
+        number: CASH_CUSTOMER_ACCOUNT_NUMBER,
+        name: CASH_CUSTOMER_ACCOUNT_NAME
+      };
+    }
     return {
-      number: vendor.beneficiary_account,
-      name: vendor.beneficiary_name
-    };
-  }
-
-  if (entryCode === AUTO_ENTRY_CODE.TRANSFER && isCashPayment(vendor.payment_method)) {
-    // GIẢ THIẾT: chưa có trường DB riêng cho tài khoản quỹ tiền mặt.
-    return {
-      number: vendor.credit_account,
-      name: 'Tài khoản tiền mặt'
+      number: safeString(vendor.beneficiary_account).trim(),
+      name: safeString(vendor.beneficiary_name).trim()
     };
   }
 
@@ -2490,10 +2503,8 @@ function getAutoEntryRowErrors(row) {
       vendorSiteFields.push('credit.account');
     } else if (entryCode === AUTO_ENTRY_CODE.REFUND_CR) {
       vendorSiteFields.push('debit.account');
-    } else if (entryCode === AUTO_ENTRY_CODE.TRANSFER && isBankTransfer(row.payment_method)) {
+    } else if (entryCode === AUTO_ENTRY_CODE.TRANSFER && !isCashPayment(row.payment_method)) {
       paymentVendorFields.push('beneficiary.account');
-    } else if (entryCode === AUTO_ENTRY_CODE.TRANSFER && isCashPayment(row.payment_method)) {
-      vendorSiteFields.push('credit.account');
     } else {
       errors.push(subject + ': không xác định được tài khoản.');
     }
