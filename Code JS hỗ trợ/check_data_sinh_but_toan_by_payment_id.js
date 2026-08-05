@@ -106,18 +106,25 @@ function inspectPayment(paymentId) {
     vendorRow.vendor = selectOne('esdHTKTvendor',
       'id="' + escapeValue(vendorId) + '"',
       ['id', 'vendor.name', 'vendor.number'], result.errors) || {};
-    vendorRow.vendorSite = selectOne('esdHTKTvendorSite',
-      'id="' + escapeValue(siteId) + '"',
-      ['id', 'ogl.site.code', 'debit.account', 'credit.account'], result.errors) || {};
+    vendorRow.vendorSite = selectVendorSite(siteId, vendorId, result.errors);
+    if (vendorRow.vendorSite.lookupWarning) {
+      result.warnings.push('NCC ' + vendorId + ': ' + vendorRow.vendorSite.lookupWarning);
+    }
     vendorRow.costDivisions = filterBy(result.costDivisions, 'vendor.id', vendorId);
     vendorRow.invoices = invoicesForVendor(links, vendorRow, vendorRows.length);
     vendorRow.hasTax = hasDeductibleTax(vendorRow.invoices);
+    vendorRow.hasUserAccountingAction = hasUserAccountingAction(
+      result.savedEntries,
+      paymentId,
+      vendorId
+    );
     vendorRow.expectedCase = classifyCase(
       numberValue(vendorRow['approved.invoice.amount']),
       numberValue(vendorRow.amount),
       numberValue(vendorRow['refund.amount']),
       isPersonal(vendorRow['vendor.type']),
-      vendorRow.hasTax
+      vendorRow.hasTax,
+      vendorRow.hasUserAccountingAction
     );
     vendorRow.dataIssues = validateVendorData(vendorRow);
 
@@ -152,8 +159,9 @@ function validateVendorData(v) {
   if (!v['vendor.site.id']) issues.push('thieu vendor.site.id');
   if (!v.currency) issues.push('thieu currency');
   if (!v.vendor['vendor.number']) issues.push('thieu vendor.number');
-  if (!v.vendorSite['ogl.site.code']) issues.push('thieu vendorSite.ogl.site.code');
-  if (!v.vendorSite['credit.account']) issues.push('thieu vendorSite.credit.account');
+  /* ogl.site.code duoc validate tai buoc mapping/call API, khong chan sinh but toan. */
+  /* credit.account chi bat buoc neu dong tu sinh thuc te can TK phai tra.
+     TT-11..TT-16 khong bi chan o validate NCC vi khong tu sinh dong Co. */
 
   if (numberValue(v.amount) > EPSILON) {
     if (!v['payment.method']) issues.push('thieu payment.method');
@@ -176,15 +184,74 @@ function validateVendorData(v) {
   return unique(issues);
 }
 
-function classifyCase(invoice, payment, refund, personal, tax) {
+function selectVendorSite(siteId, vendorId, errors) {
+  var fields = ['id', 'vendor.id', 'ogl.site.code', 'debit.account', 'credit.account'];
+  var exact = selectOne('esdHTKTvendorSite',
+    'id="' + escapeValue(siteId) + '"', fields, errors);
+  if (exact) return exact;
+
+  var candidates = selectMany('esdHTKTvendorSite',
+    'vendor.id="' + escapeValue(vendorId) + '"', fields, errors);
+  for (var i = 0; i < candidates.length; i++) {
+    if (lookupIdsEqual(candidates[i].id, siteId)) return candidates[i];
+  }
+  if (candidates.length === 1) {
+    candidates[0].lookupWarning = 'vendor.site.id=' + siteId +
+      ' khong khop id=' + candidates[0].id + '; dang dung Vendor Site duy nhat cua NCC.';
+    return candidates[0];
+  }
+  return {};
+}
+
+function lookupIdsEqual(left, right) {
+  var a = safeString(left).trim();
+  var b = safeString(right).trim();
+  if (a === b) return true;
+  if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+    return a.replace(/^0+/, '') === b.replace(/^0+/, '');
+  }
+  return false;
+}
+
+function classifyCase(invoice, payment, refund, personal, tax, userAccountingAction) {
+  // BANG QUYET DINH la nguon quy tac uu tien cao nhat.
+  // Case trung dieu kien phan biet bang AP/PREPAYMENT, AP/PAYABLE thu cong hoac GL.
   if (isZero(invoice) && isPositive(payment)) return 'TT-17';
   if (isZero(refund) && equals(invoice, payment)) return personal ? 'TT-02' : (tax ? 'TT-03' : 'TT-01');
   if (isZero(refund) && greater(invoice, payment)) return personal ? 'TT-05' : (tax ? 'TT-06' : 'TT-04');
   if (isPositive(refund) && isZero(payment) && equals(invoice, refund)) return 'TT-07';
-  if (isPositive(refund) && isPositive(payment) && equals(invoice, payment + refund)) return personal ? 'TT-10' : (tax ? 'TT-09' : 'TT-08');
-  if (isPositive(refund) && isZero(payment) && greater(invoice, refund)) return personal ? 'TT-13' : (tax ? 'TT-12' : 'TT-11');
-  if (isPositive(refund) && isPositive(payment) && greater(invoice, payment + refund)) return personal ? 'TT-16' : (tax ? 'TT-15' : 'TT-14');
+  if (isPositive(refund) && isZero(payment) && !equals(invoice, refund)) return personal ? 'TT-13' : (tax ? 'TT-12' : 'TT-11');
+  if (isPositive(refund) && isPositive(payment)) {
+    var baseCase = personal ? 'TT-10' : (tax ? 'TT-09' : 'TT-08');
+    return userAccountingAction ? toHumanActionCase(baseCase) : baseCase;
+  }
   return '';
+}
+
+function toHumanActionCase(baseCase) {
+  if (baseCase === 'TT-08') return 'TT-14';
+  if (baseCase === 'TT-09') return 'TT-15';
+  if (baseCase === 'TT-10') return 'TT-16';
+  return baseCase;
+}
+
+function hasUserAccountingAction(entries, paymentId, vendorId) {
+  var manualMarker = '.MANUAL.AP.';
+
+  for (var i = 0; i < entries.length; i++) {
+    var row = entries[i];
+    if (safeString(row['payment.id']) !== safeString(paymentId)) continue;
+    if (safeString(row['vendor.id']) !== safeString(vendorId)) continue;
+    var type = safeString(row.type).toUpperCase();
+    var entryType = safeString(row['entry.type']).toUpperCase();
+    if (type === 'GL') return true;
+    if (type === 'AP' && entryType === 'PREPAYMENT') return true;
+    if (type === 'AP' && entryType === 'PAYABLE' &&
+        safeString(row['account.type']).toUpperCase() === 'ASSET' &&
+        safeString(row.id).indexOf(manualMarker) >= 0) return true;
+  }
+
+  return false;
 }
 
 function invoicesForVendor(links, vendorRow, vendorCount) {

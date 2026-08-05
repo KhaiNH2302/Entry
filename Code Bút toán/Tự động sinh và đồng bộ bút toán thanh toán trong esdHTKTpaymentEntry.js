@@ -892,7 +892,7 @@ function normalizeEditedEntries(paymentId, entries, savedEntries) {
 	var result = [];
 	var usedIds = {};
 	var savedIds = makeEntryIdSet(savedEntries);
-	var nextApSequence = getNextEntryIdSequence(paymentId, TYPE.AP, savedEntries);
+	var nextManualApSequence = getNextManualEntryIdSequence(paymentId, savedEntries);
 	var nextGlRowSequence = getNextGlRowSequence(paymentId, 1, savedEntries);
 
 	for (var i = 0; i < entries.length; i++) {
@@ -904,7 +904,7 @@ function normalizeEditedEntries(paymentId, entries, savedEntries) {
 					row.id = makeGlEntryId(paymentId, 1, nextGlRowSequence++);
 				}
 			} else {
-				row.id = makeSequentialEntryId(paymentId, TYPE.AP, nextApSequence++);
+				row.id = makeUserAddedEntryId(paymentId, nextManualApSequence++);
 			}
 		}
 
@@ -1129,6 +1129,13 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
 			continue;
 		}
 
+		if (isHumanActionPaymentCase(caseCode) && !context.hasUserAccountingAction) {
+			canGenerate = false;
+			errors.push('NCC ' + (vendor.vendor_id || '?') + ': ' + caseCode +
+					' chi hop le sau khi co tac dong cua ke toan.');
+			continue;
+		}
+
 		// Bước 3: gọi đúng handler TT-xx để tạo các dòng Nợ/Có.
 		var vendorRows = buildEntriesByPaymentCase(caseCode, context);
 		var rowErrors = getAutoEntryRowsErrors(vendorRows);
@@ -1163,6 +1170,7 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
 	var taxInfo = getInvoiceTaxInfo(paymentId, vendor, vendorCount);
 	var hasInvoice = hasLinkedInvoicesForVendor(paymentId, vendor, vendorCount);
 	var selectedPrepayment = getSelectedPrepaymentSummary(paymentId, vendor.vendor_id);
+	var hasUserAccountingAction = hasUserAccountingActionEntry(paymentId, vendor.vendor_id);
 	var approvedAmount = toNumber(vendor.approved_invoice_amount);
 	// Phân bổ chi phí phục vụ hạch toán giá trị được chấp nhận (1), không phụ
 	// thuộc việc phiếu đã gắn bản ghi hóa đơn hay chưa.
@@ -1193,6 +1201,7 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
 		costDivisions: costDivisions,
 		selectedPrepaymentAmount: selectedPrepayment.totalAmount,
 		hasSelectedPrepayment: selectedPrepayment.rowCount > 0,
+		hasUserAccountingAction: hasUserAccountingAction,
 		firstOrder: firstOrder,
 		errors: errors
 	};
@@ -1315,11 +1324,51 @@ function getSelectedPrepaymentSummary(paymentId, vendorId) {
 	return result;
 }
 
+/**
+ * Xac dinh tac dong cua ke toan: AP/PREPAYMENT, AP/PAYABLE thu cong hoac GL.
+ * PAYABLE tu sinh cua TT-08..TT-10 khong lam thay doi case.
+ */
+function hasUserAccountingActionEntry(paymentId, vendorId) {
+	var f = null;
+	var query =
+			'payment.id="' + escapeQueryValue(paymentId) + '"' +
+			' and vendor.id="' + escapeQueryValue(vendorId) + '"';
+	var rc;
+
+	try {
+		f = new SCFile(TABLE_PAYMENT_ENTRY, SCFILE_READONLY);
+		rc = f.doSelect(query);
+		while (rc === RC_SUCCESS) {
+			var type = normalizeText(readText(f, 'type'));
+			var entryType = normalizeEntryType(readText(f, 'entry.type'));
+			var isManualGl = type === normalizeText(TYPE.GL);
+			var isManualPrepayment = type === normalizeText(TYPE.AP) &&
+					entryType === ENTRY_TYPE.PREPAYMENT;
+			var isManualPayable = type === normalizeText(TYPE.AP) &&
+					entryType === ENTRY_TYPE.PAYABLE &&
+					toStoredAccountType(readText(f, 'account.type')) === ACCOUNT_TYPE.ASSET &&
+					isUserAddedEntryId(readText(f, 'id'));
+
+			if (isManualGl || isManualPrepayment || isManualPayable) {
+				closeFile(f);
+				return true;
+			}
+			rc = f.getNext();
+		}
+	} catch (e) {
+		debugPaymentEntry('READ-MANUAL-PAYABLE-ERROR', e.toString());
+	}
+
+	closeFile(f);
+	return false;
+}
+
 // -----------------------------------------------------------------------------
 // SECTION 04B - PHÂN CASE: toàn bộ điều kiện TT-01 đến TT-17 nằm tại đây
 // -----------------------------------------------------------------------------
 /**
- * Phân case chỉ theo 3 số tiền, loại NCC và trạng thái thuế.
+ * BANG QUYET DINH la nguon quy tac uu tien cao nhat.
+ * Case trung dieu kien phan biet bang AP/PREPAYMENT, AP/PAYABLE thu cong hoac GL.
  * (1) Giá trị hóa đơn chấp nhận; (2) Số tiền đề nghị; (3) Số tiền hoàn ứng.
  */
 function classifyPaymentCase(c) {
@@ -1351,25 +1400,21 @@ function classifyPaymentCase(c) {
 		return PAYMENT_CASE.TT07;
 	}
 
-	// Vừa hoàn ứng vừa đi tiền: (1) = (2) + (3).
-	if (moneyIsPositive(refund) && moneyIsPositive(payment) && moneyEquals(invoice, payment + refund)) {
-		if (personal) return PAYMENT_CASE.TT10;
-		if (!tax) return PAYMENT_CASE.TT08;
-		return PAYMENT_CASE.TT09;
-	}
-
-	// Chỉ hoàn ứng một phần: (1) > (3), không đi tiền.
-	if (moneyIsPositive(refund) && moneyIsZero(payment) && moneyGreaterThan(invoice, refund)) {
+	// Có hoàn ứng, không đi tiền: (1) khác (3).
+	if (moneyIsPositive(refund) && moneyIsZero(payment) && !moneyEquals(invoice, refund)) {
 		if (personal) return PAYMENT_CASE.TT13;
 		if (!tax) return PAYMENT_CASE.TT11;
 		return PAYMENT_CASE.TT12;
 	}
 
-	// Hoàn ứng và đi tiền một phần: (1) > (2) + (3).
-	if (moneyIsPositive(refund) && moneyIsPositive(payment) && moneyGreaterThan(invoice, payment + refund)) {
-		if (personal) return PAYMENT_CASE.TT16;
-		if (!tax) return PAYMENT_CASE.TT14;
-		return PAYMENT_CASE.TT15;
+	// Có cả hoàn ứng và đi tiền: phân biệt bằng hành động của kế toán.
+	// Luon xac dinh case co ban TT-08..TT-10 truoc. TT-14..TT-16 chi la
+	// trang thai dac biet sau khi co tac dong nguoi dung, khong phai case khoi tao.
+	if (moneyIsPositive(refund) && moneyIsPositive(payment)) {
+		var baseCase = personal
+				? PAYMENT_CASE.TT10
+				: (!tax ? PAYMENT_CASE.TT08 : PAYMENT_CASE.TT09);
+		return c.hasUserAccountingAction ? toHumanActionPaymentCase(baseCase) : baseCase;
 	}
 
 	return '';
@@ -1457,17 +1502,17 @@ function buildPaymentCaseTT06(c) { return buildStandardPaymentCase(c, true, true
 function buildPaymentCaseTT07(c) { return buildStandardPaymentCase(c, true, c.hasTax, true, false); }
 function buildPaymentCaseTT08(c) { return buildStandardPaymentCase(c, true, false, true, true); }
 function buildPaymentCaseTT09(c) { return buildStandardPaymentCase(c, true, true,  true, true); }
-function buildPaymentCaseTT11(c) { return buildStandardPaymentCase(c, true, false, true, false); }
-function buildPaymentCaseTT12(c) { return buildStandardPaymentCase(c, true, true,  true, false); }
-function buildPaymentCaseTT14(c) { return buildStandardPaymentCase(c, true, false, true, true); }
-function buildPaymentCaseTT15(c) { return buildStandardPaymentCase(c, true, true,  true, true); }
+function buildPaymentCaseTT11(c) { return buildStandardPaymentCase(c, true, false, true, false, true); }
+function buildPaymentCaseTT12(c) { return buildStandardPaymentCase(c, true, true,  true, false, true); }
+function buildPaymentCaseTT14(c) { return buildStandardPaymentCase(c, true, false, true, true,  true); }
+function buildPaymentCaseTT15(c) { return buildStandardPaymentCase(c, true, true,  true, true,  true); }
 
 // Case cá nhân: sinh tài khoản, để trống số tiền KT phải nhập.
 function buildPaymentCaseTT02(c) { return buildPersonalPaymentCase(c, false, true); }
 function buildPaymentCaseTT05(c) { return buildPersonalPaymentCase(c, false, true); }
 function buildPaymentCaseTT10(c) { return buildPersonalPaymentCase(c, true,  true); }
-function buildPaymentCaseTT13(c) { return buildPersonalPaymentCase(c, true,  false); }
-function buildPaymentCaseTT16(c) { return buildPersonalPaymentCase(c, true,  true); }
+function buildPaymentCaseTT13(c) { return buildPersonalPaymentCase(c, true,  false, true); }
+function buildPaymentCaseTT16(c) { return buildPersonalPaymentCase(c, true,  true,  true); }
 
 // TT-17: khoản treo bằng số tiền thanh toán; sinh Nợ Phải trả và Có Khách hàng.
 function buildPaymentCaseTT17(c) {
@@ -1502,7 +1547,7 @@ function buildPaymentCaseTT17(c) {
  * - Case có hoàn ứng không tự sinh Có TK tạm ứng; sau khi có AP/PREPAYMENT,
  *   chỉ sinh Phải trả nếu vẫn còn chênh lệch.
  */
-function buildPersonalPaymentCase(c, includeRefund, includePayment) {
+function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCreatesCredit) {
 	var rows = [];
 	var order = c.firstOrder;
 	var expenseAccounts = getPersonalExpenseAccounts(c);
@@ -1533,6 +1578,9 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment) {
 	// Không sinh dòng Có TK tạm ứng (TT-BK-05) tại paymentEntry.
 	// Dòng này sẽ được xử lý sau khi người dùng nhập "Số tiền hoàn ứng lần này"
 	// tại tab Công nợ.
+
+	// TT-13, TT-16: chi sinh dong ghi No; dong ghi Co do ke toan tu sinh.
+	if (accountingCreatesCredit) return rows;
 
 	if (includePayment && moneyIsPositive(c.paymentAmount)) {
 		rows.push(buildEntryRow({
@@ -1673,7 +1721,7 @@ function getStandardExpenseAllocations(c) {
  * Thứ tự hiển thị:
  *   chi phí -> thuế -> Có tài khoản đi tiền -> phải trả còn lại.
  */
-function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, includePayment) {
+function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, includePayment, accountingCreatesCredit) {
 	var rows = [];
 	var order = c.firstOrder;
 	var i;
@@ -1716,6 +1764,10 @@ function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, 
 	// NGHIỆP VỤ CÓ HOÀN ỨNG/TÀI KHOẢN TẠM ỨNG:
 	// Không tự sinh dòng Có TK tạm ứng. Sau khi người dùng chọn hoàn ứng và dòng
 	// AP/PREPAYMENT đã được lưu, dùng tổng thực tế của các dòng đó để khử Phải trả.
+	// TT-11, TT-12, TT-14, TT-15: chi sinh dong ghi No;
+	// cac dong ghi Co do ke toan tu sinh.
+	if (accountingCreatesCredit) return rows;
+
 	if (includeRefund && c.hasSelectedPrepayment) {
 		payableDebit += c.selectedPrepaymentAmount;
 	}
@@ -1954,9 +2006,9 @@ function getVendorAutoEntryErrors(vendor) {
 	if (!vendor.currency) paymentVendorFields.push('currency');
 	if (toNumber(vendor.amount) > 0 && !vendor.payment_method) paymentVendorFields.push('payment.method');
 	if (!vendor.vendor_number) vendorFields.push('vendor.number');
-	if (!vendor.vendor_site_code) vendorSiteFields.push('ogl.site.code');
-	// Tài khoản phải trả NCC = credit.account.
-	if (!vendor.credit_account) vendorSiteFields.push('credit.account');
+	// ogl.site.code chi bat buoc tai buoc mapping/call API, khong chan sinh but toan.
+	// Khong bat buoc credit.account o cap NCC. Neu dong tu sinh thuc te can
+	// tai khoan phai tra, getAutoEntryRowErrors se validate theo dung dong do.
 	// Không yêu cầu debit.account chỉ vì có refund.amount: paymentEntry chưa sinh
 	// dòng Có TK tạm ứng; tài khoản này được kiểm tra ở bước xử lý tab Công nợ.
 
@@ -2500,7 +2552,7 @@ function getPaymentVendors(paymentId, vendorId) {
 
 function enrichVendor(vendor) {
 	var vendorInfo = getVendorInfo(vendor.vendor_id);
-	var siteInfo = getVendorSiteInfo(vendor.vendor_site_id);
+	var siteInfo = getVendorSiteInfo(vendor.vendor_site_id, vendor.vendor_id);
 
 	vendor.vendor_name = vendorInfo.vendor_name;
 	vendor.vendor_number = vendorInfo.vendor_number;
@@ -2528,10 +2580,10 @@ function getVendorInfo(vendorId) {
 	);
 }
 
-function getVendorSiteInfo(vendorSiteId) {
+function getVendorSiteInfo(vendorSiteId, vendorId) {
 	if (!vendorSiteId) return {};
 
-	return (
+	var exact =
 			selectOne(
 					TABLE_VENDOR_SITE,
 					'id="' + escapeQueryValue(vendorSiteId) + '"',
@@ -2542,8 +2594,53 @@ function getVendorSiteInfo(vendorSiteId) {
 							credit_account: extractAccountNumber(readText(record, 'credit.account'))
 						};
 					}
-			) || {}
-	);
+			);
+	if (exact) return exact;
+
+	// Fallback: mot so moi truong luu ID khong dong nhat so 0 o dau.
+	var f = new SCFile(TABLE_VENDOR_SITE, SCFILE_READONLY);
+	var query = vendorId
+			? 'vendor.id="' + escapeQueryValue(vendorId) + '"'
+			: '';
+	var rc;
+	var onlyCandidate = null;
+	var candidateCount = 0;
+	try {
+		rc = f.doSelect(query);
+		while (rc === RC_SUCCESS) {
+			candidateCount++;
+			onlyCandidate = {
+				vendor_site_code: readText(f, 'ogl.site.code'),
+				debit_account: extractAccountNumber(readText(f, 'debit.account')),
+				credit_account: extractAccountNumber(readText(f, 'credit.account'))
+			};
+			if (lookupIdsEqual(readText(f, 'id'), vendorSiteId)) {
+				closeFile(f);
+				return onlyCandidate;
+			}
+			rc = f.getNext();
+		}
+	} catch (e) {
+		debugPaymentEntry('READ-VENDOR-SITE-ERROR', e.toString());
+	}
+	closeFile(f);
+	if (candidateCount === 1) {
+		debugPaymentEntry('READ-VENDOR-SITE-FALLBACK',
+				'vendor=' + vendorId + ', paymentVendor.site=' + vendorSiteId +
+				', dung Vendor Site duy nhat cua NCC');
+		return onlyCandidate;
+	}
+	return {};
+}
+
+function lookupIdsEqual(left, right) {
+	var a = safeString(left).trim();
+	var b = safeString(right).trim();
+	if (a === b) return true;
+	if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+		return a.replace(/^0+/, '') === b.replace(/^0+/, '');
+	}
+	return false;
 }
 
 // =============================================================================
@@ -2808,7 +2905,23 @@ function isAutoEntry(row) {
 	// dòng phát sinh sau từ xử lý hoàn ứng và phải được giữ khi sinh lại.
 	if (normalizeEntryType(row.entry_type) === ENTRY_TYPE.PREPAYMENT) return false;
 
+	// Dong AP do nguoi dung them co ID MANUAL va phai duoc giu khi dong bo lai.
+	if (isUserAddedEntryId(row.id)) return false;
+
 	return true;
+}
+
+function toHumanActionPaymentCase(baseCase) {
+	if (baseCase === PAYMENT_CASE.TT08) return PAYMENT_CASE.TT14;
+	if (baseCase === PAYMENT_CASE.TT09) return PAYMENT_CASE.TT15;
+	if (baseCase === PAYMENT_CASE.TT10) return PAYMENT_CASE.TT16;
+	return baseCase;
+}
+
+function isHumanActionPaymentCase(caseCode) {
+	return caseCode === PAYMENT_CASE.TT14 ||
+			caseCode === PAYMENT_CASE.TT15 ||
+			caseCode === PAYMENT_CASE.TT16;
 }
 
 // =============================================================================
@@ -2857,6 +2970,31 @@ function makeSequentialEntryId(paymentId, entryType, sequence) {
 		return makeGlEntryId(paymentId, 1, sequence);
 	}
 	return getEntryIdPrefix(paymentId, entryType) + sequence;
+}
+
+function makeUserAddedEntryId(paymentId, sequence) {
+	return safeString(paymentId).trim() + '.MANUAL.AP.' + sequence;
+}
+
+function isUserAddedEntryId(entryId) {
+	return safeString(entryId).indexOf('.MANUAL.AP.') >= 0;
+}
+
+function getNextManualEntryIdSequence(paymentId, rows) {
+	var prefix = safeString(paymentId).trim() + '.MANUAL.AP.';
+	var maxSequence = 0;
+	var list = rows || [];
+
+	for (var i = 0; i < list.length; i++) {
+		var id = safeString(list[i].id).trim();
+		if (id.indexOf(prefix) !== 0) continue;
+		var suffix = id.substring(prefix.length);
+		if (/^\d+$/.test(suffix) && Number(suffix) > maxSequence) {
+			maxSequence = Number(suffix);
+		}
+	}
+
+	return maxSequence + 1;
 }
 
 function getEntryIdPrefix(paymentId, entryType) {
