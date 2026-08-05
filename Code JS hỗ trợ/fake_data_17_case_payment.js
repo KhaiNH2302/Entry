@@ -7,9 +7,12 @@
  *   - esdHTKTinvoice
  *
  * Du lieu tham chieu tu SM:
- *   vendor.id      = 0000000040
- *   vendor.site.id = 0000000222
- *   vendor.number  = NCC_101234523
+ * Moi case tao 2 payment de doi chieu ket qua sinh but toan:
+ *   - payment thu 1: 1 nha cung cap
+ *   - payment thu 2: 2 nha cung cap (chia tien 60/40)
+ * Dung cac cap vendor/site co that tren SM:
+ *   - 0000000040 / 0000000222 / NCC_101234523
+ *   - 0000000041 / 0000000206 / NCC_101234504
  *
  * Script chi tao du lieu nguon, KHONG tao esdHTKTpaymentEntry.
  * paymentEntry phai duoc sinh boi action syncPaymentEntry de test dung luong.
@@ -35,12 +38,41 @@ var CASES = [
   { code: 'TT-17', approved: 0,       payment: 500000,  refund: 0,       personal: false, tax: 0 }
 ];
 
-var INVOICE_TEST_YEAR = '26';
-var VENDOR_ID = '0000000040';
-var VENDOR_SITE_ID = '0000000222';
-var VENDOR_TAX_CODE = 'NCC_101234523';
+/*
+ * Phan loai NCC bat buoc cua 17 case:
+ *   CN: TT-02, TT-05, TT-10, TT-13, TT-16
+ *   DN: cac case con lai
+ * Ca payment don NCC va payment nhieu NCC phai giu cung loai NCC cua case.
+ */
+var PERSONAL_CASES = {
+  'TT-02': true,
+  'TT-05': true,
+  'TT-10': true,
+  'TT-13': true,
+  'TT-16': true
+};
 
-/* Dai ID co dinh cho 17 case: TT.106.26.0100000 ... TT.106.26.1700000. */
+var INVOICE_TEST_YEAR = '26';
+var VENDORS = [
+  {
+    id: '0000000040',
+    siteId: '0000000222',
+    taxCode: 'NCC_101234523',
+    beneficiaryAccount: '88888888'
+  },
+  {
+    id: '0000000041',
+    siteId: '0000000206',
+    taxCode: 'NCC_101234504',
+    beneficiaryAccount: '32424234'
+  }
+];
+
+/*
+ * Dai ID co dinh cho 17 case:
+ *   - don NCC : TT.106.26.0100000 ... TT.106.26.1700000
+ *   - nhieu NCC: TT.106.26.0100001 ... TT.106.26.1700001
+ */
 var PAYMENT_TEST_BRANCH = '106';
 var PAYMENT_TEST_YEAR = '26';
 
@@ -55,8 +87,8 @@ var DELETE_EXISTING_17_CASES = true;
 var USE_PAYMENT_ACTION_ADD = false;
 
 /*
- * An toan cho SM: moi lan chi insert 1 case (toi da 4 record).
- * Chay lan luot CASE_START_INDEX = 0..16 thay vi insert 66 record trong 1 request.
+ * An toan cho SM: co the gioi han so case moi lan bang CASE_BATCH_SIZE.
+ * Moi case tao 2 payment: 1 payment don NCC va 1 payment nhieu NCC.
  */
 var CASE_START_INDEX = 0;
 var CASE_BATCH_SIZE = 17;
@@ -82,6 +114,8 @@ if (INSERT_TO_SM) {
 }
 
 function buildFakeDb(useNextNumber) {
+  validateCaseVendorTypes();
+
   var db = {
     esdHTKTpayment: [],
     esdHTKTpaymentVendor: [],
@@ -102,17 +136,38 @@ function buildFakeDb(useNextNumber) {
 
   for (var i = startIndex; i < endIndex; i++) {
     var definition = CASES[i];
-    var paymentId = makeCasePaymentId(i + 1);
-    var invoiceId = makeCaseInvoiceId(i + 1);
-	print("invoiceId them moi " + invoiceId)
+    var paymentVariants = [
+      { vendorDefinitions: [definition] },
+      { vendorDefinitions: splitDefinitionByVendors(definition) }
+    ];
 
-    db.esdHTKTpayment.push(makePayment(paymentId, definition));
-    db.esdHTKTpaymentVendor.push(makePaymentVendor(paymentId, definition));
+    for (var variantIndex = 0; variantIndex < paymentVariants.length; variantIndex++) {
+      var paymentId = makeCasePaymentId(i + 1, variantIndex);
+      var variant = paymentVariants[variantIndex];
+      db.esdHTKTpayment.push(makePayment(paymentId, definition));
 
-    // TT-17: khong co hoa don, approved.invoice.amount = 0 va amount > 0.
-    if (definition.code !== 'TT-17') {
-      db.esdHTKTpaymentInvoice.push(makePaymentInvoice(paymentId, invoiceId, definition));
-      db.esdHTKTinvoice.push(makeInvoice(invoiceId, definition));
+      for (var vendorIndex = 0; vendorIndex < variant.vendorDefinitions.length; vendorIndex++) {
+        var vendor = VENDORS[vendorIndex];
+        var vendorDefinition = variant.vendorDefinitions[vendorIndex];
+        db.esdHTKTpaymentVendor.push(
+          makePaymentVendor(
+            paymentId, vendorDefinition, vendor, vendorIndex, variantIndex
+          )
+        );
+
+        // TT-17: khong co hoa don, approved.invoice.amount = 0 va amount > 0.
+        if (definition.code !== 'TT-17') {
+          var invoiceId = makeCaseInvoiceId(
+            i + 1, variantIndex + 1, vendorIndex + 1
+          );
+          db.esdHTKTpaymentInvoice.push(
+            makePaymentInvoice(paymentId, invoiceId, vendorDefinition)
+          );
+          db.esdHTKTinvoice.push(
+            makeInvoice(invoiceId, vendorDefinition, vendor)
+          );
+        }
+      }
     }
   }
 
@@ -152,38 +207,40 @@ function makePayment(paymentId, definition) {
   };
 }
 
-function makePaymentVendor(paymentId, definition) {
+function makePaymentVendor(paymentId, definition, vendor, vendorIndex, variantIndex) {
   var caseNumber = parseInt(String(definition.code).replace('TT-', ''), 10) || 0;
+  var vendorType = getCaseVendorType(definition);
   return {
-    id: padLeft(9000000 + caseNumber, 14),
+    id: padLeft(
+      900000000 + (caseNumber * 100) + (variantIndex * 10) + vendorIndex + 1,
+      14
+    ),
     'payment.id': paymentId,
-    'vendor.id': VENDOR_ID,
-    'vendor.site.id': VENDOR_SITE_ID,
+    'vendor.id': vendor.id,
+    'vendor.site.id': vendor.siteId,
     'approved.invoice.amount': definition.approved,
     amount: definition.payment,
     'refund.amount': definition.refund,
-    'vendor.type': definition.personal ? 'CN' : 'DN',
+    'vendor.type': vendorType,
     currency: 'VND',
     'payment.method': 'CHUYENKHOAN',
-    'beneficiary.account': '88888888',
+    'beneficiary.account': vendor.beneficiaryAccount,
     'beneficiary.name': 'CT CTP GIMO',
     'beneficiary.bank': '01202001',
     'bank.name': 'NH TMCP Dau tu va Phat trien Viet Nam (BIDV)',
     'transaction.des': 'Test sinh but toan ' + definition.code +
-      ' - ' + (definition.personal ? 'NCC ca nhan' : 'NCC doanh nghiep'),
+      ' - ' + (vendorType === 'CN' ? 'NCC ca nhan' : 'NCC doanh nghiep'),
     'identity.number': '',
-    'issued.date': '',
     'issued.place': '',
     phone: '',
     'check.name.success': true,
-    'exchange.rate': '',
-    'payment.rate': '',
-    '_expected.case': definition.code
+    '_expected.case': definition.code,
+    '_expected.vendor.type': vendorType
   };
 }
 
 function makePaymentInvoice(paymentId, invoiceId, definition) {
-  var vendorType = definition.personal ? 'CN' : 'DN';
+  var vendorType = getCaseVendorType(definition);
   var deductionType;
 
   // CN: co hoa don de phan case nhung khong sinh thue GTGT tu dong.
@@ -207,23 +264,43 @@ function makePaymentInvoice(paymentId, invoiceId, definition) {
   };
 }
 
-function makeInvoice(invoiceId, definition) {
+function makeInvoice(invoiceId, definition, vendor) {
   var caseNumber = parseInt(String(definition.code).replace('TT-', ''), 10) || 0;
+  var vendorType = getCaseVendorType(definition);
   var invoiceDigits = String(invoiceId).replace(/[^0-9]/g, '');
   var uniqueInvoiceNumber = invoiceDigits.substring(
     Math.max(0, invoiceDigits.length - 8)
   );
   return {
     id: invoiceId,
-    'invoice.pattern': definition.personal ? 'FAKE26-CN' : 'FAKE26-DN',
+    'invoice.pattern': vendorType === 'CN' ? 'FAKE26-CN' : 'FAKE26-DN',
     'invoice.number': uniqueInvoiceNumber,
     'invoice.date': new Date(2026, 0, Math.max(1, Math.min(28, caseNumber))),
-    'invoice.serial': (definition.personal ? 'CN' : 'DN') + padLeft(caseNumber, 2),
-    'total.tax': definition.personal ? 0 : definition.tax,
+    'invoice.serial': vendorType + padLeft(caseNumber, 2),
+    'total.tax': vendorType === 'CN' ? 0 : definition.tax,
     'exchange.rate': 1,
-    'seller.tax.code': VENDOR_TAX_CODE,
-    '_expected.case': definition.code
+    'seller.tax.code': vendor.taxCode,
+    '_expected.case': definition.code,
+    '_expected.vendor.type': vendorType
   };
+}
+
+function getCaseVendorType(definition) {
+  return definition.personal ? 'CN' : 'DN';
+}
+
+/** Chan script ngay neu cau hinh personal bi sua sai so voi ma tran 17 case. */
+function validateCaseVendorTypes() {
+  for (var i = 0; i < CASES.length; i++) {
+    var definition = CASES[i];
+    var expectedPersonal = PERSONAL_CASES[definition.code] === true;
+    if (definition.personal !== expectedPersonal) {
+      throw new Error(
+        definition.code + ': vendor.type phai la ' +
+        (expectedPersonal ? 'CN' : 'DN')
+      );
+    }
+  }
 }
 
 function padLeft(value, length) {
@@ -232,16 +309,41 @@ function padLeft(value, length) {
   return result;
 }
 
-function makeCasePaymentId(caseNumber) {
-  var sequence = Number(caseNumber) * 100000;
+function makeCasePaymentId(caseNumber, variantIndex) {
+  var sequence = (Number(caseNumber) * 100000) + (Number(variantIndex) || 0);
   return 'TT.' + PAYMENT_TEST_BRANCH + '.' + PAYMENT_TEST_YEAR + '.' +
     padLeft(sequence, 7);
 }
 
-function makeCaseInvoiceId(caseNumber) {
+function makeCaseInvoiceId(caseNumber, variantNumber, vendorNumber) {
   var caseText = padLeft(Number(caseNumber), 2);
-  var randomText = padLeft(Math.floor(Math.random() * 100000), 5);
-  return 'SSVN' + INVOICE_TEST_YEAR + caseText + randomText;
+  var variantText = String(Number(variantNumber));
+  var vendorText = padLeft(Number(vendorNumber), 2);
+  var randomText = padLeft(Math.floor(Math.random() * 100), 2);
+  return 'SSVN' + INVOICE_TEST_YEAR + caseText + variantText + vendorText + randomText;
+}
+
+/** Chia so tien 60/40; phan du duoc giu o NCC dau de tong khong thay doi. */
+function splitDefinitionByVendors(definition) {
+  var first = {};
+  var second = {};
+  var fields = ['approved', 'payment', 'refund', 'tax'];
+
+  for (var key in definition) {
+    if (!definition.hasOwnProperty(key)) continue;
+    first[key] = definition[key];
+    second[key] = definition[key];
+  }
+
+  for (var i = 0; i < fields.length; i++) {
+    var field = fields[i];
+    var total = Number(definition[field]) || 0;
+    var secondAmount = Math.floor(total * 40 / 100);
+    first[field] = total - secondAmount;
+    second[field] = secondAmount;
+  }
+
+  return [first, second];
 }
 
 /**
@@ -334,7 +436,7 @@ function insertRecord(tableName, row) {
       file = new SCFile(tableName);
       var findRc = file.doSelect(recordQuery);
       if (findRc === RC_SUCCESS) {
-        mapRowToFile(file, row);
+        mapRowToFile(file, row, tableName);
         var updateRc = file.doUpdate();
         closeFile(file);
         return updateRc;
@@ -344,7 +446,7 @@ function insertRecord(tableName, row) {
     }
 
     file = new SCFile(tableName);
-    mapRowToFile(file, row);
+    mapRowToFile(file, row, tableName);
     var rc;
     if (tableName === 'esdHTKTpayment' && USE_PAYMENT_ACTION_ADD) {
       rc = addPaymentByAction(file);
@@ -453,12 +555,20 @@ function getRecordQuery(tableName, row) {
   return '';
 }
 
-function mapRowToFile(file, row) {
+function mapRowToFile(file, row, tableName) {
   for (var key in row) {
     if (!row.hasOwnProperty(key)) continue;
     // Field bat dau bang _ chi la metadata test, khong ghi vao SM.
     if (key.charAt(0) === '_') continue;
-    file[key] = row[key];
+    try {
+      file[key] = row[key];
+    } catch (e) {
+      throw new Error(
+        tableName + '.' + key +
+        ' khong nhan gia tri [' + String(row[key]) +
+        '] (' + typeof row[key] + '): ' + e.toString()
+      );
+    }
   }
 }
 

@@ -4,12 +4,13 @@
  * Chay truc tiep toan bo script trong SM JavaScript Test/ScriptLibrary.
  */
 
-var MAX_ROWS = 50;
+var MAX_ROWS = 500;
 
 var TABLES = [
   {
     name: 'esdHTKTpayment',
-    fields: ['id', 'department', 'description', 'current.phase', 'created.by',
+    fields: ['id', 'contract.id', 'contract.name', 'department', 'description',
+      'current.phase', 'created.by',
       'total.advance.amount', 'total.amount.paid', 'total.refund.amount', 'currentcy']
   },
   {
@@ -54,6 +55,22 @@ var TABLES = [
   {
     name: 'esdHTKTinvoice',
     fields: ['id', 'total.tax', 'exchange.rate', 'seller.tax.code']
+  },
+  {
+    name: 'esdHDcontract',
+    fields: [
+      'id', 'name', 'category', 'contact.list', 'contract.group',
+      'contract.no', 'contract.type', 'contract.start.date', 'contract.end.date',
+      'actual.end.date', 'expected.end.date', 'signed.date', 'signer',
+      'contract.value.before.tax', 'tax.amount', 'contract.value.after.tax',
+      'total.contract.value', 'total.budget', 'total.executed.value',
+      'total.unexecuted.value', 'total.paid.amount', 'total.settlement.amount',
+      'remaining.amount', 'duration.unit', 'execution.duration',
+      'execution.dependency', 'executor.id', 'current.phase', 'status',
+      'is.budgeted', 'item.id', 'item.name', 'kms.id', 'id.activity.vj',
+      'id.ncc.vj', 'unit.lv1', 'unit.lv2', 'unit.lv3', 'note',
+      'created.at', 'created.by', 'sysmodtime', 'sysmoduser'
+    ]
   },
   {
     name: 'esdHTKTvendor',
@@ -111,6 +128,9 @@ function run() {
     result.counts[definition.name] = rows.length;
   }
 
+  result.contractsWithVendorMultipleInvoices =
+    findContractsWithVendorMultipleInvoices(result.tables);
+
   result.success = result.errors.length === 0;
   var output = JSON.stringify(result);
 
@@ -121,6 +141,73 @@ function run() {
   try {
     if (vars['$L.file']) vars['$L.file'].queryReturn = output;
   } catch (ignoreOutput) {}
+
+  return result;
+}
+
+/**
+ * Tim cap contract/vendor co tu 2 hoa don tro len trong tap du lieu da query.
+ * Hoa don duoc gan dung NCC qua seller.tax.code = vendor.number.
+ */
+function findContractsWithVendorMultipleInvoices(tables) {
+  var payments = tables.esdHTKTpayment || [];
+  var paymentVendors = tables.esdHTKTpaymentVendor || [];
+  var paymentInvoices = tables.esdHTKTpaymentInvoice || [];
+  var invoices = tables.esdHTKTinvoice || [];
+  var vendors = tables.esdHTKTvendor || [];
+  var paymentById = {};
+  var vendorById = {};
+  var invoiceById = {};
+  var groups = {};
+  var result = [];
+  var i;
+
+  for (i = 0; i < payments.length; i++) paymentById[payments[i].id] = payments[i];
+  for (i = 0; i < vendors.length; i++) vendorById[vendors[i].id] = vendors[i];
+  for (i = 0; i < invoices.length; i++) invoiceById[invoices[i].id] = invoices[i];
+
+  for (i = 0; i < paymentVendors.length; i++) {
+    var paymentVendor = paymentVendors[i];
+    var payment = paymentById[paymentVendor['payment.id']];
+    var vendor = vendorById[paymentVendor['vendor.id']];
+    var contractId = payment ? String(payment['contract.id'] || '') : '';
+    var vendorNumber = vendor ? String(vendor['vendor.number'] || '') : '';
+    if (!contractId || !vendorNumber) continue;
+
+    var key = contractId + '|' + paymentVendor['vendor.id'];
+    if (!groups[key]) {
+      groups[key] = {
+        contract_id: contractId,
+        contract_name: String(payment['contract.name'] || ''),
+        vendor_id: String(paymentVendor['vendor.id'] || ''),
+        vendor_number: vendorNumber,
+        vendor_name: String(vendor['vendor.name'] || ''),
+        invoice_ids: [],
+        invoice_seen: {}
+      };
+    }
+
+    for (var j = 0; j < paymentInvoices.length; j++) {
+      var paymentInvoice = paymentInvoices[j];
+      if (paymentInvoice['payment.id'] !== paymentVendor['payment.id']) continue;
+      var invoice = invoiceById[paymentInvoice['invoice.id']];
+      if (!invoice || String(invoice['seller.tax.code'] || '') !== vendorNumber) continue;
+      var invoiceId = String(paymentInvoice['invoice.id'] || '');
+      if (invoiceId && !groups[key].invoice_seen[invoiceId]) {
+        groups[key].invoice_seen[invoiceId] = true;
+        groups[key].invoice_ids.push(invoiceId);
+      }
+    }
+  }
+
+  for (var groupKey in groups) {
+    if (!groups.hasOwnProperty(groupKey)) continue;
+    var group = groups[groupKey];
+    if (group.invoice_ids.length < 2) continue;
+    delete group.invoice_seen;
+    group.invoice_count = group.invoice_ids.length;
+    result.push(group);
+  }
 
   return result;
 }

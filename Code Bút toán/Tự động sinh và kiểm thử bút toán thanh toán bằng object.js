@@ -14,14 +14,12 @@
  *  TODO CÒN LẠI
  * ---------------------------------------------------------------------------
  *  TT-17 ĐÃ CHỐT:
- *    - Chỉ tự sinh Có TK Khách hàng; Nợ TK Phải trả xử lý tại tab Công nợ.
+ *    - Khoản treo TT-BK-07 bằng số tiền thanh toán; tự sinh cặp
+ *      Nợ TK Phải trả / Có TK Khách hàng.
  *
  *  TODO-INTEGRATION:
  *    - Fill payload Invoice/AP, Apply Prepayment, Payment, GL và Core Banking.
  *    - Hiện tại chưa gọi hoặc gửi dữ liệu sang hệ thống tích hợp.
- *
- *  TODO-SUSPENDED:
- *    - Chưa có bảng/trường DB cho khoản treo nên chưa sinh TT-BK-07.
  *
  *  ĐÃ CHỐT TẠM:
  *    - Dòng CUSTOMER thanh toán Tiền mặt dùng cố định STK 99999999.
@@ -934,7 +932,7 @@ function getCompletedPaymentCaseDefinitions() {
     { caseCode: 'TT-14', title: 'Hoàn ứng một phần, thanh toán một phần, còn phải trả, không thuế', approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 3, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
     { caseCode: 'TT-15', title: 'Hoàn ứng một phần, thanh toán một phần, còn phải trả, NCC có thuế', approved: 1100000, payment: 200000, refund: 300000, tax: 100000, expectedRows: 4, expectedCounts: makeExpectedDisplayCounts(1, 1, 0, 1, 1) },
     { caseCode: 'TT-16', title: 'Cá nhân, hoàn ứng và thanh toán một phần, còn phải trả', personal: true, approved: 1000000, payment: 200000, refund: 300000, tax: 0, expectedRows: 3, expectedBlankRows: 2, expectedCounts: makeExpectedDisplayCounts(1, 0, 0, 1, 1) },
-    { caseCode: 'TT-17', title: 'Không có hóa đơn, chỉ đi tiền; Nợ Phải trả xử lý tại tab Công nợ', approved: 0, payment: 600000, refund: 0, tax: 0, expectedRows: 1, expectedCounts: makeExpectedDisplayCounts(0, 0, 0, 1, 0) }
+    { caseCode: 'TT-17', title: 'Không có hóa đơn; khoản treo bằng số thanh toán', approved: 0, payment: 600000, refund: 0, tax: 0, expectedRows: 2, expectedCounts: makeExpectedDisplayCounts(0, 0, 0, 1, 1) }
   ];
 }
 
@@ -1548,7 +1546,7 @@ function getEntryTypeByRuleCode(entryCode) {
  * 4) Hoàn ứng: refund.amount chỉ dùng phân case; dòng Có TK tạm ứng được xử lý
  *    sau tại tab Công nợ theo "Số tiền hoàn ứng lần này".
  * 5) Thanh toán:       TT-BK-06 khi remainingAmount > 0
- * 6) Khoản treo:       TT-BK-07                                   [TODO-SUSPENDED]
+ * 6) Khoản treo:       TT-BK-07; riêng TT-17 bằng số tiền thanh toán
  * 7) Chuyển tiền:      TT-BK-08 = TT-BK-06 + TT-BK-07
  */
 /**
@@ -1858,16 +1856,26 @@ function buildPaymentCaseTT10(c) { return buildPersonalPaymentCase(c, true,  tru
 function buildPaymentCaseTT13(c) { return buildPersonalPaymentCase(c, true,  false); }
 function buildPaymentCaseTT16(c) { return buildPersonalPaymentCase(c, true,  true); }
 
-// TT-17: Nợ Phải trả được tạo từ tab Công nợ; tại đây chỉ sinh Có TK Khách hàng.
+// TT-17: khoản treo bằng số tiền thanh toán; sinh Nợ Phải trả và Có Khách hàng.
 function buildPaymentCaseTT17(c) {
-  return [buildEntryRow({
-    paymentId: c.paymentId,
-    request: c.request,
-    vendor: c.vendor,
-    entryCode: AUTO_ENTRY_CODE.TRANSFER,
-    amount: c.paymentAmount,
-    order: c.firstOrder
-  })];
+  return [
+    buildEntryRow({
+      paymentId: c.paymentId,
+      request: c.request,
+      vendor: c.vendor,
+      entryCode: AUTO_ENTRY_CODE.SUSPENDED,
+      amount: c.paymentAmount,
+      order: c.firstOrder
+    }),
+    buildEntryRow({
+      paymentId: c.paymentId,
+      request: c.request,
+      vendor: c.vendor,
+      entryCode: AUTO_ENTRY_CODE.TRANSFER,
+      amount: c.paymentAmount,
+      order: c.firstOrder + 1
+    })
+  ];
 }
 
 /**
@@ -2194,7 +2202,7 @@ function buildExpectedPaymentEntriesLegacy(paymentId, vendorId) {
     // CODE CŨ ĐỂ ĐỐI CHIẾU: trước đây chưa đọc refund.amount theo NCC.
     var hasRefund = false;
 
-    // TODO-SUSPENDED: chưa có bảng/trường DB cho khoản treo.
+    // CODE LEGACY KHÔNG ĐƯỢC GỌI: TT-17 được xử lý tại buildPaymentCaseTT17().
     var hasSuspended = false;
 
     var taxInfo = getInvoiceTaxInfo(paymentId, vendor, vendors.length);
@@ -2309,7 +2317,8 @@ function buildExpectedPaymentEntriesLegacy(paymentId, vendorId) {
 
     // ---------- Nhóm khoản treo (TT-BK-07) — sinh độc lập ----------
     /*
-     * TODO-SUSPENDED: cần bảng/trường DB lưu thông tin trả khoản treo.
+     * CODE LEGACY KHÔNG ĐƯỢC GỌI: luồng TT-17 hiện dùng payment.amount làm
+     * số tiền TT-BK-07 tại buildPaymentCaseTT17().
      * Khi có thông tin, cài đặt:
      *   var suspendedInfo = getSuspendedPaymentInfo(paymentId, vendor.vendor_id);
      *   if (suspendedInfo && suspendedInfo.amount > 0) {

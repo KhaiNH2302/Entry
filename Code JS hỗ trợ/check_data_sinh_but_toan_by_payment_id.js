@@ -124,9 +124,6 @@ function inspectPayment(paymentId) {
     if (!vendorRow.expectedCase) {
       result.errors.push('NCC ' + (vendorId || '?') + ': bo 3 so tien khong khop TT-01..TT-17.');
     }
-    if (vendorRow.expectedCase === 'TT-17') {
-      result.warnings.push('NCC ' + (vendorId || '?') + ': TT-17 chua duoc trien khai sinh but toan.');
-    }
     for (var issueIndex = 0; issueIndex < vendorRow.dataIssues.length; issueIndex++) {
       result.errors.push('NCC ' + (vendorId || '?') + ': ' + vendorRow.dataIssues[issueIndex]);
     }

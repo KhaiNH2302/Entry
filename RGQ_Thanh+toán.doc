@@ -1,0 +1,1122 @@
+Date: Wed, 5 Aug 2026 04:22:06 +0000 (UTC)
+Message-ID: <1468775154.17.1785903726348@293389840a4e>
+Subject: Exported From Confluence
+MIME-Version: 1.0
+Content-Type: multipart/related; 
+	boundary="----=_Part_16_886215180.1785903726348"
+
+------=_Part_16_886215180.1785903726348
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Content-Location: file:///C:/exported.html
+
+<html xmlns:o=3D'urn:schemas-microsoft-com:office:office'
+      xmlns:w=3D'urn:schemas-microsoft-com:office:word'
+      xmlns:v=3D'urn:schemas-microsoft-com:vml'
+      xmlns=3D'urn:w3-org-ns:HTML'>
+<head>
+    <meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8=
+">
+    <title>RGQ_Thanh to=C3=A1n</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:TargetScreenSize>1024x640</o:TargetScreenSize>
+            <o:PixelsPerInch>72</o:PixelsPerInch>
+            <o:AllowPNG/>
+        </o:OfficeDocumentSettings>
+        <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>90</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+                <!--
+        @page Section1 {
+            size: 8.5in 11.0in;
+            margin: 1.0in;
+            mso-header-margin: .5in;
+            mso-footer-margin: .5in;
+            mso-paper-source: 0;
+        }
+
+        table {
+            border: solid 1px;
+            border-collapse: collapse;
+        }
+
+        table td, table th {
+            border: solid 1px;
+            padding: 5px;
+        }
+
+        td {
+            page-break-inside: avoid;
+        }
+
+        tr {
+            page-break-after: avoid;
+        }
+
+        div.Section1 {
+            page: Section1;
+        }
+
+        /* Confluence print stylesheet. Common to all themes for print medi=
+a */
+/* Full of !important until we improve batching for print CSS */
+
+@media print {
+    #main {
+        padding-bottom: 1em !important; /* The default padding of 6em is to=
+o much for printouts */
+    }
+
+    body {
+        font: var(--ds-font-body-small, Arial, Helvetica, FreeSans, sans-se=
+rif);
+    }
+
+    body, #full-height-container, #main, #page, #content, .has-personal-sid=
+ebar #content {
+        background: var(--ds-surface, #fff) !important;
+        color: var(--ds-text, #000) !important;
+        border: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+
+    a, a:link, a:visited, a:focus, a:hover, a:active {
+        color: var(--ds-text, #000);
+    }
+
+    #content h1,
+    #content h2,
+    #content h3,
+    #content h4,
+    #content h5,
+    #content h6 {
+        page-break-after: avoid;
+    }
+
+    pre {
+        font: var(--ds-font-code, Monaco, "Courier New", monospace);
+    }
+
+    #header,
+    .aui-header-inner,
+    #navigation,
+    #sidebar,
+    .sidebar,
+    #personal-info-sidebar,
+    .ia-fixed-sidebar,
+    .page-actions,
+    .navmenu,
+    .ajs-menu-bar,
+    .noprint,
+    .inline-control-link,
+    .inline-control-link a,
+    a.show-labels-editor,
+    .global-comment-actions,
+    .comment-actions,
+    .quick-comment-container,
+    #addcomment {
+        display: none !important;
+    }
+
+    /* CONF-28544 cannot print multiple pages in IE */
+    #splitter-content {
+        position: relative !important;
+    }
+
+    .comment .date::before {
+        content: none !important; /* remove middot for print view */
+    }
+
+    h1.pagetitle img {
+        height: auto;
+        width: auto;
+    }
+
+    .print-only {
+        display: block;
+    }
+
+    #footer {
+        position: relative !important; /* CONF-17506 Place the footer at en=
+d of the content */
+        margin: 0;
+        padding: 0;
+        background: none;
+        clear: both;
+    }
+
+    #poweredby {
+        border-top: none;
+        background: none;
+    }
+
+    #poweredby li.print-only {
+        display: list-item;
+        font-style: italic;
+    }
+
+    #poweredby li.noprint {
+        display: none;
+    }
+
+    /* no width controls in print */
+    .wiki-content .table-wrap,
+    .wiki-content p,
+    .panel .codeContent,
+    .panel .codeContent pre,
+    .image-wrap {
+        overflow: visible !important;
+    }
+
+    /* TODO - should this work? */
+    #children-section,
+    #comments-section .comment,
+    #comments-section .comment .comment-body,
+    #comments-section .comment .comment-content,
+    #comments-section .comment p {
+        page-break-inside: avoid;
+    }
+
+    #page-children a {
+        text-decoration: none;
+    }
+
+    /**
+     hide twixies
+
+     the specificity here is a hack because print styles
+     are getting loaded before the base styles. */
+    #comments-section.pageSection .section-header,
+    #comments-section.pageSection .section-title,
+    #children-section.pageSection .section-header,
+    #children-section.pageSection .section-title,
+    .children-show-hide {
+        padding-left: 0;
+        margin-left: 0;
+    }
+
+    .children-show-hide.icon {
+        display: none;
+    }
+
+    /* personal sidebar */
+    .has-personal-sidebar #content {
+        margin-right: 0px;
+    }
+
+    .has-personal-sidebar #content .pageSection {
+        margin-right: 0px;
+    }
+
+    .no-print, .no-print * {
+        display: none !important;
+    }
+}
+-->
+    </style>
+</head>
+<body>
+    <h1>RGQ_Thanh to=C3=A1n</h1>
+    <div class=3D"Section1">
+        <p local-id=3D"2e529081a1fb">
+<style>[data-colorid=3Dw77w04cjec]{color:#36b37e} html[data-color-mode=3Dda=
+rk] [data-colorid=3Dw77w04cjec]{color:#4cc994}[data-colorid=3Dikbk2kqbz2]{c=
+olor:#36b37e} html[data-color-mode=3Ddark] [data-colorid=3Dikbk2kqbz2]{colo=
+r:#4cc994}[data-colorid=3Dsckduz9lxw]{color:#36b37e} html[data-color-mode=
+=3Ddark] [data-colorid=3Dsckduz9lxw]{color:#4cc994}[data-colorid=3Dvhjouzj5=
+2y]{color:#ffc400} html[data-color-mode=3Ddark] [data-colorid=3Dvhjouzj52y]=
+{color:#ffc400}[data-colorid=3Dew2aeq4qc4]{color:#36b37e} html[data-color-m=
+ode=3Ddark] [data-colorid=3Dew2aeq4qc4]{color:#4cc994}[data-colorid=3Djuimo=
+xc0nf]{color:#36b37e} html[data-color-mode=3Ddark] [data-colorid=3Djuimoxc0=
+nf]{color:#4cc994}[data-colorid=3Dh0wc13p6z2]{color:#36b37e} html[data-colo=
+r-mode=3Ddark] [data-colorid=3Dh0wc13p6z2]{color:#4cc994}[data-colorid=3Dad=
+v1zlb57x]{color:#36b37e} html[data-color-mode=3Ddark] [data-colorid=3Dadv1z=
+lb57x]{color:#4cc994}[data-colorid=3Dloz8u5o6ir]{color:#36b37e} html[data-c=
+olor-mode=3Ddark] [data-colorid=3Dloz8u5o6ir]{color:#4cc994}</style>I/ QA T=
+hanh to=C3=A1n</p>
+<div class=3D"table-wrap">
+<table data-table-width=3D"1410" data-layout=3D"center" data-local-id=3D"c8=
+a3c1e9-182f-4821-9e22-dd24077386f2" class=3D"confluenceTable">
+<colgroup>
+<col style=3D"width: 70.0px;">
+<col style=3D"width: 172.0px;">
+<col style=3D"width: 114.0px;">
+<col style=3D"width: 85.0px;">
+<col style=3D"width: 390.0px;">
+<col style=3D"width: 161.0px;">
+<col style=3D"width: 326.0px;">
+<col style=3D"width: 91.0px;">
+</colgroup>
+<tbody>
+<tr data-local-id=3D"e9e224c2-2fab-4e85-af92-d62b7e559084">
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"b44f853d-e8ba-43c2-9=
+6e1-625428cf7e45" class=3D"confluenceTd">
+<p local-id=3D"8ded2fe79153">No</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"48c8c50a-b977-41d7-9=
+1c7-bf8babcb9561" class=3D"confluenceTd">
+<p local-id=3D"60c3fe33450d">M=C3=A0n h=C3=ACnh/Ch=E1=BB=A9c n=C4=83ng</p><=
+/td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"bd11cceb723b" class=
+=3D"confluenceTd">
+<p local-id=3D"cb7d824c8741">Ng=C3=A0y h=E1=BB=8Fi</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"7547534f-1ee0-4bf5-9=
+717-c41e0ef25b14" class=3D"confluenceTd">
+<p local-id=3D"f1c2750e2db0">N=E1=BB=99i b=E1=BB=99 / Nghi=E1=BB=87p v=E1=
+=BB=A5</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"6e26aa44-6539-46e2-9=
+66d-0e24fe0359ce" class=3D"confluenceTd">
+<p local-id=3D"471c76e87144">QA</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"2a3f9ea62ba6" class=
+=3D"confluenceTd">
+<p local-id=3D"5e0a2e4a944c">Ng=C3=A0y tr=E1=BA=A3 l=E1=BB=9Di</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"a4fd708743aa" class=
+=3D"confluenceTd">
+<p local-id=3D"19ec17b9869e">Answer</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"64184ee7f6d5" class=
+=3D"confluenceTd">
+<p local-id=3D"14dad63a207e">Status</p></td>
+</tr>
+<tr data-local-id=3D"ad14b039-32f5-4512-ab27-db37febc9eea">
+<td data-local-id=3D"fb9d4472-66f8-4a58-9260-3470165108d1" class=3D"conflue=
+nceTd">
+<p local-id=3D"ec9058e1ddf5">1</p></td>
+<td data-local-id=3D"cfa678fd-2a02-4b4d-a9ac-76999d2f22e1" class=3D"conflue=
+nceTd">
+<p local-id=3D"8cfa36737f70">Chi ti=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=BB=8B =
+- Tab th=C3=B4ng tin =C4=91=E1=BB=81 ngh=E1=BB=8B</p></td>
+<td data-local-id=3D"b309b13f7c9f" class=3D"confluenceTd">
+<p local-id=3D"16a4f17e61ca"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"d96ca099-e101-4582-886d-c62030d0b812" class=3D"conflue=
+nceTd">
+<p local-id=3D"4cf2dd87b963">NV</p></td>
+<td data-local-id=3D"896a0bd4-a7ed-4dfa-a3a9-a7209abbcd98" class=3D"conflue=
+nceTd">
+<p local-id=3D"0c714f256834"><span class=3D"inline-comment-marker" data-ref=
+=3D"f95d8644-0dab-48b6-b61a-115a8766f706">C=C3=B3 c=E1=BA=A7n thi=E1=BA=BFt=
+ ph=E1=BA=A3i c=C3=B3 bi=C3=AAn b=E1=BA=A3n nghi=E1=BB=87m thu b=C3=A0n gia=
+o t=E1=BA=A1i quy tr=C3=ACnh =C4=91=E1=BB=81 ngh=E1=BB=8B thanh to=C3=A1n k=
+h=C3=B4ng</span>? N=E1=BA=BFu b=E1=BA=AFt bu=E1=BB=99c th=C3=AC s=E1=BA=BD =
+th=C3=AAm t=E1=BA=A1i m=C3=A0n =C4=90MMS t=E1=BA=A1o =C4=91=E1=BB=81 ngh=E1=
+=BB=8B v=C3=A0 hi=E1=BB=83n th=E1=BB=8B t=E1=BA=A1i T=C3=A0i li=E1=BB=87u =
+=C4=91=C3=ADnh k=C3=A8m gi=E1=BB=91ng nh=C6=B0 Ch=E1=BB=8Dn h=C3=B3a =C4=91=
+=C6=A1n?</p></td>
+<td data-local-id=3D"bb46606f797c" class=3D"confluenceTd">
+<p local-id=3D"a0ddf3d1c56d"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"f9a8df4b0d27" class=3D"confluenceTd">
+<p local-id=3D"51bc37e3ca47">NV CF: kh=C3=B4ng b=E1=BA=AFt bu=E1=BB=99c c=
+=C3=B3 bbbg/nt, bb ch=E1=BB=89 l=C3=A0 1 lo=E1=BA=A1i t=C3=A0i li=E1=BB=87u=
+ =C4=91=C3=ADnh k=C3=A8m thu=E1=BB=99c t=C3=A0i li=E1=BB=87u h=C4=91/kms</p=
+></td>
+<td data-local-id=3D"a05cb4eaa4f4" class=3D"confluenceTd">
+<p local-id=3D"572a56c21a1e"><strong><span data-colorid=3D"h0wc13p6z2">Done=
+</span></strong></p></td>
+</tr>
+<tr data-local-id=3D"1e4604e4-a36f-40f7-885c-7d68691774c8">
+<td data-local-id=3D"6ce3e6cc-b53d-42a3-8195-29ed21442a7c" class=3D"conflue=
+nceTd">
+<p local-id=3D"6f43bd27a1a9">2</p></td>
+<td data-local-id=3D"1c92000c-11d7-4ebc-a8af-c6e5c5427c77" class=3D"conflue=
+nceTd">
+<p local-id=3D"83a25a75182b">Chi ti=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=BB=8B =
+- Tab h=C3=A0ng h=C3=B3a d=E1=BB=8Bch v=E1=BB=A5</p></td>
+<td data-local-id=3D"beed7cfe0776" class=3D"confluenceTd">
+<p local-id=3D"0fc29ade0bc6"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"6d164d09-ac6e-4291-9074-119130431438" class=3D"conflue=
+nceTd">
+<p local-id=3D"75b725c1c5d0">NV</p></td>
+<td data-local-id=3D"f0ed7d79-558c-40aa-acb2-9e85d29cc225" class=3D"conflue=
+nceTd">
+<p local-id=3D"a091bd91b628"><span class=3D"inline-comment-marker" data-ref=
+=3D"feb67ac0-fad1-4fb5-a61f-8236b7992d8d">Th=C3=B4ng tin h=C3=A0ng h=C3=B3a=
+ d=E1=BB=8Bch v=E1=BB=A5 hi=E1=BB=83n th=E1=BB=8B t=E1=BA=A1i =C4=91=C3=A2y=
+ s=E1=BA=BD l=E1=BA=A5y theo h=C3=B3a =C4=91=C6=A1n hay theo H=C4=90/KMS?</=
+span><br><span class=3D"inline-comment-marker" data-ref=3D"4b0550ca-2e44-44=
+a5-86cb-eb0c604a6d41">C=C3=B3 thao t=C3=A1c g=C3=AC v=E1=BB=9Bi th=C3=B4ng =
+tin n=C3=A0y kh=C3=B4ng</span>? hay ch=E1=BB=89 hi=E1=BB=83n th=E1=BB=8B =
+=C4=91=E1=BB=83 xem</p></td>
+<td data-local-id=3D"c0ecaad87cf9" class=3D"confluenceTd">
+<p local-id=3D"853a5761f27f"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"4ed2f6f5d92d" class=3D"confluenceTd">
+<p local-id=3D"4d6442fb2af9">NV CF: b=E1=BB=8F tab hhdv</p></td>
+<td data-local-id=3D"4b71c44e37dc" class=3D"confluenceTd">
+<p local-id=3D"908717586bae"><strong><span data-colorid=3D"ikbk2kqbz2">Done=
+</span></strong></p></td>
+</tr>
+<tr data-local-id=3D"84d1806b-bf84-4363-85a6-edfa764faa9e">
+<td data-local-id=3D"d2a2010a-b369-4d23-b26b-bf8f40c298d4" class=3D"conflue=
+nceTd">
+<p local-id=3D"4335b4f726f3">3</p></td>
+<td data-local-id=3D"42727f96-0016-41ec-a907-a806b0c8398c" class=3D"conflue=
+nceTd">
+<p local-id=3D"0331a2a69cfa">Chi ti=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=BB=8B =
+- Tab Th=C3=B4ng tin c=C3=B4ng n=E1=BB=A3</p></td>
+<td data-local-id=3D"79a6a7ff10ce" class=3D"confluenceTd">
+<p local-id=3D"1cbb5d7c2ec5"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"2c538f04-c6f3-470d-852e-11f854a84dbf" class=3D"conflue=
+nceTd">
+<p local-id=3D"d0d05fb5ea66">NV</p></td>
+<td data-local-id=3D"242f8a61-f6b2-4cd6-8fd6-b596297b20c9" class=3D"conflue=
+nceTd">
+<p local-id=3D"f7499102d79d">Vi=E1=BB=87c <span class=3D"inline-comment-mar=
+ker" data-ref=3D"bf8e5755-75b2-4e2e-82dc-31af2c560128">ho=C3=A0n t=E1=BA=A1=
+m =E1=BB=A9ng =C4=91=C6=B0=E1=BB=A3c th=E1=BB=B1c hi=E1=BB=87n tr=C3=AAn t=
+=E1=BB=ABng kho=E1=BA=A3n t=E1=BA=A1m =E1=BB=A9ng c=E1=BB=A7a NCC </span>ha=
+y tr=C3=AAn t=E1=BB=95ng s=E1=BB=91 ti=E1=BB=81n t=E1=BA=A1m =E1=BB=A9ng c=
+=E1=BB=A7a NCC?</p></td>
+<td data-local-id=3D"cb1c5196cfbb" class=3D"confluenceTd">
+<p local-id=3D"637f6fcfa24e"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"e1674eee1eab" class=3D"confluenceTd">
+<p local-id=3D"0e5daf848efb">ho=C3=A0n tr=C3=AAn t=E1=BB=ABng kho=E1=BA=A3n=
+ t=E1=BA=A1m =E1=BB=A9ng</p></td>
+<td data-local-id=3D"5186d06dbdab" class=3D"confluenceTd">
+<p local-id=3D"6c3d9809cc9f"><strong><span data-colorid=3D"ew2aeq4qc4">Done=
+</span></strong></p></td>
+</tr>
+<tr data-local-id=3D"8b8c2d3f-781a-4e59-b6f0-0860e9f37956">
+<td data-local-id=3D"f2abd8a1-186f-4985-b45a-66c399c4f497" class=3D"conflue=
+nceTd">
+<p local-id=3D"07f0b2dff7a7">4</p></td>
+<td data-local-id=3D"9f76366f-10b6-492a-8c45-50d6a5ecfb9b" class=3D"conflue=
+nceTd">
+<p local-id=3D"69a1c99d18ba">Chi ti=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=BB=8B =
+- Tab Ph=C3=A2n b=E1=BB=95 chi ph=C3=AD</p></td>
+<td data-local-id=3D"7aea1ff4c3b7" class=3D"confluenceTd">
+<p local-id=3D"26e333c21cca"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"03275224-451f-4887-8dc1-30142ead549a" class=3D"conflue=
+nceTd">
+<p local-id=3D"e5b071a482c8">NV</p></td>
+<td data-local-id=3D"dd228b99-c66c-41c0-b95f-a553af5fd065" class=3D"conflue=
+nceTd">
+<p local-id=3D"cc948d6d9b96">Nh=E1=BB=9D anh/ch=E1=BB=8B t=E1=BB=95ng h=E1=
+=BB=A3p<span class=3D"inline-comment-marker" data-ref=3D"4def7438-4f78-427f=
+-a8b4-0c871c6478ba"> b=C3=BAt to=C3=A1n ph=C3=A2n b=E1=BB=95 chi ph=C3=AD n=
+=E1=BB=99i b=E1=BB=99 v=C3=A0 li=C3=AAn chi nh=C3=A1nh</span></p></td>
+<td data-local-id=3D"000421639fbe" class=3D"confluenceTd">
+<p local-id=3D"54ce21902ac5"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"a00b75db73af" class=3D"confluenceTd">
+<p local-id=3D"92c890a475ad">A H=E1=BA=A3i: ph=C3=A2n b=E1=BB=95 s=E1=BA=BD=
+ t=E1=BA=A1m th=E1=BB=9Di =C4=91=E1=BB=83 sau 31/8</p></td>
+<td data-local-id=3D"4b5df5aadc75" class=3D"confluenceTd">
+<p local-id=3D"07184f327ab1"><strong><span data-colorid=3D"vhjouzj52y">Pend=
+ing</span></strong></p></td>
+</tr>
+<tr data-local-id=3D"dae40de2-96bd-4992-bf4e-270d8e3525f9">
+<td data-local-id=3D"c5912d32-bb0d-4f64-8894-685638bb4c30" class=3D"conflue=
+nceTd">
+<p local-id=3D"5a7e1256948f">5</p></td>
+<td data-local-id=3D"721a9d87-2025-4fc7-8511-bf53b3d9eb46" class=3D"conflue=
+nceTd">
+<p local-id=3D"d8e8021d5e02">Chi ti=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=BB=8B =
+- Tab Ph=C3=A2n b=E1=BB=95 chi ph=C3=AD</p></td>
+<td data-local-id=3D"7120822e88a6" class=3D"confluenceTd">
+<p local-id=3D"c294ba4ef599"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"d2b7bfe8-b7a0-404a-b446-6fcaca085228" class=3D"conflue=
+nceTd">
+<p local-id=3D"181dde9bcc02">NV</p></td>
+<td data-local-id=3D"6bd5db15-3c00-424d-8b41-5d9d70d72480" class=3D"conflue=
+nceTd">
+<p local-id=3D"3d0680a636d2">X=C3=A1c nh=E1=BA=ADn ph=E1=BA=A1m vi x=E1=BB=
+=AD l=C3=BD ph=C3=A2n b=E1=BB=95 chi ph=C3=AD trong =C4=91=E1=BB=81 ngh=E1=
+=BB=8B thanh to=C3=A1n: ch=E1=BB=89 ph=C3=A2n b=E1=BB=91 s=E1=BB=91 ti=E1=
+=BB=81n chi ph=C3=AD, kh=C3=B4ng x=E1=BB=AD l=C3=BD ph=C3=A2n b=E1=BB=95 =
+=C4=91=E1=BA=BFn h=C3=A0ng h=C3=B3a d=E1=BB=8Bch v=E1=BB=A5, <span class=3D=
+"inline-comment-marker" data-ref=3D"e389f32e-ce8c-421f-9959-710366f04479">k=
+h=C3=B4ng c=C3=B3 lu=E1=BB=93ng x=C3=A1c nh=E1=BA=ADn c=E1=BB=A7a =C4=91=C6=
+=A1n v=E1=BB=8B =C4=91=C6=B0=E1=BB=A3c ph=C3=A2n b=E1=BB=95</span></p></td>
+<td data-local-id=3D"a9dcd081c117" class=3D"confluenceTd">
+<p local-id=3D"0c34ad49f03c"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"38a3430f04fc" class=3D"confluenceTd">
+<p local-id=3D"dec179a465ed">A H=E1=BA=A3i cf: =C4=91=C3=A2y l=C3=A0 ph=C3=
+=A2n chia chi ph=C3=AD, ph=C3=A2n chia theo ncc, ph=C3=A2n chia s=E1=BB=91 =
+ti=E1=BB=81n =C4=91=E1=BA=BFn c=C3=A1c ph=C3=B2ng ban</p></td>
+<td data-local-id=3D"fb483379c4b5" class=3D"confluenceTd">
+<p local-id=3D"bba972b8ece6"></p></td>
+</tr>
+<tr data-local-id=3D"49b63542-b4f8-4131-8322-d93973e86dd9">
+<td data-local-id=3D"087930de-5e2a-4a40-98ee-0d931b167550" class=3D"conflue=
+nceTd">
+<p local-id=3D"eede7a7594ff">6</p></td>
+<td data-local-id=3D"4c26879e-0654-4f49-9cb7-86a549dac7c9" class=3D"conflue=
+nceTd">
+<p local-id=3D"13128f4308ca">Chi ti=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=BB=8B =
+- Tab Th=C3=B4ng tin c=C3=B4ng n=E1=BB=A3</p></td>
+<td data-local-id=3D"9ce6034b263f" class=3D"confluenceTd">
+<p local-id=3D"cf9f8452518e"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"9a1d0795-244a-402d-be51-666a84b6dfd4" class=3D"conflue=
+nceTd">
+<p local-id=3D"8a65aef26995">NV</p></td>
+<td data-local-id=3D"9335bf1e-d4d8-411c-a85d-cfae12926604" class=3D"conflue=
+nceTd">
+<p local-id=3D"c2efb7c1b0dd">C=C3=B3 tr=C6=B0=E1=BB=9Dng h=E1=BB=A3p ho=C3=
+=A0n <span class=3D"inline-comment-marker" data-ref=3D"a5c3546e-a5a3-4323-9=
+48c-01bf7b6e91e6">t=E1=BA=A1m =E1=BB=A9ng 1 ph=E1=BA=A7n, thanh to=C3=A1n 1=
+ ph=E1=BA=A7n v=C3=A0 treo ph=E1=BA=A3i tr=E1=BA=A3 NCC 1 ph=E1=BA=A7n kh=
+=C3=B4ng?</span></p></td>
+<td data-local-id=3D"8dc33d9caf55" class=3D"confluenceTd">
+<p local-id=3D"e69725a5e139"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"81370255111e" class=3D"confluenceTd">
+<p local-id=3D"8f97dc90beba">NV cf: c=C3=B3</p></td>
+<td data-local-id=3D"76652d6574ff" class=3D"confluenceTd">
+<p local-id=3D"c3fc49f66dc1"><strong><span data-colorid=3D"loz8u5o6ir">Done=
+</span></strong></p></td>
+</tr>
+<tr data-local-id=3D"3686717c-91dc-4239-a78c-b2db845b5d64">
+<td data-local-id=3D"810df01f-c840-4ec7-833f-73abff1578da" class=3D"conflue=
+nceTd">
+<p local-id=3D"f076326126bf">7</p></td>
+<td data-local-id=3D"5d4c96f2-ee51-497c-a64f-a2d945e17ee0" class=3D"conflue=
+nceTd">
+<p local-id=3D"e40f0b06c217">Chi ti=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=BB=8B =
+- Tab Th=C3=B4ng tin h=E1=BA=A1ch to=C3=A1n</p></td>
+<td data-local-id=3D"d74ea370f000" class=3D"confluenceTd">
+<p local-id=3D"4bc4356c08b5"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"77e1524b-363d-4b6b-9935-55590336cc55" class=3D"conflue=
+nceTd">
+<p local-id=3D"5a57f472c887">NV</p></td>
+<td data-local-id=3D"a1d7043c-a3e5-4f74-b3b1-9ef9d4206476" class=3D"conflue=
+nceTd">
+<p local-id=3D"50afb6649ada"><span class=3D"inline-comment-marker" data-ref=
+=3D"8ff22071-7095-4b8f-a82d-8552609995f3">=C4=90=E1=BB=91i v=E1=BB=9Bi tr=
+=C6=B0=E1=BB=9Dng h=E1=BB=A3p h=E1=BA=A1ch to=C3=A1n Ph=E1=BA=A3i tr=E1=BA=
+=A3 NCC/ Ph=E1=BA=A3i thu NCC th=C3=AC tr=E1=BA=A1ng th=C3=A1i c=E1=BB=A7a =
+=C4=91=E1=BB=81 ngh=E1=BB=8B thanh to=C3=A1n s=E1=BA=BD nh=C6=B0 n=C3=A0o</=
+span>? Sau khi ghi nh=E1=BA=ADn h=E1=BA=A1ch to=C3=A1n th=C3=A0nh c=C3=B4ng=
+ v=C3=A0o OGL s=E1=BA=BD =C4=91=C3=A1nh d=E1=BA=A5u tr=E1=BA=A1ng th=C3=A1i=
+ =C4=91=E1=BB=81 ngh=E1=BB=8B l=C3=A0 ho=C3=A0n th=C3=A0nh, tr=E1=BA=A1ng t=
+h=C3=A1i =C4=91i ti=E1=BB=81n l=C3=A0 =C4=91ang th=E1=BB=B1c hi=E1=BB=87n? =
+<br>
+N=E1=BA=BFu v=E1=BA=ADy th=C3=AC khi thanh to=C3=A1n c=C3=A1c kho=E1=BA=A3n=
+ ph=E1=BA=A3i tr=E1=BA=A3 s=E1=BA=BD x=E1=BB=AD l=C3=BD nh=C6=B0 n=C3=A0o?<=
+/p></td>
+<td data-local-id=3D"7d003e4e3c1d" class=3D"confluenceTd">
+<p local-id=3D"831cd5ccecd2"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"db6f4a565c15" class=3D"confluenceTd">
+<p local-id=3D"edbe98523bb8">=C4=91=C3=A3 cf l=C3=AAn m=C3=A0n c=C3=B4ng n=
+=E1=BB=A3<br>
+- ph=E1=BA=A3i tr=E1=BA=A3 =3D s=E1=BB=91 ti=E1=BB=81n =C4=91=E1=BB=81 ngh=
+=E1=BB=8B tt kt x=C3=A1c nh=E1=BA=ADn<br>
+- ph=E1=BA=A3i tr=E1=BA=A3 c=C3=B2n l=E1=BA=A1i =3D s=E1=BB=91 ph=E1=BA=A3i=
+ tr=E1=BA=A3 ch=C6=B0a thanh to=C3=A1n h=E1=BA=BFt</p></td>
+<td data-local-id=3D"12245a3e3fec" class=3D"confluenceTd">
+<p local-id=3D"b7acb93198f3"><strong><span data-colorid=3D"juimoxc0nf">Done=
+</span></strong></p></td>
+</tr>
+<tr data-local-id=3D"2e9b051a-428e-47a6-866f-cf0f48dec095">
+<td data-local-id=3D"d4697245-f481-4162-9cc8-1e1a9cbad5b3" class=3D"conflue=
+nceTd">
+<p local-id=3D"66e81e63eddb">8</p></td>
+<td data-local-id=3D"2118f27b-c560-4f89-8cb6-089c2991c7c8" class=3D"conflue=
+nceTd">
+<p local-id=3D"e7f4ead9d3f7">Chi ti=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=BB=8B =
+- Tab Th=C3=B4ng tin h=E1=BA=A1ch to=C3=A1n</p></td>
+<td data-local-id=3D"6724ca8b0447" class=3D"confluenceTd">
+<p local-id=3D"0d140bfd49ef"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"e5a1468c-79cc-4c1c-b775-41731e2e6024" class=3D"conflue=
+nceTd">
+<p local-id=3D"9641193815fc">NV</p></td>
+<td data-local-id=3D"b8397f67-4925-4fec-84f0-c5e071d732b3" class=3D"conflue=
+nceTd">
+<p local-id=3D"4331eb39402e"><span class=3D"inline-comment-marker" data-ref=
+=3D"279170cc-493f-4498-bfe1-0170506f0bc8">=C4=90=E1=BB=91i v=E1=BB=9Bi tr=
+=C6=B0=E1=BB=9Dng h=E1=BB=A3p ho=C3=A0n =E1=BB=A9ng thu l=E1=BA=A1i ti=E1=
+=BB=81n th=C3=AC x=E1=BB=AD l=C3=BD th=C3=AAm b=C3=BAt to=C3=A1n hay c=E1=
+=BA=A7n t=E1=BA=A1o phi=E1=BA=BFu? c=C3=B3 3 tr=C6=B0=E1=BB=9Dng h=E1=BB=A3=
+p: thu ngay, treo ph=E1=BA=A3i thu NCC v=C3=A0 thu b=E1=BA=B1ng ti=E1=BB=81=
+n m=E1=BA=B7t</span><br><span class=3D"inline-comment-marker" data-ref=3D"f=
+64116f3-06a0-4715-a177-47e9341c8ad7">C=C3=B3 tr=C6=B0=E1=BB=9Dng h=E1=BB=A3=
+p NCC tr=E1=BA=A3 1 ph=E1=BA=A7n, treo ph=E1=BA=A3i thu NCC 1 ph=E1=BA=A7n =
+kh=C3=B4ng?</span></p></td>
+<td data-local-id=3D"3dcb2aef1ad1" class=3D"confluenceTd">
+<p local-id=3D"c45bbdd8d2b3"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"ce646a224ec9" class=3D"confluenceTd">
+<p local-id=3D"5dd25260da14">a H=E1=BA=A3i cf: tr=C6=B0=E1=BB=9Dng h=E1=BB=
+=A3p thu l=E1=BA=A1i ti=E1=BB=81n x=E1=BA=A3y ra =E1=BB=9F cu=E1=BB=91i h=
+=E1=BB=A3p =C4=91=E1=BB=93ng khi s=E1=BB=91 ti=E1=BB=81n ph=E1=BA=A3i thanh=
+ to=C3=A1n &lt; s=E1=BB=91 ti=E1=BB=81n t=E1=BA=A1m =E1=BB=A9ng =E2=86=92 t=
+h=E1=BB=B1c hi=E1=BB=87n thu l=E1=BA=A1i ti=E1=BB=81n<br>
+tr=C6=B0=E1=BB=9Dng h=E1=BB=A3p n=C3=A0y =C3=ADt g=E1=BA=B7p<br><br><span c=
+lass=3D"inline-comment-marker" data-ref=3D"7a9a1fee-28de-4348-8812-7d0558b6=
+5f2f">-&gt; team s=E1=BA=BD hi=E1=BB=83n th=E1=BB=8B s=E1=BB=91 ph=E1=BA=A3=
+i thu tr=C3=AAn tab c=C3=B4ng n=E1=BB=A3 c=C3=B2n thao t=C3=A1c thu l=E1=BA=
+=A1i ti=E1=BB=81n nh=C6=B0 n=C3=A0o s=E1=BA=BD ch=C6=B0a x=E1=BB=AD l=C3=BD=
+ tr=C3=AAn h=E1=BB=87 th=E1=BB=91ng QLTS? </span></p>
+<p local-id=3D"24157a700434"></p>
+<p local-id=3D"4f3514e3dea7">sau 31/8 s=E1=BA=BD x=E1=BB=AD l=C3=BD tr=C6=
+=B0=E1=BB=9Dng h=E1=BB=A3p t=E1=BA=A1m =E1=BB=A9ng th=E1=BB=ABa treo ph=E1=
+=BA=A3i thu</p></td>
+<td data-local-id=3D"77900b241b87" class=3D"confluenceTd">
+<p local-id=3D"e8ee88298e7f"></p></td>
+</tr>
+<tr data-local-id=3D"cb67664012cf">
+<td data-local-id=3D"7352b670-eda2-450b-8faf-a5b6984d1735" class=3D"conflue=
+nceTd">
+<p local-id=3D"2fa151aaf2df">9</p></td>
+<td data-local-id=3D"b70aa8fb-2695-4304-9aae-7fef26db75f2" class=3D"conflue=
+nceTd">
+<p local-id=3D"2261f418c976">Tab Th=C3=B4ng tin c=C3=B4ng n=E1=BB=A3 + h=E1=
+=BA=A1ch to=C3=A1n</p></td>
+<td data-local-id=3D"4051ce8d7510" class=3D"confluenceTd">
+<p local-id=3D"c06a0f1f1cd9"><time datetime=3D"2026-07-13" class=3D"date-pa=
+st">13 Jul 2026</time></p></td>
+<td data-local-id=3D"fd920516-56ab-4930-9f37-952d1632c15c" class=3D"conflue=
+nceTd">
+<p local-id=3D"6d619d160993">NV</p></td>
+<td data-local-id=3D"0dfaaa82-29fe-4249-8959-018d1972a5c9" class=3D"conflue=
+nceTd">
+<p local-id=3D"9072692ed5e4">C=C3=A1c kho=E1=BA=A3n ph=E1=BA=A3i tr=E1=BA=
+=A3 t=E1=BB=B1 t=C3=ADnh to=C3=A1n theo c=C3=B4ng th=E1=BB=A9c n=C3=A0o?<br=
+>
+vd DMMS =C4=91=E1=BB=81 ngh=E1=BB=8B thanh to=C3=A1n 400tr, KT ch=E1=BB=89 =
+duy=E1=BB=87t 330tr, trong =C4=91=C3=B3 <br>
+- nh=E1=BA=ADp ho=C3=A0n =E1=BB=A9ng 200tr<br>
+- thanh to=C3=A1n th=C3=AAm 100tr <br>
+- gi=E1=BB=AF l=E1=BA=A1i 30tr =E2=86=92 kho=E1=BA=A3n 30tr n=C3=A0y n=E1=
+=BA=BFu ko do t=E1=BB=B1 nh=E1=BA=ADp v=C3=A0o th=C3=AC t=C3=ADnh to=C3=A1n=
+ ra nh=C6=B0 th=E1=BA=BF n=C3=A0o?<br></p></td>
+<td data-local-id=3D"d18b44c730d7" class=3D"confluenceTd">
+<p local-id=3D"47276d27e3b2"></p></td>
+<td data-local-id=3D"647cb1f56fb0" class=3D"confluenceTd">
+<p local-id=3D"45212d6a2ad3">do thi=E1=BA=BFu tr=C6=B0=E1=BB=9Dng nh=E1=BA=
+=ADp ph=E1=BA=A3i tr=E1=BA=A3, s=E1=BA=BD b=E1=BB=95 sung v=C3=A0 s=E1=BB=
+=91 ph=E1=BA=A3i tr=E1=BA=A3 c=C3=B2n l=E1=BA=A1i c=E1=BB=A7a dntt n=C3=A0y=
+ =3D ph=E1=BA=A3i tr=E1=BA=A3 - =C4=91=E1=BB=81 ngh=E1=BB=8B tt l=E1=BA=A7n=
+ n=C3=A0y<br>
+=C4=91=E1=BA=B7t t=C3=AAn l=C3=A0 gi=C3=A1 tr=E1=BB=8B ph=E1=BA=A3i tr=E1=
+=BA=A3</p></td>
+<td data-local-id=3D"f174cf02d594" class=3D"confluenceTd">
+<p local-id=3D"ed9ea471c27c"></p></td>
+</tr>
+<tr data-local-id=3D"20d7b1fb8262">
+<td data-local-id=3D"826a5b87d146" class=3D"confluenceTd">
+<p local-id=3D"a302deeeea95">10</p></td>
+<td data-local-id=3D"1e20e71504cb" class=3D"confluenceTd">
+<p local-id=3D"d44e2a2697ca">Tab Th=C3=B4ng tin c=C3=B4ng n=E1=BB=A3</p></t=
+d>
+<td data-local-id=3D"6e23b8f2-f9f3-4864-9e26-dbb5cb1ce2d4" class=3D"conflue=
+nceTd">
+<p local-id=3D"0cff98012025"><time datetime=3D"2026-07-14" class=3D"date-pa=
+st">14 Jul 2026</time></p></td>
+<td data-local-id=3D"e0b7ea6a6ba5" class=3D"confluenceTd">
+<p local-id=3D"543a62c39d50">NV</p></td>
+<td data-local-id=3D"c428fc939c11" class=3D"confluenceTd">
+<p local-id=3D"c5d9659a1ce9">G=C3=B3p =C3=BD t=E1=BB=AB c Th=C3=BAy: <br>
+1/ do thu=E1=BA=BF thu=E1=BB=99c lo=E1=BA=A1i Standard n=C3=AAn hi=E1=BB=83=
+n th=E1=BB=8B l=C3=AAn c=C3=B9ng v=E1=BB=9Bi kho=E1=BA=A3n t=E1=BA=A1m =E1=
+=BB=A9ng th=C3=AC kh=C3=B4ng ch=C3=ADnh x=C3=A1c, =C4=91=E1=BB=81 xu=E1=BA=
+=A5t b=E1=BB=8F c=E1=BB=99t thu=E1=BA=BF v=C3=A0 ch=E1=BB=89 hi=E1=BB=83n t=
+h=E1=BB=8B s=E1=BB=91 ti=E1=BB=81n t=E1=BA=A1m =E1=BB=A9ng l=C3=A0 s=E1=BB=
+=91 ti=E1=BB=81n kh=C3=B4ng g=E1=BB=93m thu=E1=BA=BF =C4=91=E1=BB=83 th=E1=
+=BB=B1c hi=E1=BB=87n ho=C3=A0n =E1=BB=A9ng, c=C3=B2n thu=E1=BA=BF sau n=C3=
+=A0y s=E1=BA=BD hi=E1=BB=83n th=E1=BB=8B t=E1=BA=A1i m=C3=A0n l=E1=BB=8Bch =
+s=E1=BB=AD hi=E1=BB=83n th=E1=BB=8B full c=C3=A1c giao d=E1=BB=8Bch, =C4=91=
+=E1=BB=83 tr=C3=A1nh m=C3=A0n h=C3=ACnh c=C3=B3 nhi=E1=BB=81u th=C3=B4ng ti=
+n qu=C3=A1-&gt; nghi=E1=BB=87p v=E1=BB=A5 c=C3=B3 c=E1=BA=A7n hi=E1=BB=83n =
+th=E1=BB=8B thu=E1=BA=BF g=E1=BA=AFn v=E1=BB=9Bi kho=E1=BA=A3n t=E1=BA=A1m =
+=E1=BB=A9ng n=C3=A0o hay ko?</p>
+<p local-id=3D"d52aa241d4a6">2/ b=E1=BB=8F c=E1=BB=99t tr=E1=BA=A1ng th=C3=
+=A1i h=E1=BA=A1ch to=C3=A1n, hi=E1=BB=83n th=E1=BB=8B th=C3=AAm c=E1=BB=99t=
+ m=C3=A3 giao d=E1=BB=8Bch OGL tr=E1=BA=A3 v=E1=BB=81: do ch=E1=BB=89 c=C3=
+=A1c tr=C6=B0=E1=BB=9Dng h=E1=BB=A3p =C4=91=C3=A3 h=E1=BA=A1ch to=C3=A1n th=
+=C3=A0nh c=C3=B4ng m=E1=BB=9Bi hi=E1=BB=83n th=E1=BB=8B l=C3=AAn n=C3=AAn =
+=C4=91=E1=BB=81 xu=E1=BA=A5t b=E1=BB=8F c=E1=BB=99t tr=E1=BA=A1ng th=C3=A1i=
+ h=E1=BA=A1ch to=C3=A1n</p>
+<p local-id=3D"efb9dab8b6f3">3/ khi click v=C3=A0o m=C3=A3 =C4=91=E1=BB=81 =
+ngh=E1=BB=8B tr=C3=AAn b=E1=BA=A3ng s=E1=BA=BD hi=E1=BB=83n th=E1=BB=8B ra =
+popup 1 s=E1=BB=91 th=C3=B4ng tin c=E1=BA=A7n thi=E1=BA=BFt (mong mu=E1=BB=
+=91n s=E1=BA=BD hi=E1=BB=83n th=E1=BB=8B nh=E1=BB=AFng th=C3=B4ng tin j) ha=
+y s=E1=BA=BD chuy=E1=BB=83n th=E1=BA=B3ng =C4=91=E1=BA=BFn m=C3=A0n chi ti=
+=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=BB=8B?</p>
+<p local-id=3D"4ff91ecb07ce">4/ ho=C3=A0n &gt;t=E1=BA=A1m =E1=BB=A9ng theo =
+a h=E1=BA=A3i l=C3=A0 thu l=E1=BA=A1i ti=E1=BB=81n =E1=BB=9F cu=E1=BB=91i h=
+=C4=91, c=C3=B2n theo c th=E1=BB=A7y ho=C3=A0n &gt; t=E1=BA=A1m =E1=BB=A9ng=
+ s=E1=BA=BD ho=C3=A0n h=E1=BA=BFt s=E1=BB=91 t=E1=BA=A1m =E1=BB=A9ng v=C3=
+=A0 thanh to=C3=A1n th=C3=AAm kho=E1=BA=A3n ch=C3=AAnh l=E1=BB=87ch =E2=86=
+=92 li=C3=AAn quan =C4=91=E1=BA=BFn nghi=E1=BB=87p v=E1=BB=A5 thu l=E1=BA=
+=A1i ti=E1=BB=81n</p></td>
+<td data-local-id=3D"80cdd0df8606" class=3D"confluenceTd">
+<p local-id=3D"42033fa5a4ae"></p></td>
+<td data-local-id=3D"9e0a5f8c5b3f" class=3D"confluenceTd">
+<p local-id=3D"ccc0366c3b56">1/ x=C3=A1c nh=E1=BA=ADn b=E1=BB=8F thu=E1=BA=
+=BF tr=C3=AAn ph=E1=BA=A7n c=C3=A1c kho=E1=BA=A3n t=E1=BA=A1m =E1=BB=A9ng</=
+p>
+<p local-id=3D"baffb49fb67c">2/ b=E1=BB=8F ok</p>
+<p local-id=3D"2e959df3181a">3/</p>
+<p local-id=3D"99ea3c43fdba">4/ nghi=E1=BB=87p v=E1=BB=A5 thu l=E1=BA=A1i t=
+i=E1=BB=81n sau 31/8</p></td>
+<td data-local-id=3D"66b4d4940b3b" class=3D"confluenceTd">
+<p local-id=3D"3648f5ef3fdb"></p></td>
+</tr>
+<tr data-local-id=3D"3db5cfd0f110">
+<td data-local-id=3D"b82a0de2d3de" class=3D"confluenceTd">
+<p local-id=3D"a298d889c2e5">11</p></td>
+<td data-local-id=3D"8dca9daf0927" class=3D"confluenceTd">
+<p local-id=3D"44dec936cfef"></p></td>
+<td data-local-id=3D"c122d42b-b122-48ea-afd6-faa8ac9c5231" class=3D"conflue=
+nceTd">
+<p local-id=3D"6382d028b06f"><time datetime=3D"2026-07-15" class=3D"date-pa=
+st">15 Jul 2026</time></p></td>
+<td data-local-id=3D"4fe26d18d6e5" class=3D"confluenceTd">
+<p local-id=3D"c5d5b18d2463"></p></td>
+<td data-local-id=3D"b1265a50d976" class=3D"confluenceTd">
+<p local-id=3D"a0b7294709eb">1/ x=C3=A1c nh=E1=BA=ADn b=E1=BB=8F tab hhdv c=
+ho b=C3=AAn squad kh=C3=A1c theo d=C3=B5i, squad thanh to=C3=A1n /t=E1=BA=
+=A1m =E1=BB=A9ng =C4=91ang ko theo d=C3=B5i theo hhdv</p>
+<p local-id=3D"ddeab74cc3e3">2/ thanh to=C3=A1n c=C3=B3 b=E1=BA=A3o l=C3=A3=
+nh nh=C6=B0 t=E1=BA=A1m =E1=BB=A9ng ko?</p>
+<p local-id=3D"44832ef9b991"></p></td>
+<td data-local-id=3D"3f6128cc9f69" class=3D"confluenceTd">
+<p local-id=3D"2f24279abfe9"></p></td>
+<td data-local-id=3D"d36930218c44" class=3D"confluenceTd">
+<p local-id=3D"4c299f4dffc4">2/ thanh to=C3=A1n ko b=E1=BA=AFt bu=E1=BB=99c=
+ c=C3=B3 b=E1=BA=A3o l=C3=A3nh, n=E1=BA=BFu c=C3=B3 n=C3=B3 ch=E1=BB=89 l=
+=C3=A0 1 lo=E1=BA=A1i t=C3=A0i li=E1=BB=87u =C4=91=C3=ADnh k=C3=A8m trong t=
+l =C4=91=C3=ADnh k=C3=A8m =E2=86=92 b=E1=BB=8F hi=E1=BB=83n th=E1=BB=8B tr=
+=C3=AAn th=C3=B4ng tin thanh to=C3=A1n</p></td>
+<td data-local-id=3D"04337627e547" class=3D"confluenceTd">
+<p local-id=3D"4e0821015e68"></p></td>
+</tr>
+<tr data-local-id=3D"8cc96f97a350">
+<td data-local-id=3D"e1497e3fbe03" class=3D"confluenceTd">
+<p local-id=3D"ff3567605514">12</p></td>
+<td data-local-id=3D"5978f1d61192" class=3D"confluenceTd">
+<p local-id=3D"16b3ae0afafe"></p></td>
+<td data-local-id=3D"4f3a39a69635" class=3D"confluenceTd">
+<p local-id=3D"8c51e54c450a"></p></td>
+<td data-local-id=3D"5fb407b05b70" class=3D"confluenceTd">
+<p local-id=3D"92c46ce349e3"></p></td>
+<td data-local-id=3D"49bd346488cf" class=3D"confluenceTd">
+<p local-id=3D"72ffa045d297">1/ c=E1=BA=A7n l=C3=A0m r=C3=B5 tr=E1=BA=A1ng =
+th=C3=A1i phi=E1=BA=BFu, tr=E1=BA=A1ng th=C3=A1i h=E1=BA=A1ch to=C3=A1n ogl=
+ v=C3=A0 tr=E1=BA=A1ng th=C3=A1i ti=E1=BB=81n (core)<br>
+- vd khi h=E1=BA=A1ch to=C3=A1n l=E1=BB=97i nh=C6=B0ng g=E1=BB=8Di core th=
+=C3=A0nh c=C3=B4ng? hay ch=E1=BB=89 khi h=E1=BA=A1ch to=C3=A1n th=C3=A0nh c=
+=C3=B4ng ms g=E1=BB=8Di core?<br>
+-</p></td>
+<td data-local-id=3D"fef3b7a798a0" class=3D"confluenceTd">
+<p local-id=3D"fe9f71154ca2"></p></td>
+<td data-local-id=3D"f6fd9f7ccfec" class=3D"confluenceTd">
+<p local-id=3D"5f951853b40b"></p></td>
+<td data-local-id=3D"439b65ba1f11" class=3D"confluenceTd">
+<p local-id=3D"0107caa29b1b"></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p local-id=3D"5b4b9b4c3df1"></p>
+<p local-id=3D"27fc48773608">II/ QA T=E1=BA=A1m =E1=BB=A9ng</p>
+<div class=3D"table-wrap">
+<table data-table-width=3D"1282" data-layout=3D"center" data-local-id=3D"5e=
+301f4d-7e82-4484-8def-8e17e4274bd0" class=3D"confluenceTable">
+<colgroup>
+<col style=3D"width: 49.0px;">
+<col style=3D"width: 96.0px;">
+<col style=3D"width: 108.0px;">
+<col style=3D"width: 88.0px;">
+<col style=3D"width: 417.0px;">
+<col style=3D"width: 96.0px;">
+<col style=3D"width: 354.0px;">
+<col style=3D"width: 71.0px;">
+</colgroup>
+<tbody>
+<tr data-local-id=3D"c1ede194-d9cc-436f-9afc-9ae6552609fb">
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"32d8c780-1146-47bc-8=
+30d-19ceb6262649" class=3D"confluenceTd">
+<p local-id=3D"34d50d92a743">No</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"03ccfc6a-aaca-418b-b=
+176-8f1c8910f050" class=3D"confluenceTd">
+<p local-id=3D"2c744fd345b4">Screen</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"6163e79e-7aa7-44d4-b=
+d01-11a3be94f455" class=3D"confluenceTd">
+<p local-id=3D"30aa7b7eafee">Ng=C3=A0y h=E1=BB=8Fi</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"5b919da0-1787-4440-8=
+31f-c8087bc229b8" class=3D"confluenceTd">
+<p local-id=3D"9aba2ef5f803">N=E1=BB=99i b=E1=BB=99 / Nghi=E1=BB=87p v=E1=
+=BB=A5</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"3f40867a-0612-4860-9=
+1f1-1c04e615ee8d" class=3D"confluenceTd">
+<p local-id=3D"1ac90125d123">QA</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"196cd579-18f9-4dee-a=
+13b-654ba2c32841" class=3D"confluenceTd">
+<p local-id=3D"daf14785d302">Ng=C3=A0y tr=E1=BA=A3 l=E1=BB=9Di</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"78984e9b8d23" class=
+=3D"confluenceTd">
+<p local-id=3D"175d4abff84a">Answer</p></td>
+<td data-highlight-colour=3D"#fce5cd" data-local-id=3D"e007d5f4-d0cb-4029-9=
+201-abcb919095e1" class=3D"confluenceTd">
+<p local-id=3D"c0035f71e497">Status</p></td>
+</tr>
+<tr data-local-id=3D"366b2641-3c2a-42a9-8eae-80cc2561d08e">
+<td data-local-id=3D"f501ee32-62d4-4bba-bb3e-035b427a9f1b" class=3D"conflue=
+nceTd">
+<p local-id=3D"5bb5ffb717d7">1</p></td>
+<td data-local-id=3D"92fbf167-e4ca-435a-9072-38f20ed67df1" class=3D"conflue=
+nceTd">
+<p local-id=3D"be357bffd6dd">Th=C3=B4ng tin c=C3=B4ng n=E1=BB=A3</p></td>
+<td data-local-id=3D"2e48865c554b" class=3D"confluenceTd">
+<p local-id=3D"e8aa842fdf88"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"26b00e18-ee74-4fef-8cb6-703a9eaaa7d7" class=3D"conflue=
+nceTd">
+<p local-id=3D"ae5cdc91be0f">NV</p></td>
+<td data-local-id=3D"a081c26e-b9ce-41c2-8441-b01dd5bc6c12" class=3D"conflue=
+nceTd">
+<p local-id=3D"1fca82ee545e">API Ki=E1=BB=83m tra c=C3=B4ng n=E1=BB=A3 NCC =
+=C4=91ang y=C3=AAu c=E1=BA=A7u c=C3=A1c tr=C6=B0=E1=BB=9Dng: <span class=3D=
+"inline-comment-marker" data-ref=3D"1e57684f-e3d7-490b-960e-c5b0158581d0">T=
+=E1=BB=AB Ng=C3=A0y</span>, =C4=90=E1=BA=BFn ng=C3=A0y<br>
+-&gt; C=C3=B3 th=E1=BB=83 gi=E1=BB=9Bi h=E1=BA=A1n l=E1=BA=A1i th=E1=BB=9Di=
+ gian trong v=C3=B2ng 1 n=C4=83m kh=C3=B4ng? N=E1=BA=BFu kh=C3=B4ng th=C3=
+=AC c=C3=B3 th=E1=BB=83 gi=E1=BB=9Bi h=E1=BA=A1n trong bao l=C3=A2u. T=E1=
+=BB=AB ng=C3=A0y l=C3=A0 T=E1=BB=AB khi n=C3=A0o?</p></td>
+<td data-local-id=3D"9a20950d6a87" class=3D"confluenceTd">
+<p local-id=3D"ae01b1ad71e0"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"7c7fdab8d433" class=3D"confluenceTd">
+<ul local-id=3D"5a7f7a1896d6">
+<li local-id=3D"ff289288a7cc">
+<p local-id=3D"a43a4b03ea23">T=E1=BB=AB ng=C3=A0y: Ng=C3=A0y h=E1=BB=A3p =
+=C4=91=E1=BB=93ng/Ng=C3=A0y ph=C3=A1t sinh giao d=E1=BB=8Bch</p></li>
+<li local-id=3D"c57e52de997b">
+<p local-id=3D"8337e477b1d6">=C4=90=E1=BA=BFn ng=C3=A0y: Ng=C3=A0y hi=E1=BB=
+=87n t=E1=BA=A1i</p></li>
+</ul></td>
+<td data-local-id=3D"431d3479-eb21-4e13-8409-d2d8d19c5f0b" class=3D"conflue=
+nceTd">
+<p local-id=3D"41435a7b1b08"><strong><span data-colorid=3D"w77w04cjec">Done=
+</span></strong></p></td>
+</tr>
+<tr data-local-id=3D"aa670a92-a5e9-4788-b5f4-8ac0cdcc3c96">
+<td data-local-id=3D"6c6b1adf-a361-4ffd-a9f4-3a26eb90b8d4" class=3D"conflue=
+nceTd">
+<p local-id=3D"b8895c522169">2</p></td>
+<td data-local-id=3D"cb3d34f2-96a1-4f60-ae41-18d492dc6a72" class=3D"conflue=
+nceTd">
+<p local-id=3D"ef61df8c4645">Th=C3=B4ng tin c=C3=B4ng n=E1=BB=A3</p></td>
+<td data-local-id=3D"8fd66a2eb1ad" class=3D"confluenceTd">
+<p local-id=3D"4110af566aaf"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"7dffa29b-fb8d-41ea-89be-78b747ed31bf" class=3D"conflue=
+nceTd">
+<p local-id=3D"d8470d407555">NV</p></td>
+<td data-local-id=3D"79edd744-12e7-4495-8545-46e92ac6e80d" class=3D"conflue=
+nceTd">
+<p local-id=3D"0dd2d725de9b">Khi xem =E1=BB=9F tab C=C3=B4ng n=E1=BB=A3 th=
+=C3=AC xem =C4=91=C6=B0=E1=BB=A3c c=C3=A1c kho=E1=BA=A3n t=E1=BA=A1m =E1=BB=
+=A9ng theo 1 H=E1=BB=A3p =C4=91=E1=BB=93ng/Kho=E1=BA=A3n mua s=E1=BA=AFm =
+=C4=91ang ch=E1=BB=8Dn =C4=91=C3=BAng kh=C3=B4ng?<br>
+T=E1=BB=A9c l=C3=A0 v=E1=BB=9Bi <span class=3D"inline-comment-marker" data-=
+ref=3D"3f474381-3701-4426-911f-25ce5c8df019">H=E1=BB=A3p =C4=91=E1=BB=93ng =
+A ch=E1=BB=89 hi=E1=BB=83n th=E1=BB=8B c=C3=A1c kho=E1=BA=A3n t=E1=BA=A1m =
+=E1=BB=A9ng li=C3=AAn quan =C4=91=E1=BA=BFn H=E1=BB=A3p =C4=91=E1=BB=93ng A=
+ v=C3=A0 theo t=E1=BB=ABng Nh=C3=A0 cung c=E1=BA=A5p</span></p></td>
+<td data-local-id=3D"97a54057f04e" class=3D"confluenceTd">
+<p local-id=3D"035d96f65590"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"19fcb3e1f3f6" class=3D"confluenceTd">
+<p local-id=3D"5931eaf9ac83">Kh=C3=A1c v=E1=BB=9Bi OGL</p>
+<ul local-id=3D"65d4eeca-23d8-48d2-91c8-548afecb1f88">
+<li local-id=3D"bc84b2d5-777a-4c71-9a7e-0dc160d29c17">
+<p local-id=3D"e698ae613fbe">D=E1=BB=AF li=E1=BB=87u c=C3=B4ng n=E1=BB=A3 h=
+i=E1=BB=83n th=E1=BB=8B tr=C3=AAn QLTS s=E1=BA=BD =C4=91=C6=B0=E1=BB=A3c <s=
+trong>t=C3=ADnh to=C3=A1n v=C3=A0 l=C6=B0u tr=E1=BB=AF n=E1=BB=99i b=E1=BB=
+=99 t=E1=BA=A1i QLTS</strong>, d=E1=BB=B1a tr=C3=AAn c=C3=A1c giao d=E1=BB=
+=8Bch t=E1=BA=A1m =E1=BB=A9ng, thanh to=C3=A1n, ho=C3=A0n =E1=BB=A9ng =C4=
+=91=C3=A3 ph=C3=A1t sinh v=C3=A0 =C4=91=C6=B0=E1=BB=A3c qu=E1=BA=A3n l=C3=
+=BD chi ti=E1=BA=BFt theo t=E1=BB=ABng H=C4=90/KMS v=C3=A0 NCC.</p></li>
+<li local-id=3D"68cee1e8-11af-467c-a016-7ef72d06c341">
+<p local-id=3D"ddce8c3dbf6a">K=E1=BA=BFt qu=E1=BA=A3 tr=E1=BA=A3 v=E1=BB=81=
+ t=E1=BB=AB OGL sau m=E1=BB=97i l=E1=BA=A7n g=E1=BB=8Di API (transactionId,=
+ status h=E1=BA=A1ch to=C3=A1n) ch=E1=BB=89 =C4=91=C6=B0=E1=BB=A3c QLTS d=
+=C3=B9ng =C4=91=E1=BB=83 theo d=C3=B5i tr=E1=BA=A1ng th=C3=A1i =C4=91=E1=BB=
+=93ng b=E1=BB=99 c=E1=BB=A7a t=E1=BB=ABng giao d=E1=BB=8Bch, t=E1=BB=A9c x=
+=C3=A1c =C4=91=E1=BB=8Bnh giao d=E1=BB=8Bch =C4=91=C3=B3 =C4=91=C3=A3 h=E1=
+=BA=A1ch to=C3=A1n th=C3=A0nh c=C3=B4ng hay g=E1=BA=B7p l=E1=BB=97i ph=C3=
+=ADa OGL, kh=C3=B4ng d=C3=B9ng =C4=91=E1=BB=83 t=C3=ADnh to=C3=A1n hay hi=
+=E1=BB=87u ch=E1=BB=89nh s=E1=BB=91 d=C6=B0 c=C3=B4ng n=E1=BB=A3.</p></li>
+</ul></td>
+<td data-local-id=3D"0436bc02-b183-4942-9a4c-3251df5bbedd" class=3D"conflue=
+nceTd">
+<p local-id=3D"fd68ce44070e"></p></td>
+</tr>
+<tr data-local-id=3D"8091d1e1-4e77-49e6-964b-b420915e13fb">
+<td data-local-id=3D"f79275e8-790d-4b81-a604-42ee242432fa" class=3D"conflue=
+nceTd">
+<p local-id=3D"667ea25c9a60">3</p></td>
+<td data-local-id=3D"3d7cde18-910b-4bc4-a804-f4dc5e4f1a61" class=3D"conflue=
+nceTd">
+<p local-id=3D"d1b74043f5eb">T=C3=A0i li=E1=BB=87u =C4=91=C3=ADnh k=C3=A8m<=
+/p></td>
+<td data-local-id=3D"5527e0bc5708" class=3D"confluenceTd">
+<p local-id=3D"fd48e475b68a"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"6a13e84a-04dc-4858-976c-99d9d1590ff2" class=3D"conflue=
+nceTd">
+<p local-id=3D"ffe9cd471601">NV</p></td>
+<td data-local-id=3D"6daf242d-7775-447d-8b72-87375e2836a9" class=3D"conflue=
+nceTd">
+<p local-id=3D"7377999c9bec">=C4=90=E1=BB=91i v=E1=BB=9Bi h=C3=B3a =C4=91=
+=C6=A1n, KT <span class=3D"inline-comment-marker" data-ref=3D"99f2c262-1620=
+-45d3-a06f-fe1d014d58db">ch=E1=BB=8Dn Lo=E1=BA=A1i kh=E1=BA=A5u tr=E1=BB=AB=
+ ch=E1=BB=89 c=C3=B3 3 lo=E1=BA=A1i: Kh=C3=B4ng kh=E1=BA=A5u tr=E1=BB=AB, K=
+h=E1=BA=A5u tr=E1=BB=AB t=E1=BB=B7 l=E1=BB=87, Kh=E1=BA=A5u tr=E1=BB=AB to=
+=C3=A0n b=E1=BB=99 =C4=91=C3=BAng kh=C3=B4ng =E1=BA=A1? </span><br>
+1.T=E1=BB=A9c l=C3=A0<span class=3D"inline-comment-marker" data-ref=3D"b5f2=
+22dd-d64a-44b9-9a83-862a1458e1af"> kh=C3=B4ng c=C3=B3 kh=E1=BA=A5u tr=E1=BB=
+=AB 1 ph=E1=BA=A7n</span> -&gt; C=C3=B3 cho ng=C6=B0=E1=BB=9Di d=C3=B9ng nh=
+=E1=BA=ADp tay s=E1=BB=91 ti=E1=BB=81n kh=E1=BA=A5u tr=E1=BB=AB kh=C3=B4ng?=
+ N=E1=BA=BFu c=C3=B3 th=C3=AC mong mu=E1=BB=91n nh=E1=BA=ADp =E1=BB=9F =C4=
+=91=C3=A2u<br>
+2.N=E1=BA=BFu l=C3=A0 kh=E1=BA=A5u tr=E1=BB=AB t=E1=BB=B7 l=E1=BB=87 th=C3=
+=AC l=E1=BA=A5y t=E1=BB=B7 l=E1=BB=87 <span class=3D"inline-comment-marker"=
+ data-ref=3D"fdde0dcb-c2db-4fa0-b9be-b1e06ad0d7ac">=E1=BB=9F =C4=91=C3=A2u =
+</span>? c=C3=B3 ph=E1=BA=A3i t=E1=BB=AB H=C3=B3a =C4=91=C6=A1n kh=C3=B4ng?=
+ L=C3=A0 n=E1=BB=99i dung n=C3=A0o tr=C3=AAn h=C3=B3a =C4=91=C6=A1n? c=C3=
+=B3 ph=E1=BA=A3i thu=E1=BA=BF su=E1=BA=A5t kh=C3=B4ng?C=C3=B3 cho ch=E1=BB=
+=89nh s=E1=BB=ADa kh=C3=B4ng? TH k c=C3=B3 h=C3=B3a =C4=91=C6=A1n th=C3=AC =
+sao</p>
+<ul local-id=3D"9bea50429bc8">
+<li local-id=3D"a647dc5e0229">
+<p local-id=3D"3695cf1c13b0">TH thu=E1=BA=BF su=E1=BA=A5t c=E1=BB=A7a HHDV =
+kh=C3=A1c nhau th=C3=AC sao?</p></li>
+</ul></td>
+<td data-local-id=3D"148ba5a1aeac" class=3D"confluenceTd">
+<p local-id=3D"133cfb5d9259"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"4b9db46921e1" class=3D"confluenceTd">
+<p local-id=3D"8783c5846641">=C4=90=C3=BAng ch=E1=BB=89 c=C3=B3 3 lo=E1=BA=
+=A1i kh=E1=BA=A5u tr=E1=BB=AB n=C3=A0y</p>
+<p local-id=3D"1ccd0bd86699">Kh=C3=B4ng c=C3=B3 TH cho ng=C6=B0=E1=BB=9Di d=
+=C3=B9ng nh=E1=BA=ADp s=E1=BB=91 ti=E1=BB=81n</p></td>
+<td data-local-id=3D"e6337551-3378-4d04-bbf0-975dd26859d8" class=3D"conflue=
+nceTd">
+<p local-id=3D"ae66ae86eb67"><strong><span data-colorid=3D"adv1zlb57x">Done=
+</span></strong></p></td>
+</tr>
+<tr data-local-id=3D"103b7d1e-8c99-45ea-9a6d-0b874c41bbf6">
+<td data-local-id=3D"0cb387a6-31a7-4794-be0c-b3196d073336" class=3D"conflue=
+nceTd">
+<p local-id=3D"da1b4388e4d0">4</p></td>
+<td data-local-id=3D"495c5ffa-cb81-4788-822d-2258df6be5a6" class=3D"conflue=
+nceTd">
+<p local-id=3D"5abe4ce39f38">Popup Chi ti=E1=BA=BFt =C4=91=E1=BB=81 ngh=E1=
+=BB=8B theo NCC</p></td>
+<td data-local-id=3D"afe67b241e2e" class=3D"confluenceTd">
+<p local-id=3D"7c3043cdbfb2"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"644c4e59-3a2f-4aba-9160-3c555ff117e7" class=3D"conflue=
+nceTd">
+<p local-id=3D"3f5b5e985093">NV</p></td>
+<td data-local-id=3D"65f00415-37ed-4eec-bf53-7155fd9b6278" class=3D"conflue=
+nceTd">
+<p local-id=3D"17b2b6b84da1">Khi nh=E1=BA=ADp S=E1=BB=91 TK th=E1=BB=A5 h=
+=C6=B0=E1=BB=9Fng v=C3=A0 ch=E1=BB=8Dn Ng=C3=A2n h=C3=A0ng th=E1=BB=A5 h=C6=
+=B0=E1=BB=9Fng -&gt; TH k<span class=3D"inline-comment-marker" data-ref=3D"=
+6de776a1-5820-42c9-85db-28634a64feba">h=C3=B4ng t=C3=ACm th=E1=BA=A5y</span=
+> th=C3=AC ch=E1=BA=B7n =E1=BB=9F n=C3=BAt l=C6=B0u kh=C3=B4ng cho l=C6=B0u=
+ hay v=E1=BA=ABn cho ng=C6=B0=E1=BB=9Di <span class=3D"inline-comment-marke=
+r" data-ref=3D"1036bd97-87a3-4b93-b483-6ff2871a7bbe">d=C3=B9ng t=E1=BB=B1 n=
+h=E1=BA=ADp li=E1=BB=87u =E1=BA=A1?</span> - TH cho nh=E1=BA=ADp li=E1=BB=
+=87u th=C3=AC khi =C4=91i ti=E1=BB=81n s=E1=BA=BD kh=C3=B4ng =C4=91i =C4=91=
+=C6=B0=E1=BB=A3c</p></td>
+<td data-local-id=3D"907a6da1df5d" class=3D"confluenceTd">
+<p local-id=3D"672f67022a5e"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"d24ba3a52db4" class=3D"confluenceTd">
+<p local-id=3D"53fb7334b886">N=E1=BA=BFu kh=C3=B4ng tr=E1=BA=A3 v=E1=BB=81 =
+t=C3=AAn ng=C6=B0=E1=BB=9Di th=E1=BB=A5 h=C6=B0=E1=BB=9Fng th=C3=AC cho ng=
+=C6=B0=E1=BB=9Di d=C3=B9ng nh=E1=BA=ADp. N=E1=BA=BFu kh=C3=B4ng =C4=91i =C4=
+=91=C6=B0=E1=BB=A3c ti=E1=BB=81n th=C3=AC =C4=91=E1=BA=A9y v=E1=BB=81 ph=E1=
+=BA=A7n x=E1=BB=AD l=C3=BD l=E1=BB=97i</p></td>
+<td data-local-id=3D"349ed25a-ddaf-4b38-9d4e-d6154dc38e05" class=3D"conflue=
+nceTd">
+<p local-id=3D"cef7d181c24f"><strong><span data-colorid=3D"sckduz9lxw">Done=
+</span></strong></p></td>
+</tr>
+<tr data-local-id=3D"50f93c41eaae">
+<td data-local-id=3D"edb59ab1847e" class=3D"confluenceTd">
+<p local-id=3D"72a443e8d998">5</p></td>
+<td data-local-id=3D"6fd8cbd4a438" class=3D"confluenceTd">
+<p local-id=3D"5c40092aef64">Tab T=C3=A0i li=E1=BB=87u =C4=91=C3=ADnh k=C3=
+=A8m</p></td>
+<td data-local-id=3D"3432b555b1ed" class=3D"confluenceTd">
+<p local-id=3D"c12cf7da3f92"><time datetime=3D"2026-06-30" class=3D"date-pa=
+st">30 Jun 2026</time></p></td>
+<td data-local-id=3D"9a831ba947c3" class=3D"confluenceTd">
+<p local-id=3D"ced01d81dab6">NV</p></td>
+<td data-local-id=3D"044cca012abc" class=3D"confluenceTd">
+<p local-id=3D"6613ab588d20">C=C3=A1c t=C3=A0i li=E1=BB=87u l=E1=BA=A5y t=
+=E1=BB=AB module H=E1=BB=A3p =C4=91=E1=BB=93ng - mua s=E1=BA=AFm th=C3=AC c=
+=C3=B3 gi=E1=BB=9Bi h=E1=BA=A1n =E1=BB=9F b=C3=AAn HTKT kh=C3=B4ng? <span c=
+lass=3D"inline-comment-marker" data-ref=3D"5271eacd-8211-423c-b931-1efdaa87=
+97b7">Gi=E1=BB=9Bi h=E1=BA=A1n nh=E1=BB=AFng lo=E1=BA=A1i t=C3=A0i li=E1=BB=
+=87u n=C3=A0o?</span></p></td>
+<td data-local-id=3D"cdce7557f336" class=3D"confluenceTd">
+<p local-id=3D"33d8d893c376"><time datetime=3D"2026-07-09" class=3D"date-pa=
+st">09 Jul 2026</time></p></td>
+<td data-local-id=3D"686d58590cbe" class=3D"confluenceTd">
+<p local-id=3D"6f7e194e05ec">T=C3=A0i li=E1=BB=87u giao d=E1=BB=8Bch T=E1=
+=BA=A1m =E1=BB=A9ng + T=C3=A0i li=E1=BB=87u H=E1=BB=A3p =C4=91=E1=BB=93ng/K=
+ho=E1=BA=A3n mua s=E1=BA=AFm -&gt; T=C3=A0i li=E1=BB=87u kh=C3=A1c: Cho ng=
+=C6=B0=E1=BB=9Di d=C3=B9ng t=C3=ACm ki=E1=BA=BFm/ch=E1=BB=8Dn t=E1=BB=AB d=
+=E1=BB=AF li=E1=BB=87u t=C3=A0i li=E1=BB=87u =C4=91=C3=ADnh k=C3=A8m b=C3=
+=AAn squad2</p></td>
+<td data-local-id=3D"3b8c9bf6-a525-46f3-8280-e888dcb8edf3" class=3D"conflue=
+nceTd">
+<p local-id=3D"df46a723950c"></p></td>
+</tr>
+<tr data-local-id=3D"235135ab155e">
+<td data-local-id=3D"1ba95057d35c" class=3D"confluenceTd">
+<p local-id=3D"f0da5d01cfb6">6</p></td>
+<td data-local-id=3D"2c0b3bc5b283" class=3D"confluenceTd">
+<p local-id=3D"674629057f47">Tab Th=C3=B4ng tin c=C3=B4ng n=E1=BB=A3</p></t=
+d>
+<td data-local-id=3D"330b368b-4b58-47f9-866b-dd8551ec9f59" class=3D"conflue=
+nceTd">
+<p local-id=3D"198d6688e7d6"><time datetime=3D"2026-07-13" class=3D"date-pa=
+st">13 Jul 2026</time></p></td>
+<td data-local-id=3D"e55965b1c6e5" class=3D"confluenceTd">
+<p local-id=3D"1f5c8591b3b2">NV</p></td>
+<td data-local-id=3D"fbdbd6cb-bacd-41c5-be20-49f3f89be7e7" class=3D"conflue=
+nceTd">
+<p local-id=3D"dbdf82865f27">Mong mu=E1=BB=91n hi=E1=BB=83n th=E1=BB=8B xem=
+ c=C3=B4ng n=E1=BB=A3 cho tam =E1=BB=A9ng v=C3=A0 thanh to=C3=A1n c=C3=B3 k=
+h=C3=A1c bi=E1=BB=87t ko? <br>
+hi=E1=BB=87n t=E1=BA=A1i: 2 b=C3=AAn hi=E1=BB=83n th=E1=BB=8B nh=C6=B0 nhau=
+</p>
+<ul local-id=3D"3685dacf1ca7">
+<li local-id=3D"a943946ad02c">
+<p local-id=3D"6dfa1883f371">Hi=E1=BB=83n th=E1=BB=8B c=C3=A1c kho=E1=BA=A3=
+n t=E1=BA=A1m =E1=BB=A9ng ch=C6=B0a ho=C3=A0n =E1=BB=A9ng h=E1=BA=BFt</p></=
+li>
+<li local-id=3D"5597242b0de3">
+<p local-id=3D"917b12aa5fd8">Hi=E1=BB=83n th=E1=BB=8B c=C3=A1c invoice ch=
+=C6=B0a thanh to=C3=A1n h=E1=BA=BFt</p></li>
+</ul>
+<p local-id=3D"d9187786367d">Trong t=C6=B0=C6=A1ng lai s=E1=BA=BD l=C3=A0m =
+th=C3=AAm m=C3=A0n l=E1=BB=8Bch s=E1=BB=AD bao g=E1=BB=93m ho=C3=A0n =E1=BB=
+=A9ng/t=E1=BA=A1m =E1=BB=A9ng/thanh to=C3=A1n n=C3=AAn hi=E1=BB=83n th=E1=
+=BB=8B th=C3=B4ng tin t=E1=BA=A1i m=C3=A0n th=C3=B4ng tin c=C3=B4ng n=E1=BB=
+=A3 ch=E1=BB=89 bao g=E1=BB=93m 2 tr=C6=B0=E1=BB=9Dng h=E1=BB=A3p tr=C3=AAn=
+ l=C3=A0 =C4=91=C3=A3 =C4=91=E1=BB=A7?</p></td>
+<td data-local-id=3D"abd41eb77380" class=3D"confluenceTd">
+<p local-id=3D"4619a8684ab7"></p></td>
+<td data-local-id=3D"f482d4d061e0" class=3D"confluenceTd">
+<p local-id=3D"8c639acbaada"></p></td>
+<td data-local-id=3D"edbc7d4f-97df-4c60-b1a7-fb3f9594a77f" class=3D"conflue=
+nceTd">
+<p local-id=3D"04dd73be3210"></p></td>
+</tr>
+<tr data-local-id=3D"49e57e8b4be4">
+<td data-local-id=3D"4fede08e7ffe" class=3D"confluenceTd">
+<p local-id=3D"b461a44d7bf7">7</p></td>
+<td data-local-id=3D"0301f7b9c291" class=3D"confluenceTd">
+<p local-id=3D"fc9dbf42f524">Tab th=C3=B4ng tin h=E1=BA=A1ch to=C3=A1n</p><=
+/td>
+<td data-local-id=3D"60c31f158bae" class=3D"confluenceTd">
+<p local-id=3D"53ea77e28729"><time datetime=3D"2026-07-13" class=3D"date-pa=
+st">13 Jul 2026</time></p></td>
+<td data-local-id=3D"17ec2dcab89e" class=3D"confluenceTd">
+<p local-id=3D"b385b7ff8400">NV</p></td>
+<td data-local-id=3D"b9f0cb971305" class=3D"confluenceTd">
+<p local-id=3D"513183d981f0">nh=E1=BB=9D a/c cung c=E1=BA=A5p c=C3=A1c t=C3=
+=A0i kho=E1=BA=A3n th=C6=B0=E1=BB=9Dng d=C3=B9ng =C4=91=E1=BB=83 cho v=C3=
+=A0o danh m=E1=BB=A5c, hi=E1=BB=87n t=E1=BA=A1i team ch=E1=BB=89 c=C3=B3 t=
+=C3=A0i kho=E1=BA=A3n theo lo=E1=BA=A1i HHDV m=E1=BA=B7c =C4=91=E1=BB=8Bnh =
+cho site NCC</p></td>
+<td data-local-id=3D"e7001cbf2220" class=3D"confluenceTd">
+<p local-id=3D"dfe34d4df4ba"></p></td>
+<td data-local-id=3D"880a235d6808" class=3D"confluenceTd">
+<p local-id=3D"871e7da0f4c4"></p></td>
+<td data-local-id=3D"4953f8208336" class=3D"confluenceTd">
+<p local-id=3D"74427760d90a"></p></td>
+</tr>
+<tr data-local-id=3D"4bf45f4b4222">
+<td data-local-id=3D"901a970087ff" class=3D"confluenceTd">
+<p local-id=3D"364c7fb8c89c">8</p></td>
+<td data-local-id=3D"88b218404290" class=3D"confluenceTd">
+<p local-id=3D"7c998437a6d1">Tab Th=C3=B4ng tin =C4=91=E1=BB=81 ngh=E1=BB=
+=8B</p></td>
+<td data-local-id=3D"cc740590-00aa-485d-a862-ec5ddd918db5" class=3D"conflue=
+nceTd">
+<p local-id=3D"e1af14f85b02"><time datetime=3D"2026-07-13" class=3D"date-pa=
+st">13 Jul 2026</time></p></td>
+<td data-local-id=3D"cd908b7232fc" class=3D"confluenceTd">
+<p local-id=3D"702534ad04c0">NV</p></td>
+<td data-local-id=3D"b24a2c5a9ff8" class=3D"confluenceTd">
+<p local-id=3D"b9a569e69b08">C=C3=B3 cho role KTTC ch=E1=BB=8Dn c=C3=A1c h=
+=C3=B3a =C4=91=C6=A1n do =C4=90MMS upload kh=C3=B4ng?</p></td>
+<td data-local-id=3D"16a742f2fc02" class=3D"confluenceTd">
+<p local-id=3D"f6d48d8e2369"></p></td>
+<td data-local-id=3D"3df358da041e" class=3D"confluenceTd">
+<p local-id=3D"9bc2485dd4b5"></p></td>
+<td data-local-id=3D"f5533aed5952" class=3D"confluenceTd">
+<p local-id=3D"17a8eac2faa4"></p></td>
+</tr>
+<tr data-local-id=3D"363f0f48206e">
+<td data-local-id=3D"af28c488f270" class=3D"confluenceTd">
+<p local-id=3D"dcedadd48505">9</p></td>
+<td data-local-id=3D"bd01a4598898" class=3D"confluenceTd">
+<p local-id=3D"098e682a095f">H=C3=B3a =C4=91=C6=A1n =C4=91=C3=ADnh k=C3=A8m=
+</p></td>
+<td data-local-id=3D"555e774c873e" class=3D"confluenceTd">
+<p local-id=3D"983a4de26624"><time datetime=3D"2026-07-14" class=3D"date-pa=
+st">14 Jul 2026</time></p></td>
+<td data-local-id=3D"1686bdcebb4c" class=3D"confluenceTd">
+<p local-id=3D"d4ffbedbc112">NV</p></td>
+<td data-local-id=3D"560e98ff998e" class=3D"confluenceTd">
+<p local-id=3D"5b05819fac9a">C=C3=B3 tr=C6=B0=E1=BB=9Dng h=E1=BB=A3p t=E1=
+=BA=A1m =E1=BB=A9ng cho NCC ko upload h=C3=B3a =C4=91=C6=A1n nh=C6=B0ng mu=
+=E1=BB=91n kh=E1=BA=A5u tr=E1=BB=AB thu=E1=BA=BF ko?</p>
+<p local-id=3D"d40ab24c69bb">//do hi=E1=BB=87n t=E1=BA=A1i b=C3=BAt to=C3=
+=A1n AP d=C3=B2ng thu=E1=BA=BF t=E1=BB=B1 sinh ra khi l=E1=BB=B1a ch=E1=BB=
+=8Dn kh=E1=BA=A5u tr=E1=BB=AB thu=E1=BA=BF t=E1=BA=A1i h=C3=B3a =C4=91=C6=
+=A1n, n=E1=BA=BFu ko c=C3=B3 h=C3=B3a =C4=91=C6=A1n th=C3=AC s=E1=BA=BD ko =
+t=E1=BB=B1 sinh ra d=C3=B2ng thu=E1=BA=BF v=C3=A0 c=C5=A9ng ko th=C3=AAm dc=
+ d=C3=B2ng =E2=86=92 n=E1=BA=BFu c=C3=B3 tr=C6=B0=E1=BB=9Dng h=E1=BB=A3p n=
+=C3=A0y th=C3=AC ph=E1=BA=A3i cho KT th=C3=AAm d=C3=B2ng gi=E1=BB=91ng b=C3=
+=AAn thanh to=C3=A1n ph=C3=A2n chia CP</p></td>
+<td data-local-id=3D"4c62faf3ac34" class=3D"confluenceTd">
+<p local-id=3D"03de1add223d"></p></td>
+<td data-local-id=3D"4d4bd74fd078" class=3D"confluenceTd">
+<p local-id=3D"29d39880a3bf">ko c=C3=B3 h=C3=B3a =C4=91=C6=A1n th=C3=AC t=
+=E1=BB=A9c l=C3=A0 ko c=C3=B3 thu=E1=BA=BF</p></td>
+<td data-local-id=3D"e945cb8eb380" class=3D"confluenceTd">
+<p local-id=3D"1a70772a4ee1"></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p local-id=3D"349c8f7f4149"></p>
+<p local-id=3D"c0111932ac5f"></p>
+    </div>
+</body>
+</html>
+------=_Part_16_886215180.1785903726348--
