@@ -1,6 +1,6 @@
 # Context hiện tại - Sinh bút toán thanh toán
 
-Cập nhật ngày: 05/08/2026
+Cập nhật ngày: 06/08/2026
 
 ## 1. Nguồn quy tắc ưu tiên
 
@@ -67,9 +67,15 @@ Mục đích:
 
 ## 4. Quy tắc sinh dòng Có
 
-- TT-11 đến TT-16 không tự sinh các dòng ghi Có.
-- Các dòng ghi Có của TT-11 đến TT-16 do kế toán thêm.
-- Khi chuyển từ TT-08/09/10 sang TT-14/15/16, code sinh lại phần tự động và bảo toàn các dòng do người dùng thêm.
+- TT-01, TT-03: tự sinh TRANSFER (Có TK KH). Không sinh LIABILITY vì `(1) = (2)`.
+- TT-04, TT-05, TT-06: tự sinh TRANSFER (Có TK KH) nhưng **không tự sinh LIABILITY** (Có 331). Kế toán tự thêm dòng phải trả bằng thao tác thủ công.
+- TT-07, TT-08, TT-09, TT-10: tự sinh TRANSFER (Có TK KH nếu `(2) > 0`) **và** LIABILITY (Có 331) cho phần chênh lệch `(1) - (2)`.
+  - TT-10 (cá nhân): số tiền các dòng Có để trống, kế toán tự nhập.
+- TT-11, TT-12, TT-13: không tự sinh bất kỳ dòng ghi Có nào (`accountingCreatesCredit`).
+- TT-14, TT-15, TT-16: tự sinh TRANSFER (Có TK KH) nhưng **không sinh LIABILITY** (`accountingCreatesCredit` chặn sau TRANSFER).
+  - TT-16 (cá nhân): số tiền TRANSFER để trống.
+- TT-17: sinh Nợ PAYABLE và Có CUSTOMER; không liên quan TRANSFER/LIABILITY.
+- Khi chuyển từ TT-08/09/10 sang TT-14/15/16, code bảo toàn các dòng do người dùng thêm và sinh lại các phần tự động (bao gồm cả TRANSFER).
 
 ## 5. Validation Vendor Site
 

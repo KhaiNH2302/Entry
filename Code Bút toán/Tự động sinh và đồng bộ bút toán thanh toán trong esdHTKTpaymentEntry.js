@@ -342,11 +342,16 @@ function syncPaymentEntryNowByInputDetails(details) {
 	// Gộp thông tin người dùng đã chỉnh sửa trên UI (description, account_number) vào bút toán mới
 	var mergedExpectedEntries = mergeEditableAutoEntryFields(savedEntries, expectedEntries);
 	debugPaymentEntry('SYNC', 'Merge dữ liệu chỉnh sửa xong, rows=' + mergedExpectedEntries.length);
-	assignNewEntryIds(paymentId, mergedExpectedEntries, savedEntries);
 
-	// Tiến hành xóa bút toán cũ và chèn lại bộ bút toán đã merge mới
-	var syncResult = replaceAutoPaymentEntries(paymentId, mergedExpectedEntries);
-	debugPaymentEntry('SYNC', 'Đồng bộ xong: inserted=' + syncResult.inserted + ', deleted=' + syncResult.deleted);
+	// Xóa bút toán auto cũ trước, rồi mới gán ID cho dòng mới dựa trên DB còn lại
+	var deleted = deleteAutoPaymentEntries(paymentId);
+	var remainingEntries = getSavedPaymentEntries(paymentId);
+	assignNewEntryIds(paymentId, mergedExpectedEntries, remainingEntries);
+
+	// Chèn lại bộ bút toán đã merge mới
+	var inserted = insertPaymentEntries(mergedExpectedEntries);
+	debugPaymentEntry('SYNC', 'Đồng bộ xong: inserted=' + inserted + ', deleted=' + deleted);
+	var syncResult = { inserted: inserted, updated: 0, deleted: deleted };
 
 	return makeResult(getSavedPaymentEntries(paymentId), 'synced', {
 		canGenerate: canGenerate,
@@ -1113,6 +1118,7 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
 
 		// Bước 2: chỉ phân case tại đây; không rải điều kiện case sang phần save.
 		var caseCode = classifyPaymentCase(context);
+		context.caseCode = caseCode;
 		debugPaymentEntry('BUILD-CASE', 'NCC ' + (vendor.vendor_id || '?') + ' => ' + (caseCode || 'NO_CASE'));
 		cases.push({ vendorId: vendor.vendor_id, caseCode: caseCode });
 
@@ -1492,9 +1498,9 @@ function buildEntriesByPaymentCase(caseCode, context) {
 // -----------------------------------------------------------------------------
 // Mỗi hàm chỉ khai báo thành phần cần sinh; logic tạo dòng nằm ở SECTION 05D.
 // Số dòng hiển thị (n = số Cost Division, t = số nhóm thuế):
-// TT-01 n+1; TT-03 n+t+1; TT-04 n+2; TT-06 n+t+2; TT-07 n(+t)+1;
-// TT-08 n+2; TT-09 n+t+2; TT-11 n+2; TT-12 n+t+2;
-// TT-14 n+3; TT-15 n+t+3.
+// TT-01 n+1; TT-03 n+t+1; TT-04 n+1; TT-06 n+t+1; TT-07 n+1(+t);
+// TT-08 n+2; TT-09 n+t+2; TT-11 n; TT-12 n+t;
+// TT-14 n+1; TT-15 n+t+1.
 function buildPaymentCaseTT01(c) { return buildStandardPaymentCase(c, true, false, false, true); }
 function buildPaymentCaseTT03(c) { return buildStandardPaymentCase(c, true, true,  false, true); }
 function buildPaymentCaseTT04(c) { return buildStandardPaymentCase(c, true, false, false, true); }
@@ -1502,8 +1508,8 @@ function buildPaymentCaseTT06(c) { return buildStandardPaymentCase(c, true, true
 function buildPaymentCaseTT07(c) { return buildStandardPaymentCase(c, true, c.hasTax, true, false); }
 function buildPaymentCaseTT08(c) { return buildStandardPaymentCase(c, true, false, true, true); }
 function buildPaymentCaseTT09(c) { return buildStandardPaymentCase(c, true, true,  true, true); }
-function buildPaymentCaseTT11(c) { return buildStandardPaymentCase(c, true, false, true, false, true); }
-function buildPaymentCaseTT12(c) { return buildStandardPaymentCase(c, true, true,  true, false, true); }
+function buildPaymentCaseTT11(c) { return buildStandardPaymentCase(c, true, false, true, false, false); }
+function buildPaymentCaseTT12(c) { return buildStandardPaymentCase(c, true, true,  true, false, false); }
 function buildPaymentCaseTT14(c) { return buildStandardPaymentCase(c, true, false, true, true,  true); }
 function buildPaymentCaseTT15(c) { return buildStandardPaymentCase(c, true, true,  true, true,  true); }
 
@@ -1511,7 +1517,7 @@ function buildPaymentCaseTT15(c) { return buildStandardPaymentCase(c, true, true
 function buildPaymentCaseTT02(c) { return buildPersonalPaymentCase(c, false, true); }
 function buildPaymentCaseTT05(c) { return buildPersonalPaymentCase(c, false, true); }
 function buildPaymentCaseTT10(c) { return buildPersonalPaymentCase(c, true,  true); }
-function buildPaymentCaseTT13(c) { return buildPersonalPaymentCase(c, true,  false, true); }
+function buildPaymentCaseTT13(c) { return buildPersonalPaymentCase(c, true,  false, false); }
 function buildPaymentCaseTT16(c) { return buildPersonalPaymentCase(c, true,  true,  true); }
 
 // TT-17: khoản treo bằng số tiền thanh toán; sinh Nợ Phải trả và Có Khách hàng.
@@ -1573,15 +1579,6 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCr
 		}));
 	}
 
-	// SỬA NGHIỆP VỤ HOÀN ỨNG:
-	// refund.amount chỉ dùng để phân case có/không có tạm ứng.
-	// Không sinh dòng Có TK tạm ứng (TT-BK-05) tại paymentEntry.
-	// Dòng này sẽ được xử lý sau khi người dùng nhập "Số tiền hoàn ứng lần này"
-	// tại tab Công nợ.
-
-	// TT-13, TT-16: chi sinh dong ghi No; dong ghi Co do ke toan tu sinh.
-	if (accountingCreatesCredit) return rows;
-
 	if (includePayment && moneyIsPositive(c.paymentAmount)) {
 		rows.push(buildEntryRow({
 			paymentId: c.paymentId,
@@ -1594,11 +1591,12 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCr
 		}));
 	}
 
+	if (accountingCreatesCredit) return rows;
+
 	// NGHIỆP VỤ NCC CÁ NHÂN:
 	// - Nợ Chi phí: (1) - thuế, nhưng amount để trống cho KT nhập.
 	// - Có Tạm ứng: lấy từ các dòng AP/PREPAYMENT được tạo tại tab Công nợ.
 	// - Có Phải trả: ((1) - thuế) - (2) - tổng PREPAYMENT.
-	// Chỉ sinh Phải trả sau khi đã có PREPAYMENT đối với case hoàn ứng.
 	var personalExpenseBase = Math.max(
 			0,
 			c.approvedAmount - toNumber(c.taxInfo.totalDeductibleTax)
@@ -1608,7 +1606,25 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCr
 		personalPayableBase += c.selectedPrepaymentAmount;
 	}
 	var personalPayableDifference = personalExpenseBase - personalPayableBase;
-	var canGeneratePersonalPayable = !includeRefund || c.hasSelectedPrepayment;
+
+	// Nếu có hoàn ứng, sinh dòng Có TK Tạm ứng (REFUND_CR) với số tiền trống cho KT tự nhập
+	if (includeRefund && moneyIsPositive(c.refundAmount)) {
+		var refundAllocation = Math.min(personalPayableDifference, c.refundAmount);
+		rows.push(buildEntryRow({
+			paymentId: c.paymentId,
+			request: c.request,
+			vendor: c.vendor,
+			entryCode: AUTO_ENTRY_CODE.REFUND_CR,
+			amount: null,
+			allowBlankAmount: true,
+			order: order++
+		}));
+		personalPayableDifference -= refundAllocation;
+	}
+
+	var isCase456 = c.caseCode === PAYMENT_CASE.TT04 || c.caseCode === PAYMENT_CASE.TT05 || c.caseCode === PAYMENT_CASE.TT06;
+	var isCase11_12_13 = c.caseCode === PAYMENT_CASE.TT11 || c.caseCode === PAYMENT_CASE.TT12 || c.caseCode === PAYMENT_CASE.TT13;
+	var canGeneratePersonalPayable = !isCase456 && !isCase11_12_13;
 	if (canGeneratePersonalPayable &&
 			moneyIsPositive(personalPayableDifference)) {
 		rows.push(buildEntryRow({
@@ -1616,8 +1632,8 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCr
 			request: c.request,
 			vendor: c.vendor,
 			entryCode: AUTO_ENTRY_CODE.LIABILITY,
-			amount: personalPayableDifference,
-			allowBlankAmount: false,
+			amount: null,
+			allowBlankAmount: true,
 			order: order++
 		}));
 	}
@@ -1761,17 +1777,6 @@ function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, 
 
 	}
 
-	// NGHIỆP VỤ CÓ HOÀN ỨNG/TÀI KHOẢN TẠM ỨNG:
-	// Không tự sinh dòng Có TK tạm ứng. Sau khi người dùng chọn hoàn ứng và dòng
-	// AP/PREPAYMENT đã được lưu, dùng tổng thực tế của các dòng đó để khử Phải trả.
-	// TT-11, TT-12, TT-14, TT-15: chi sinh dong ghi No;
-	// cac dong ghi Co do ke toan tu sinh.
-	if (accountingCreatesCredit) return rows;
-
-	if (includeRefund && c.hasSelectedPrepayment) {
-		payableDebit += c.selectedPrepaymentAmount;
-	}
-
 	if (includePayment && moneyIsPositive(c.paymentAmount)) {
 		// Dòng Nợ phải trả của Payment được khử; chỉ hiển thị Có tài khoản đi tiền.
 		payableDebit += c.paymentAmount;
@@ -1785,11 +1790,30 @@ function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, 
 		}));
 	}
 
-	// Case không hoàn ứng: sinh Phải trả theo chênh lệch như cũ.
-	// Case có hoàn ứng: chỉ tính/sinh Phải trả sau khi đã có dòng AP/PREPAYMENT.
-	// TT-07 đủ hoàn ứng => chênh lệch 0; TT-11 hoàn ứng một phần => sinh phần dư.
+	if (accountingCreatesCredit) return rows;
+
 	var payableDifference = payableCredit - payableDebit;
-	var canGeneratePayable = !includeRefund || c.hasSelectedPrepayment;
+
+	// Nếu có hoàn ứng (refundAmount > 0), sinh dòng Giảm dư tạm ứng (Có TK Tạm ứng - REFUND_CR)
+	if (includeRefund && moneyIsPositive(c.refundAmount)) {
+		var refundAllocation = Math.min(payableDifference, c.refundAmount);
+		if (moneyIsPositive(refundAllocation)) {
+			rows.push(buildEntryRow({
+				paymentId: c.paymentId,
+				request: c.request,
+				vendor: c.vendor,
+				entryCode: AUTO_ENTRY_CODE.REFUND_CR,
+				amount: refundAllocation,
+				order: order++
+			}));
+			payableDifference -= refundAllocation;
+		}
+	}
+
+	// Chỉ hiển thị TK phải trả khi sau khử vẫn còn số dư Có và không thuộc case 4, 5, 6
+	var isCase456 = c.caseCode === PAYMENT_CASE.TT04 || c.caseCode === PAYMENT_CASE.TT05 || c.caseCode === PAYMENT_CASE.TT06;
+	var isCase11_12_13 = c.caseCode === PAYMENT_CASE.TT11 || c.caseCode === PAYMENT_CASE.TT12 || c.caseCode === PAYMENT_CASE.TT13;
+	var canGeneratePayable = !isCase456 && !isCase11_12_13;
 	if (canGeneratePayable && moneyIsPositive(payableDifference)) {
 		rows.push(buildEntryRow({
 			paymentId: c.paymentId,
@@ -1817,7 +1841,6 @@ function buildEntryRow(params) {
 		id: '',
 		payment_id: params.paymentId,
 		entry_type: entryType,
-		rule_code: params.entryCode,
 		ledger_type: getAutoLedgerType(params.entryCode),
 		account_type: getAutoAccountType(params.entryCode),
 		account_number: account.number,
@@ -1900,6 +1923,14 @@ function resolveAccount(entryCode, vendor, taxInfo) {
 		return {
 			number: taxInfo.accountNumber,
 			name: taxInfo.accountName
+		};
+	}
+
+	// TT-BK-05: Tài khoản tạm ứng (Giảm dư tạm ứng - Có)
+	if (entryCode === AUTO_ENTRY_CODE.REFUND_CR) {
+		return {
+			number: vendor.debit_account,
+			name: getGlAccountName(vendor.debit_account)
 		};
 	}
 
