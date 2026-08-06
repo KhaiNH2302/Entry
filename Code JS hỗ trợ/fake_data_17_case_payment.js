@@ -55,20 +55,23 @@ var PERSONAL_CASES = {
 var INVOICE_TEST_YEAR = '26';
 var VENDORS = [
   {
+    // DN - Không hoàn ứng (Dùng nhà cung cấp Bách Khoa có TK Công nợ 331)
     id: '0000000044',
     siteId: '0000000268',
     taxCode: 'NCC_101234536',
     beneficiaryAccount: '1231232'
   },
   {
-    id: '0000000041',
-    siteId: '0000000278',
-    taxCode: 'NCC_101234504',
-    beneficiaryAccount: '32424234'
+    // CN - Cá nhân (Dùng nhà cung cấp Bách Khoa là loại CN trong DB thực tế)
+    id: '0000000044',
+    siteId: '0000000268',
+    taxCode: 'NCC_101234536',
+    beneficiaryAccount: '1231232'
   },
   {
+    // DN - Có hoàn ứng (Dùng nhà cung cấp Thành Công có TK Tạm ứng 141)
     id: '0000000045',
-    siteId: '0000000276',
+    siteId: '0000000264',
     taxCode: 'NCC_101234511',
     beneficiaryAccount: '32424234'
   }
@@ -168,16 +171,18 @@ function buildFakeDb(useNextNumber) {
           )
         );
 
-        // Sinh paymentInvoice dựa trên dữ liệu hóa đơn đã có sẵn của nhà cung cấp này
+        // TT-17: khong co hoa don, approved.invoice.amount = 0 va amount > 0.
         if (definition.code !== 'TT-17') {
-          var limit = 1;
-          var existingInvoices = getExistingInvoicesForVendor(vendor.taxCode, limit);
-          for (var invIdx = 0; invIdx < existingInvoices.length; invIdx++) {
-            var inv = existingInvoices[invIdx];
-            db.esdHTKTpaymentInvoice.push(
-              makePaymentInvoice(paymentId, inv.id, vendorDefinition)
-            );
-          }
+          var invoiceId = makeCaseInvoiceId(
+            i + 1, variantIndex + 1, vendorIndex + 1
+          );
+          // Không init data bảng paymentInvoice nữa theo yêu cầu
+          // db.esdHTKTpaymentInvoice.push(
+          //   makePaymentInvoice(paymentId, invoiceId, vendorDefinition)
+          // );
+          db.esdHTKTinvoice.push(
+            makeInvoice(invoiceId, vendorDefinition, vendor)
+          );
         }
       }
     }
@@ -210,7 +215,7 @@ function makePayment(paymentId, definition) {
     'require.check.level2': false,
     'unit.lv1': '099922000',
     'unit.lv2': '099922010',
-    'contract.id': (definition.refund > 0) ? 'HDMS_26_GT_2026_021_00222' : 'KMS_2026_009_00090',
+    'contract.id': (definition.refund > 0) ? 'HDMS_26_GT_2026_021_00222' : 'HDMS_26_GT_2026_001_00185',
     'contract.name': '',
     currency: 'VND',
     'total.contract.amount': contractAmount,
@@ -394,6 +399,9 @@ function runAtomicFakeInsert(db) {
     // Upsert bang cha truoc, bang lien ket sau.
     result.inserted.esdHTKTpayment = insertAllOrThrow(
       'esdHTKTpayment', db.esdHTKTpayment, writtenDb.esdHTKTpayment
+    );
+    result.inserted.esdHTKTinvoice = insertAllOrThrow(
+      'esdHTKTinvoice', db.esdHTKTinvoice, writtenDb.esdHTKTinvoice
     );
     result.inserted.esdHTKTpaymentVendor = insertAllOrThrow(
       'esdHTKTpaymentVendor', db.esdHTKTpaymentVendor, writtenDb.esdHTKTpaymentVendor
