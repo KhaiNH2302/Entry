@@ -223,8 +223,9 @@ function getListPaymentEntryByInputDetails(details) {
 	var creatorUnit = getCreatorAccountingUnit(createdBy);
 	var glUnitOptions = getGlUnitOptions();
 	var glCostCenterOptions = getGlCostCenterOptions();
-	var transactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.lv1Id);
-	var defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(transactionOfficeOptions);
+	var creatorTransactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.lv1Id);
+	var transactionOfficeOptions = getGlTransactionOfficeOptions();
+	var defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(creatorTransactionOfficeOptions);
 	var savedEntries = getSavedPaymentEntries(paymentId);
 	debugPaymentEntry('GET-LIST', 'Đã đọc ' + savedEntries.length + ' dòng đã lưu, phase=' + currentPhase);
 
@@ -320,6 +321,7 @@ function syncPaymentEntryNowByInputDetails(details) {
 				getPreservedAutoEntriesForOtherVendors(savedEntries, successfulVendorIds)
 		);
 	}
+	expectedEntries = removeForbiddenAutoCreditEntries(expectedEntries, 'SYNC');
 
 	if (isGenerationPhaseLocked(expectedResult.currentPhase)) {
 		debugPaymentEntry('SYNC', 'Dừng do phase đang khóa: ' + expectedResult.currentPhase);
@@ -642,12 +644,11 @@ function savePaymentEntryEdit(details) {
 	}
 	var currentUser = getCurrentOperatorName();
 	var isKttcCreator =
-			normalizeText(request.initial_role) === 'kttc' &&
-			isSameUser(request.created_by, currentUser);
+			normalizeText(request.initial_role) === 'kttc';
 	var isAssignedKttc = isSameUser(request.user_checker_kttc, currentUser);
 
-	if (!isKttcCreator && !isAssignedKttc) {
 
+	if (!isKttcCreator && !isAssignedKttc) {
 		return makeError('Chỉ cán bộ KTTC khởi tạo hoặc được phân công mới được chỉnh sửa hạch toán.');
 	}
 
@@ -988,9 +989,9 @@ function validateEditedEntry(paymentId, row, index, usedIds) {
 	if (!(row.amount > 0)) return prefix + 'amount must be greater than 0.';
 	if (!row.currency) return prefix + 'missing currency.';
 	if (!row.type) return prefix + 'missing type.';
-	if (isGlEntry && !/^[0-9]{3}$/.test(row.branch)) {
-		return prefix + 'missing or invalid GL branch.';
-	}
+//    if (isGlEntry && !/^[0-9]{3}$/.test(row.branch)) {
+//        return prefix + 'missing or invalid GL branch.';
+//    }
 	if (!(row.order > 0)) return prefix + 'order must be greater than 0.';
 
 	return '';
@@ -1164,6 +1165,10 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
 
 		// Bước 3: gọi đúng handler TT-xx để tạo các dòng Nợ/Có.
 		var vendorRows = buildEntriesByPaymentCase(caseCode, context);
+		vendorRows = removeForbiddenAutoCreditEntries(
+				vendorRows,
+				'BUILD ' + caseCode + ' NCC ' + (vendor.vendor_id || '?')
+		);
 		var rowErrors = getAutoEntryRowsErrors(vendorRows);
 		if (rowErrors.length > 0) {
 			debugPaymentEntry('BUILD-VENDOR-ERROR', 'NCC ' + (vendor.vendor_id || '?') + ': ' + rowErrors.join(' | '));
@@ -1187,6 +1192,32 @@ function buildExpectedPaymentEntries(paymentId, vendorId) {
 		successfulVendorIds: successfulVendorIds,
 		currentPhase: request.current_phase
 	};
+}
+
+/**
+ * Chốt nghiệp vụ cho dòng tự động:
+ * - Không bao giờ sinh Có TK Phải trả (PAYABLE/ASSET).
+ * - Không bao giờ sinh Có TK Tạm ứng (PREPAYMENT/ASSET).
+ * TT-17 dùng PAYABLE/DEBIT nên không bị loại.
+ */
+function removeForbiddenAutoCreditEntries(rows, source) {
+	var list = rows || [];
+	var result = [];
+	for (var i = 0; i < list.length; i++) {
+		var entryType = normalizeEntryType(list[i].entry_type);
+		var accountType = toStoredAccountType(list[i].account_type);
+		var forbidden = accountType === ACCOUNT_TYPE.ASSET &&
+				(entryType === ENTRY_TYPE.PAYABLE || entryType === ENTRY_TYPE.PREPAYMENT);
+		if (forbidden) {
+			debugPaymentEntry(
+					'AUTO-CREDIT-BLOCKED',
+					safeString(source) + ': type=' + entryType + ', id=' + safeString(list[i].id)
+			);
+			continue;
+		}
+		result.push(list[i]);
+	}
+	return result;
 }
 
 // -----------------------------------------------------------------------------
@@ -1569,9 +1600,7 @@ function buildPaymentCaseTT17(c) {
  * - Có PCCP: tiền chi phí lấy từ tổng amount theo tài khoản.
  * - Không PCCP: tiền chi phí để trống cho KT nhập.
  * - Dòng đi tiền vẫn để amount=null cho KT nhập.
- * - Phải trả được tính từ ((1) - thuế) - (2) - tổng PREPAYMENT.
- * - Case có hoàn ứng không tự sinh Có TK tạm ứng; sau khi có AP/PREPAYMENT,
- *   chỉ sinh Phải trả nếu vẫn còn chênh lệch.
+ * - Không tự sinh dòng Có TK Phải trả; KT xử lý thủ công khi cần.
  */
 function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCreatesCredit) {
 	var rows = [];
@@ -1619,34 +1648,21 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCr
 
 	if (accountingCreatesCredit) return rows;
 
-	// NGHIỆP VỤ NCC CÁ NHÂN:
-	// - Nợ Chi phí: (1) - thuế, nhưng amount để trống cho KT nhập.
-	// - Có Tạm ứng: lấy từ các dòng AP/PREPAYMENT được tạo tại tab Công nợ.
-	// - Có Phải trả: ((1) - thuế) - (2) - tổng PREPAYMENT.
-	// Chỉ sinh Phải trả sau khi đã có PREPAYMENT đối với case hoàn ứng.
-	var personalExpenseBase = Math.max(
-			0,
-			c.approvedAmount - toNumber(c.taxInfo.totalDeductibleTax)
-	);
-	var personalPayableBase = c.paymentAmount;
-	if (includeRefund && c.hasSelectedPrepayment) {
-		personalPayableBase += c.selectedPrepaymentAmount;
-	}
-	var personalPayableDifference = personalExpenseBase - personalPayableBase;
-	var isCase456 = c.caseCode === PAYMENT_CASE.TT04 || c.caseCode === PAYMENT_CASE.TT05 || c.caseCode === PAYMENT_CASE.TT06;
-	var canGeneratePersonalPayable = !isCase456;
-	if (canGeneratePersonalPayable &&
-			moneyIsPositive(personalPayableDifference)) {
-		rows.push(buildEntryRow({
-			paymentId: c.paymentId,
-			request: c.request,
-			vendor: c.vendor,
-			entryCode: AUTO_ENTRY_CODE.LIABILITY,
-			amount: null,
-			allowBlankAmount: true,
-			order: order++
-		}));
-	}
+	// KHÔNG TỰ ĐỘNG SINH CÓ TK PHẢI TRẢ.
+	// Đoạn tính chênh lệch và push AUTO_ENTRY_CODE.LIABILITY cũ được giữ
+	// dưới dạng comment để đối chiếu nghiệp vụ khi cần.
+	// var personalPayableDifference = personalExpenseBase - personalPayableBase;
+	// if (moneyIsPositive(personalPayableDifference)) {
+	//  rows.push(buildEntryRow({
+	//      paymentId: c.paymentId,
+	//      request: c.request,
+	//      vendor: c.vendor,
+	//      entryCode: AUTO_ENTRY_CODE.LIABILITY,
+	//      amount: null,
+	//      allowBlankAmount: true,
+	//      order: order++
+	//  }));
+	// }
 
 	return rows;
 }
@@ -1740,9 +1756,8 @@ function getStandardExpenseAllocations(c) {
  * Sinh đúng các dòng được hiển thị tại tab Hạch toán.
  *
  * Không lưu các cặp TK phải trả trung gian của Standard / Payment.
- * Case có refund.amount không sinh Có TK tạm ứng hoặc Phải trả tại paymentEntry.
- * Case không hoàn ứng chỉ lưu một dòng TK phải trả bằng số chênh lệch:
- *   Có phải trả - Nợ phải trả = (1) - (2).
+ * Không tự sinh dòng Có TK tạm ứng hoặc Có TK Phải trả tại paymentEntry.
+ * Ngoại lệ duy nhất liên quan TK Phải trả là TT-17 sinh Nợ TT-BK-07.
  *
  * Thứ tự hiển thị:
  *   chi phí -> thuế -> Có tài khoản đi tiền -> phải trả còn lại.
@@ -1809,22 +1824,19 @@ function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, 
 
 	if (accountingCreatesCredit) return rows;
 
-	// Case không hoàn ứng: sinh Phải trả theo chênh lệch như cũ.
-	// Case có hoàn ứng: chỉ tính/sinh Phải trả sau khi đã có dòng AP/PREPAYMENT.
-	// TT-07 đủ hoàn ứng => chênh lệch 0; TT-11 hoàn ứng một phần => sinh phần dư.
-	var payableDifference = payableCredit - payableDebit;
-	var isCase456 = c.caseCode === PAYMENT_CASE.TT04 || c.caseCode === PAYMENT_CASE.TT05 || c.caseCode === PAYMENT_CASE.TT06;
-	var canGeneratePayable = !isCase456;
-	if (canGeneratePayable && moneyIsPositive(payableDifference)) {
-		rows.push(buildEntryRow({
-			paymentId: c.paymentId,
-			request: c.request,
-			vendor: c.vendor,
-			entryCode: AUTO_ENTRY_CODE.LIABILITY,
-			amount: payableDifference,
-			order: order++
-		}));
-	}
+	// KHÔNG TỰ ĐỘNG SINH CÓ TK PHẢI TRẢ.
+	// Đoạn sinh AUTO_ENTRY_CODE.LIABILITY cũ được giữ dưới dạng comment:
+	// var payableDifference = payableCredit - payableDebit;
+	// if (moneyIsPositive(payableDifference)) {
+	//  rows.push(buildEntryRow({
+	//      paymentId: c.paymentId,
+	//      request: c.request,
+	//      vendor: c.vendor,
+	//      entryCode: AUTO_ENTRY_CODE.LIABILITY,
+	//      amount: payableDifference,
+	//      order: order++
+	//  }));
+	// }
 
 	return rows;
 }
@@ -2538,6 +2550,68 @@ function compareGlUnitOption(left, right) {
 	return a === b ? 0 : a < b ? -1 : 1;
 }
 
+
+/** map danh sách PGD segment6 của GL khác mã 98, 00 và kèm ogl.branch.code để lọc theo Đơn vị. */
+function getGlTransactionOfficeOptions() {
+	var optionMap = {};
+	var options = [];
+	var fields = [
+		['d.entity.code', 'entity_code', 'S'],
+		['d.org.transaction.code', 'transaction_code', 'S'],
+		['d.ogl.branch.code', 'branch_code', 'S'],
+		['d.branch.name', 'branch_name', 'S']
+	];
+	var sql =
+			'SELECT ' +
+			selectFields(fields) +
+			' FROM ' +
+			TABLE_ENTITY +
+			' d WHERE d.status="' +
+			escapeQueryValue(ENTITY_STATUS_ACTIVE) +
+			'"';
+	var rows;
+
+	try {
+		rows = selectList(TABLE_ENTITY, sql, fields);
+	} catch (e) {
+		return options;
+	}
+
+	for (var i = 0; i < rows.length; i++) {
+		var entityCode = safeString(rows[i].entity_code).trim();
+		var transactionCode = safeString(rows[i].transaction_code).trim();
+		var branchCode = safeString(rows[i].branch_code).trim();
+		var branchName = safeString(rows[i].branch_name).trim();
+		var branchNameSeparatorIndex = branchName.indexOf('-');
+		var optionKey = branchCode + '|' + transactionCode;
+
+		// map tên PGD bằng phần bên phải dấu "-" trong branch.name.
+		if (branchNameSeparatorIndex >= 0) {
+			branchName = branchName.substring(branchNameSeparatorIndex + 1).trim();
+		}
+
+		if (
+				transactionCode &&
+				transactionCode !== GL_UNIT_TRANSACTION_CODE &&
+				transactionCode !== '00' &&
+				branchCode &&
+				!optionMap[optionKey]
+		) {
+			optionMap[optionKey] = true;
+			options.push({
+				value: entityCode,
+				label: entityCode + (branchName ? ' - ' + branchName : ''),
+				name: branchName,
+				branchCode: branchCode,
+				transactionCode: transactionCode
+			});
+		}
+	}
+
+	options.sort(compareTransactionOfficeOption);
+	return options;
+}
+
 function getTransactionOfficeOptions(lv1Id) {
 	var lv2Rows = getLv2OrgUnitsByLv1(lv1Id);
 	var optionMap = {};
@@ -2583,17 +2657,29 @@ function getLv2OrgUnitsByLv1(lv1Id) {
 }
 
 function getTransactionOfficeByLv2(lv2Id) {
-	var psCode = removeFirstLeadingZero(lv2Id);
+	var psCode = safeString(lv2Id).trim();
 	if (!psCode) return { code: '', name: '' };
-	var record = lib.ESD_Utils.getOneRecord(
-			TABLE_ENTITY,
-			'ps.code="' + escapeQueryValue(psCode) + '"',
-			['org.transaction.code', 'branch.name']
-	);
-	return record ? {
-		code: safeString(record['org.transaction.code']).trim(),
-		name: getBranchNamePrefix(record['branch.name'])
-	} : { code: '', name: '' };
+
+	try {
+		return (
+				selectOne(
+						TABLE_ENTITY,
+						'ps.code="' +
+						escapeQueryValue(psCode) +
+						'" and status="' +
+						escapeQueryValue(ENTITY_STATUS_ACTIVE) +
+						'"',
+						function (record) {
+							return {
+								code: readText(record, 'entity.code').trim(),
+								name: getBranchNamePrefix(readText(record, 'branch.name'))
+							};
+						}
+				) || { code: '', name: '' }
+		);
+	} catch (e) {
+		return { code: '', name: '' };
+	}
 }
 
 function compareTransactionOfficeOption(left, right) {
@@ -2985,6 +3071,7 @@ function deleteAutoPaymentEntries(paymentId) {
 
 	while (rc === RC_SUCCESS) {
 		if (isAutoEntry({
+			id: f['id'],
 			payment_id: f['payment.id'],
 			vendor_id: f['vendor.id'],
 			type: f['type'],
