@@ -10,7 +10,7 @@
  *                    "paymentId": "TT.xxx" }
  */
 
-var PAYMENT_ID = 'TT.XXX.XX.XXXXXXX';
+var PAYMENT_ID = 'TT.106.26.0100000';
 
 run();
 

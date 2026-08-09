@@ -55,15 +55,24 @@ var PERSONAL_CASES = {
 var INVOICE_TEST_YEAR = '26';
 var VENDORS = [
   {
-    id: '0000000040',
-    siteId: '0000000222',
-    taxCode: 'NCC_101234523',
-    beneficiaryAccount: '88888888'
+    // DN - Không hoàn ứng (Dùng nhà cung cấp Bách Khoa có TK Công nợ 331)
+    id: '0000000044',
+    siteId: '0000000268',
+    taxCode: 'NCC_101234536',
+    beneficiaryAccount: '1231232'
   },
   {
-    id: '0000000041',
-    siteId: '0000000206',
-    taxCode: 'NCC_101234504',
+    // CN - Cá nhân (Dùng nhà cung cấp Bách Khoa là loại CN trong DB thực tế)
+    id: '0000000044',
+    siteId: '0000000268',
+    taxCode: 'NCC_101234536',
+    beneficiaryAccount: '1231232'
+  },
+  {
+    // DN - Có hoàn ứng (Dùng nhà cung cấp Thành Công có TK Tạm ứng 141)
+    id: '0000000045',
+    siteId: '0000000264',
+    taxCode: 'NCC_101234511',
     beneficiaryAccount: '32424234'
   }
 ];
@@ -137,8 +146,7 @@ function buildFakeDb(useNextNumber) {
   for (var i = startIndex; i < endIndex; i++) {
     var definition = CASES[i];
     var paymentVariants = [
-      { vendorDefinitions: [definition] },
-      { vendorDefinitions: splitDefinitionByVendors(definition) }
+      { vendorDefinitions: [definition] }
     ];
 
     for (var variantIndex = 0; variantIndex < paymentVariants.length; variantIndex++) {
@@ -147,8 +155,16 @@ function buildFakeDb(useNextNumber) {
       db.esdHTKTpayment.push(makePayment(paymentId, definition));
 
       for (var vendorIndex = 0; vendorIndex < variant.vendorDefinitions.length; vendorIndex++) {
-        var vendor = VENDORS[vendorIndex];
         var vendorDefinition = variant.vendorDefinitions[vendorIndex];
+        var vendor;
+        if (vendorDefinition.personal) {
+          vendor = VENDORS[1];
+        } else if (vendorDefinition.refund > 0) {
+          vendor = VENDORS[2];
+        } else {
+          vendor = VENDORS[0];
+        }
+
         db.esdHTKTpaymentVendor.push(
           makePaymentVendor(
             paymentId, vendorDefinition, vendor, vendorIndex, variantIndex
@@ -160,9 +176,10 @@ function buildFakeDb(useNextNumber) {
           var invoiceId = makeCaseInvoiceId(
             i + 1, variantIndex + 1, vendorIndex + 1
           );
-          db.esdHTKTpaymentInvoice.push(
-            makePaymentInvoice(paymentId, invoiceId, vendorDefinition)
-          );
+          // Không init data bảng paymentInvoice nữa theo yêu cầu
+          // db.esdHTKTpaymentInvoice.push(
+          //   makePaymentInvoice(paymentId, invoiceId, vendorDefinition)
+          // );
           db.esdHTKTinvoice.push(
             makeInvoice(invoiceId, vendorDefinition, vendor)
           );
@@ -175,20 +192,22 @@ function buildFakeDb(useNextNumber) {
 }
 
 function makePayment(paymentId, definition) {
+  var maxVal = Math.max(definition.approved || 0, definition.payment || 0, definition.refund || 0);
+  var contractAmount = Math.max(maxVal * 2, 10000000); // Tối thiểu 10 triệu hoặc gấp đôi số tiền lớn nhất của case
   return {
     id: paymentId,
     department: '099922010',
     description: '',
     'current.phase': 'initial_dmms',
-    'user.checker.kttc': '',
-    'user.checker.dmms': '',
-    'user.approver.dmms': '',
-    'user.approver.kttc': '',
-    'user.checker.final': '',
-    'user.approver.final': '',
+    'user.checker.kttc': 'VTB.HTKT.80',
+    'user.checker.dmms': 'VTB.HTKT.80',
+    'user.approver.dmms': 'VTB.HTKT.80',
+    'user.approver.kttc': 'VTB.HTKT.80',
+    'user.checker.final': 'VTB.HTKT.80',
+    'user.approver.final': 'VTB.HTKT.80',
     'return.reason': '',
     'initial.role': 'dmms',
-    'created.by': 'VTB.HTKT.99',
+    'created.by': 'VTB.HTKT.80',
     'created.at': new Date(),
     'transaction.type': 'Thanh toán',
     status: 'dmms_created',
@@ -196,10 +215,10 @@ function makePayment(paymentId, definition) {
     'require.check.level2': false,
     'unit.lv1': '099922000',
     'unit.lv2': '099922010',
-    'contract.id': 'KMS_2026_009_00090',
+    'contract.id': (definition.refund > 0) ? 'HDMS_26_GT_2026_021_00222' : 'HDMS_26_GT_2026_001_00185',
     'contract.name': '',
     currency: 'VND',
-    'total.contract.amount': 2990906.1,
+    'total.contract.amount': contractAmount,
     'total.advance.amount': definition.refund,
     'total.amount.paid': definition.payment,
     'total.refund.amount': definition.refund,
@@ -475,33 +494,43 @@ function deleteExistingCaseData(db, errors) {
   var invoiceIds = [];
   var invoiceIdMap = {};
 
-  for (var i = 0; i < db.esdHTKTpayment.length; i++) {
-    var paymentId = String(db.esdHTKTpayment[i].id);
-    var linkedInvoiceIds = getLinkedInvoiceIdsForCleanup(paymentId, errors);
+  var startIndex = Math.max(0, Number(CASE_START_INDEX) || 0);
+  var batchSize = Math.max(
+    1,
+    Math.min(CASES.length, Number(CASE_BATCH_SIZE) || 1)
+  );
+  var endIndex = Math.min(CASES.length, startIndex + batchSize);
 
-    for (var invoiceIndex = 0; invoiceIndex < linkedInvoiceIds.length; invoiceIndex++) {
-      var invoiceId = linkedInvoiceIds[invoiceIndex];
-      if (!invoiceIdMap[invoiceId]) {
-        invoiceIdMap[invoiceId] = true;
-        invoiceIds.push(invoiceId);
+  for (var i = startIndex; i < endIndex; i++) {
+    // Delete BOTH variants (0 and 1) to be completely clean
+    for (var variantIndex = 0; variantIndex <= 1; variantIndex++) {
+      var paymentId = makeCasePaymentId(i + 1, variantIndex);
+      var linkedInvoiceIds = getLinkedInvoiceIdsForCleanup(paymentId, errors);
+
+      for (var invoiceIndex = 0; invoiceIndex < linkedInvoiceIds.length; invoiceIndex++) {
+        var invoiceId = linkedInvoiceIds[invoiceIndex];
+        if (!invoiceIdMap[invoiceId]) {
+          invoiceIdMap[invoiceId] = true;
+          invoiceIds.push(invoiceId);
+        }
       }
-    }
 
-    deleted.esdHTKTpaymentInvoice += deleteByQuery(
-      'esdHTKTpaymentInvoice',
-      'payment.id="' + escapeQueryValue(paymentId) + '"',
-      errors
-    );
-    deleted.esdHTKTpaymentVendor += deleteByQuery(
-      'esdHTKTpaymentVendor',
-      'payment.id="' + escapeQueryValue(paymentId) + '"',
-      errors
-    );
-    deleted.esdHTKTpayment += deleteByQuery(
-      'esdHTKTpayment',
-      'id="' + escapeQueryValue(paymentId) + '"',
-      errors
-    );
+      deleted.esdHTKTpaymentInvoice += deleteByQuery(
+        'esdHTKTpaymentInvoice',
+        'payment.id="' + escapeQueryValue(paymentId) + '"',
+        errors
+      );
+      deleted.esdHTKTpaymentVendor += deleteByQuery(
+        'esdHTKTpaymentVendor',
+        'payment.id="' + escapeQueryValue(paymentId) + '"',
+        errors
+      );
+      deleted.esdHTKTpayment += deleteByQuery(
+        'esdHTKTpayment',
+        'id="' + escapeQueryValue(paymentId) + '"',
+        errors
+      );
+    }
   }
 
   for (var j = 0; j < invoiceIds.length; j++) {
@@ -693,4 +722,30 @@ function escapeQueryValue(value) {
 
 function closeFile(file) {
   try { if (file) file.doClose(); } catch (ignoreClose) {}
+}
+
+function getExistingInvoicesForVendor(vendorTaxCode, limit) {
+  var list = [];
+  var f = new SCFile('esdHTKTinvoice', SCFILE_READONLY);
+  var query = 'seller.tax.code="' + escapeQueryValue(vendorTaxCode) + '"';
+  var rc;
+  try {
+    rc = f.doSelect(query);
+  } catch (e) {
+    return list;
+  }
+
+  var count = 0;
+  while (rc === RC_SUCCESS && count < limit) {
+    var invId = f.id;
+    if (invId) {
+      list.push({
+        id: invId,
+        total_tax: f.total_tax
+      });
+      count++;
+    }
+    rc = f.getNext();
+  }
+  return list;
 }

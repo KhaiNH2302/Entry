@@ -343,9 +343,23 @@ function buildVendorContext(payment, vendorRow) {
 	var vendor = selectOne(TABLE_VENDOR, 'id="' + escapeQueryValue(vendorRow.vendor_id) + '"', function (f) {
 		return { number: readText(f, 'vendor.number'), name: readText(f, 'vendor.name') };
 	});
-	var site = selectOne(TABLE_VENDOR_SITE, 'id="' + escapeQueryValue(vendorRow.vendor_site_id) + '"', function (f) {
-		return { code: readText(f, 'ogl.site.code') };
-	});
+	var vendorSiteCode = getVendorSiteCode(vendorRow.vendor_site_id, vendorRow.vendor_id);
+	if (!vendorSiteCode) {
+		var debugInfo = [];
+		var f = new SCFile(TABLE_VENDOR_SITE, SCFILE_READONLY);
+		var rc = f.doSelect('vendor.id="' + escapeQueryValue(vendorRow.vendor_id) + '"');
+		while (rc === RC_SUCCESS) {
+			debugInfo.push({
+				id: readText(f, 'id').trim(),
+				vendorId: readText(f, 'vendor.id').trim(),
+				siteCode: readText(f, 'ogl.site.code').trim()
+			});
+			rc = f.getNext();
+		}
+		closeFile(f);
+		return errorResult('Khong tim thay vendorSiteCode cho vendorSiteId="' + vendorRow.vendor_site_id + 
+			'" va vendorId="' + vendorRow.vendor_id + '". Cac site cua vendor nay trong DB: ' + JSON.stringify(debugInfo));
+	}
 	var entityResult = entityByUser(payment.created_by);
 	if (!vendor || !vendor.number) return errorResult('Khong tim thay vendor.number cua NCC ' + vendorRow.vendor_id + '.');
 	if (!entityResult.success) return entityResult;
@@ -357,7 +371,7 @@ function buildVendorContext(payment, vendorRow) {
 	}
 	return { success: true, data: {
 		vendorNumber: vendor.number,
-		vendorSiteCode: site ? safeString(site.code).trim() : '',
+		vendorSiteCode: vendorSiteCode,
 		entity: entityResult.data,
 		segment1: entityResult.segment1, maker: maker, checker: checker,
 		cashout: cashout,
@@ -365,10 +379,91 @@ function buildVendorContext(payment, vendorRow) {
 	} };
 }
 
+function getVendorSiteCode(vendorSiteId, vendorId) {
+	if (!vendorSiteId) return '';
+
+	var exact = selectOne(TABLE_VENDOR_SITE, 'id="' + escapeQueryValue(vendorSiteId) + '"', function (f) {
+		return safeString(readText(f, 'ogl.site.code')).trim();
+	});
+	if (exact) return exact;
+
+	var f = new SCFile(TABLE_VENDOR_SITE, SCFILE_READONLY);
+	var query = vendorId ? 'vendor.id="' + escapeQueryValue(vendorId) + '"' : '';
+	var rc;
+	var onlyCandidate = '';
+	var candidateCount = 0;
+	try {
+		rc = f.doSelect(query);
+		while (rc === RC_SUCCESS) {
+			candidateCount++;
+			var code = safeString(readText(f, 'ogl.site.code')).trim();
+			onlyCandidate = code;
+			if (lookupIdsEqual(readText(f, 'id'), vendorSiteId)) {
+				closeFile(f);
+				return code;
+			}
+			rc = f.getNext();
+		}
+	} catch (e) {
+		// ignore
+	}
+	closeFile(f);
+
+	if (candidateCount === 1) {
+		return onlyCandidate;
+	}
+	return '';
+}
+
+function lookupIdsEqual(left, right) {
+	var a = safeString(left).trim();
+	var b = safeString(right).trim();
+	if (a === b) return true;
+	if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+		return Number(a) === Number(b);
+	}
+	return false;
+}
+
+function formatSegment1(branch, defaultSegment1) {
+	var br = safeString(branch).trim();
+	if (br.length === 7 && br.substring(0, 2) === '10') {
+		return br;
+	}
+	if (br.length === 3 && /^\d+$/.test(br)) {
+		return '10' + br + '98';
+	}
+	return defaultSegment1;
+}
+
+function formatSegment2(segment1, department) {
+	var seg1 = safeString(segment1).trim();
+	var dept = safeString(department).trim();
+	if (seg1.length === 7 && seg1.substring(0, 2) === '10') {
+		var prefix = seg1.substring(0, 5); // 10xxx
+		var suffix = '00';
+		if (dept.length === 9) {
+			suffix = dept.substring(7, 9); // yy (last 2 digits)
+		} else if (dept.length === 6) {
+			suffix = dept.substring(4, 6); // yy (last 2 digits)
+		} else if (dept.length === 7 && dept.substring(0, 2) === '10') {
+			suffix = dept.substring(5, 7); // yy (last 2 digits)
+		} else if (dept.length === 2) {
+			suffix = dept;
+		}
+		return prefix + suffix; // 10xxxyy (7 characters)
+	}
+	if (dept.length === 9 && dept.charAt(0) === '0') {
+		return dept.substring(2, 8); // 6 characters
+	}
+	return dept.length === 6 ? dept : SEGMENT_2_DEFAULT;
+}
+
 function mapInvoiceLine(entry, defaultSegment1) {
+	var segment1 = formatSegment1(entry.branch, defaultSegment1);
 	return { lineNum: entry.order, amount: entry.amount,
-		segment1: safeString(entry.branch).trim() || defaultSegment1,
-		segment2: safeString(entry.department).trim() || SEGMENT_2_DEFAULT,
+		segment1: segment1,
+		segment2: formatSegment2(segment1, entry.department),
 		segment3: entry.account_number, segment4: SEGMENT_4_DEFAULT,
 		segment5: SEGMENT_5_DEFAULT,
 		segment6: safeString(entry.transaction_code).trim() || SEGMENT_6_DEFAULT,
@@ -392,8 +487,9 @@ function mapGlPayload(requestId, accountingDate, payment, vendorRow, context, en
 			if (!segment6Result.success) return segment6Result;
 			segment6 = segment6Result.data;
 		}
-		lines.push({ segment1: segment1,
-			segment2: safeString(entries[i].department).trim() || SEGMENT_2_DEFAULT,
+		var finalSegment1 = formatSegment1(entries[i].branch, segment1);
+		lines.push({ segment1: finalSegment1,
+			segment2: formatSegment2(finalSegment1, entries[i].department),
 			segment3: entries[i].account_number, segment4: SEGMENT_4_DEFAULT,
 			segment5: SEGMENT_5_DEFAULT,
 			segment6: segment6,
@@ -468,8 +564,17 @@ function validateInvoiceLines(lines, invalid) {
 		if (toNumber(line.lineNum) <= 0) invalid.push('invoiceLineList[' + i + '].lineNum');
 		if (toNumber(line.amount) <= 0) invalid.push('invoiceLineList[' + i + '].amount');
 		for (var field in lengths) {
-			if (lengths.hasOwnProperty(field) && safeString(line[field]).length !== lengths[field]) {
-				invalid.push('invoiceLineList[' + i + '].' + field);
+			if (lengths.hasOwnProperty(field)) {
+				var len = safeString(line[field]).length;
+				if (field === 'segment2') {
+					if (len !== 6 && len !== 7) {
+						invalid.push('invoiceLineList[' + i + '].' + field);
+					}
+				} else {
+					if (len !== lengths[field]) {
+						invalid.push('invoiceLineList[' + i + '].' + field);
+					}
+				}
 			}
 		}
 	}
@@ -505,35 +610,35 @@ function invalidPayload(kind, validation, payload) {
 
 function getPayment(paymentId) {
 	return selectOne(TABLE_PAYMENT, 'id="' + escapeQueryValue(paymentId) + '"', function (f) {
-		return { id: readText(f, 'id'), current_phase: readText(f, 'current.phase'),
-			description: readText(f, 'description'), contract_id: readText(f, 'contract.id'),
-			created_by: readText(f, 'created.by'),
-			user_checker_kttc: readText(f, 'user.checker.kttc') };
+		return { id: readText(f, 'id').trim(), current_phase: readText(f, 'current.phase').trim(),
+			description: readText(f, 'description').trim(), contract_id: readText(f, 'contract.id').trim(),
+			created_by: readText(f, 'created.by').trim(),
+			user_checker_kttc: readText(f, 'user.checker.kttc').trim() };
 	}) || {};
 }
 
 function getPaymentVendors(paymentId) {
 	return selectMany(TABLE_VENDOR_ROW, 'payment.id="' + escapeQueryValue(paymentId) + '"', function (f) {
-		return { payment_id: readText(f, 'payment.id'), vendor_id: readText(f, 'vendor.id'),
-			vendor_site_id: readText(f, 'vendor.site.id'),
+		return { payment_id: readText(f, 'payment.id').trim(), vendor_id: readText(f, 'vendor.id').trim(),
+			vendor_site_id: readText(f, 'vendor.site.id').trim(),
 			approved_invoice_amount: readNumber(f, 'approved.invoice.amount'), amount: readNumber(f, 'amount'),
-			refund_amount: readNumber(f, 'refund.amount'), vendor_type: readText(f, 'vendor.type'),
-			currency: readText(f, 'currency'),
-			payment_method: readText(f, 'payment.method'), beneficiary_bank: readText(f, 'beneficiary.bank'),
-			transaction_des: readText(f, 'transaction.des') };
+			refund_amount: readNumber(f, 'refund.amount'), vendor_type: readText(f, 'vendor.type').trim(),
+			currency: readText(f, 'currency').trim(),
+			payment_method: readText(f, 'payment.method').trim(), beneficiary_bank: readText(f, 'beneficiary.bank').trim(),
+			transaction_des: readText(f, 'transaction.des').trim() };
 	});
 }
 
 function getPaymentEntries(paymentId) {
 	var rows = selectMany(TABLE_ENTRY, 'payment.id="' + escapeQueryValue(paymentId) + '"', function (f) {
-		return { id: readText(f, 'id'), payment_id: readText(f, 'payment.id'),
-			entry_type: readText(f, 'entry.type'), ledger_type: readText(f, 'ledger.type'),
-			account_type: readText(f, 'account.type'), account_number: readText(f, 'account.number'),
-			account_name: readText(f, 'account.name'), branch: readText(f, 'branch'),
-			department: readText(f, 'department'), transaction_code: readText(f, 'transaction.code'),
-			amount: readNumber(f, 'amount'), currency: readText(f, 'currency'),
-			description: readText(f, 'description'), vendor_id: readText(f, 'vendor.id'),
-			type: readText(f, 'type'), order: readNumber(f, 'order'), ref_id: readText(f, 'ref.id') };
+		return { id: readText(f, 'id').trim(), payment_id: readText(f, 'payment.id').trim(),
+			entry_type: readText(f, 'entry.type').trim(), ledger_type: readText(f, 'ledger.type').trim(),
+			account_type: readText(f, 'account.type').trim(), account_number: readText(f, 'account.number').trim(),
+			account_name: readText(f, 'account.name').trim(), branch: readText(f, 'branch').trim(),
+			department: readText(f, 'department').trim(), transaction_code: readText(f, 'transaction.code').trim(),
+			amount: readNumber(f, 'amount'), currency: readText(f, 'currency').trim(),
+			description: readText(f, 'description').trim(), vendor_id: readText(f, 'vendor.id').trim(),
+			type: readText(f, 'type').trim(), order: readNumber(f, 'order'), ref_id: readText(f, 'ref.id').trim() };
 	});
 	rows.sort(function (a, b) { return toNumber(a.order) - toNumber(b.order); });
 	return rows;
@@ -576,7 +681,7 @@ function entityByUser(userName) {
 	if (!creator) return errorResult('Thieu ' + TABLE_PAYMENT + '.created.by.');
 
 	var lv1Id = selectOne(TABLE_CONTACT, 'contact.name="' + escapeQueryValue(creator) + '"', function (f) {
-		return readText(f, 'lv1.id');
+		return readText(f, 'lv1.id').trim();
 	});
 	if (!lv1Id) {
 		return errorResult('Khong tim thay contacts.lv1.id cua contact.name="' + creator + '".');
