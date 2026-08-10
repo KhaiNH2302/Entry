@@ -329,16 +329,17 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 	var vendors = getPaymentVendors(paymentId);
 	var vendorCount = vendors.length;
 	var currency = safeString(req.currency || (vendors.length > 0 ? vendors[0].currency : '') || 'VND').trim().toUpperCase() || 'VND';
-	var totalPaidAmount = toNumber(req.total_amount_paid);
 
-	if (totalPaidAmount === 0 && vendors.length > 0) {
-		var sumVendorAmount = 0;
-		for (var vIdx = 0; vIdx < vendors.length; vIdx++) {
-			sumVendorAmount += toNumber(vendors[vIdx].amount) || toNumber(vendors[vIdx].approved_invoice_amount);
-		}
-		if (sumVendorAmount > 0) totalPaidAmount = sumVendorAmount;
+	// 1. Tổng số tiền đề nghị thanh toán của tất cả các NCC thuộc DNTT (NUMBER)
+	var totalPaidAmount = 0;
+	for (var vIdx = 0; vIdx < vendors.length; vIdx++) {
+		totalPaidAmount += toNumber(vendors[vIdx].amount);
+	}
+	if (totalPaidAmount === 0 && req.total_amount_paid) {
+		totalPaidAmount = toNumber(req.total_amount_paid);
 	}
 
+	// 3. Tổng số tiền thuế của DNTT (tổng tiền thuế của mỗi NCC)
 	var totalTaxAmount = 0;
 	for (var vIdx2 = 0; vIdx2 < vendors.length; vIdx2++) {
 		var vTaxInfo = getInvoiceTaxInfo(paymentId, vendors[vIdx2], vendorCount);
@@ -349,7 +350,19 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		totalTaxAmount += vendorTax;
 	}
 
+	// 2. Số tiền thanh toán sau thuế bằng chữ (Text)
 	var amountInWords = readMoneyInWords(totalPaidAmount, currency);
+
+	// 6. Phân quyền hiển thị Button Chỉnh sửa / Xem chi tiết:
+	// - Role KTTC khởi tạo/tiếp nhận trong phase KTTC: Chỉnh sửa (canEdit = true)
+	// - Role ĐMMS/RS1 2, Lãnh đạo hoặc giai đoạn đã khóa: Xem chi tiết (canEdit = false)
+	var currentUser = getCurrentOperatorName();
+	var currentPhase = safeString(params.currentPhase || req.current_phase).trim();
+	var isEditablePhase = isAccountingEditablePhase(currentPhase);
+	var isKttcCreator = normalizeText(params.initialRole || req.initial_role) === 'kttc';
+	var isAssignedKttc = isSameUser(params.userCheckerKttc || req.user_checker_kttc, currentUser);
+	var canEdit = isEditablePhase && (isKttcCreator || isAssignedKttc);
+	var buttonLabel = canEdit ? 'Chỉnh sửa' : 'Xem chi tiết';
 
 	var meta = {
 		currentPhase: params.currentPhase,
@@ -362,26 +375,36 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		glCostCenterOptions: params.glCostCenterOptions,
 		transactionOfficeOptions: params.transactionOfficeOptions,
 		defaultTransactionOfficeCode: params.defaultTransactionOfficeCode,
-		// 5 giá trị bổ sung
-		totalPaidAmount: totalPaidAmount,
+		// 1. Tổng số tiền thanh toán sau thuế (NUMBER)
 		totalAmountAfterTax: totalPaidAmount,
+		totalPaidAmount: totalPaidAmount,
 		total_amount_paid: totalPaidAmount,
 		total_amount_after_tax: totalPaidAmount,
+		// 2. Số tiền bằng chữ (Text)
 		amountInWords: amountInWords,
 		totalAmountInWords: amountInWords,
 		moneyInWords: amountInWords,
 		amount_in_words: amountInWords,
+		// 3. Tổng số tiền thuế (NUMBER)
 		totalTaxAmount: totalTaxAmount,
 		totalTax: totalTaxAmount,
 		total_tax_amount: totalTaxAmount,
+		// 4. Loại tiền (Text)
 		currency: currency,
 		currencyType: currency,
 		currency_type: currency,
+		// 5. Số NCC thanh toán (NUMBER)
 		vendorCount: vendorCount,
 		totalVendorCount: vendorCount,
 		totalVendors: vendorCount,
 		vendor_count: vendorCount,
-		paymentVendorCount: vendorCount
+		paymentVendorCount: vendorCount,
+		// 6. Phân quyền hiển thị Button (Text / Boolean)
+		canEdit: canEdit,
+		isEditable: canEdit,
+		buttonLabel: buttonLabel,
+		buttonAction: buttonLabel,
+		viewMode: canEdit ? 'edit' : 'view'
 	};
 
 	if (params.locked !== undefined) meta.locked = params.locked;
@@ -4136,11 +4159,13 @@ function deletePaymentEntries(paymentId) {
 
 function isGenerationPhaseLocked(currentPhase) {
 	var phase = normalizeText(currentPhase);
-	return phase !== GENERATION_PHASE.DMMS && phase !== GENERATION_PHASE.KTTC;
+	return phase !== GENERATION_PHASE.DMMS && phase !== 'dmms' &&
+			phase !== GENERATION_PHASE.KTTC && phase !== 'kttc';
 }
 
 function isAccountingEditablePhase(currentPhase) {
-	return normalizeText(currentPhase) === GENERATION_PHASE.KTTC;
+	var phase = normalizeText(currentPhase);
+	return phase === GENERATION_PHASE.KTTC || phase === 'kttc';
 }
 
 function getCurrentOperatorName() {
