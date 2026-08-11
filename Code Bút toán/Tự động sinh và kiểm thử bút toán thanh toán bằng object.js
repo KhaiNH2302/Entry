@@ -9,6 +9,7 @@
  * testPaymentEntryObjects và runCompletedPaymentCaseTests để truyền dữ liệu các bảng
  * dưới dạng object, không đọc/ghi DB khi chạy test sinh bút toán.
  */
+var logger = typeof getLog === 'function' ? getLog("ESD_HTKT_PAYMENT_ENTRY") : { info: function(m) { debugPaymentEntry('INFO', m); }, error: function(m) { debugPaymentEntry('ERROR', m); } };
 
 if (typeof vars === 'undefined') {
   global.vars = {
@@ -593,6 +594,164 @@ function getPreservedAutoEntriesForOtherVendors(savedEntries, successfulVendorId
 // -----------------------------------------------------------------------------
 // SECTION 02A - SOURCE CHANGE: xác định phiếu bị ảnh hưởng và gọi LOAD / SYNC
 // -----------------------------------------------------------------------------
+
+/** Lấy thông tin bản ghi payment từ bảng esdHTKTpayment theo paymentId. */
+function getPaymentById(paymentId) {
+	if (!paymentId) {
+		return null;
+	}
+
+	var file = null;
+	var payment = null;
+	try {
+		file = new SCFile(TABLE_PAYMENT, SCFILE_READONLY);
+		var rc = file.doSelect('id="' + escapeQueryValue(paymentId) + '"');
+		if (rc === RC_SUCCESS) {
+			payment = {
+				"id": file["id"],
+				"current.phase": file["current.phase"]
+			};
+		}
+	} catch (e) {
+		logger.info("getPaymentById failed for paymentId: " + paymentId + " | Exception: " + e);
+	} finally {
+		if (file) {
+			try {
+				file.doClose();
+			} catch (ignoreClose) {}
+		}
+	}
+	return payment;
+}
+
+/**
+ * Trigger handler cho esdHTKTpaymentCostDivision
+ * Chỉ chạy khi record Payment ở Phase 'initial_kttc'
+ */
+function handlePaymentCostDivisionAndAccountingSync(rec) {
+	if (!rec) {
+		return;
+	}
+
+	var paymentId = rec["payment.id"] || rec["id"];
+	if (!paymentId) {
+		return;
+	}
+
+	var payment = getPaymentById(paymentId);
+	logger.info("handlePaymentCostDivisionAndAccountingSync | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+
+	if (!payment || payment["current.phase"] !== "initial_kttc") {
+		return;
+	}
+
+	try {
+		syncPaymentEntryBySourceChange(
+				"esdHTKTpaymentCostDivision",
+				rec
+		);
+	} catch (ex) {
+		logger.info("handlePaymentCostDivisionAndAccountingSync failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+	}
+}
+
+/**
+ * Trigger handler cho esdHTKTpaymentInvoice
+ * Chỉ chạy khi record Payment ở Phase 'initial_kttc'
+ */
+function handleSyncPaymentEntryByInvoice(rec) {
+	if (!rec) {
+		return;
+	}
+
+	var paymentId = rec["payment.id"] || rec["id"];
+	if (!paymentId) {
+		return;
+	}
+
+	var payment = getPaymentById(paymentId);
+	logger.info("handleSyncPaymentEntryByInvoice | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+
+	if (!payment || payment["current.phase"] !== "initial_kttc") {
+		return;
+	}
+
+	try {
+		syncPaymentEntryBySourceChange(
+				"esdHTKTpaymentInvoice",
+				rec
+		);
+	} catch (ex) {
+		logger.info("handleSyncPaymentEntryByInvoice failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+	}
+}
+
+/**
+ * Trigger handler cho esdHTKTpaymentVendor (Add/Delete/Sync)
+ * Hàm đồng bộ bút toán Payment Entry từ sự thay đổi của Payment Vendor
+ * Chỉ thực thi khi record ở Phase 'initial_kttc'
+ */
+function handleSyncPaymentEntryByVendor(rec) {
+	if (!rec) {
+		return;
+	}
+
+	var paymentId = rec["payment.id"] || rec["id"];
+	if (!paymentId) {
+		return;
+	}
+
+	var payment = getPaymentById(paymentId);
+	logger.info("handleSyncPaymentEntryByVendor | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+
+	if (!payment || payment["current.phase"] !== "initial_kttc") {
+		return;
+	}
+
+	try {
+		syncPaymentEntryBySourceChange(
+				"esdHTKTpaymentVendor",
+				rec
+		);
+	} catch (ex) {
+		logger.info("handleSyncPaymentEntryByVendor failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+	}
+}
+
+/**
+ * Trigger handler cho esdHTKTpaymentVendor (Update)
+ * Hàm điều phối cập nhật tổng tiền ĐNTT và đồng bộ bút toán
+ * Chỉ chạy khi record ở Phase 'initial_kttc'
+ */
+function handleUpdatePaymentVendorAndAccountingSync(rec, oldRec) {
+	if (typeof lib !== 'undefined' && lib.ESD_HTKT_PAYMENT_VENDOR && typeof lib.ESD_HTKT_PAYMENT_VENDOR.handleVendorChangeUpdate === 'function') {
+		lib.ESD_HTKT_PAYMENT_VENDOR.handleVendorChangeUpdate(rec);
+	}
+	if (!rec) {
+		return;
+	}
+
+	var paymentId = rec["payment.id"] || rec["id"];
+	if (!paymentId) {
+		return;
+	}
+
+	var payment = getPaymentById(paymentId);
+	logger.info("handleUpdatePaymentVendorAndAccountingSync | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+
+	if (!payment || payment["current.phase"] !== "initial_kttc") {
+		return;
+	}
+
+	try {
+		syncPaymentEntryBySourceChange(
+				"esdHTKTpaymentVendor",
+				rec
+		);
+	} catch (ex) {
+		logger.info("handleUpdatePaymentVendorAndAccountingSync failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+	}
+}
 
 /** Đồng bộ các đề nghị chịu ảnh hưởng sau khi bản ghi nguồn được lưu. */
 function syncPaymentEntryBySourceChange(sourceTable, sourceRecord) {

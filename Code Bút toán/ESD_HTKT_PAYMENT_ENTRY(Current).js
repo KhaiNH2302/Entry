@@ -1,4 +1,5 @@
 /** Tự động sinh và đồng bộ bút toán thanh toán trong esdHTKTpaymentEntry. */
+var logger = typeof getLog === 'function' ? getLog("ESD_HTKT_PAYMENT_ENTRY") : { info: function(m) { debugPaymentEntry('INFO', m); }, error: function(m) { debugPaymentEntry('ERROR', m); } };
 
 /*
  * ===========================================================================
@@ -295,15 +296,26 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		totalPaidAmount = toNumber(req.total_amount_paid);
 	}
 
-	// 3. Tổng số tiền thuế của DNTT (tổng tiền thuế của mỗi NCC)
+	// 3. Tổng số tiền thuế của DNTT (tổng tiền thuế của mỗi NCC / hóa đơn)
 	var totalTaxAmount = 0;
-	for (var vIdx2 = 0; vIdx2 < vendors.length; vIdx2++) {
-		var vTaxInfo = getInvoiceTaxInfo(paymentId, vendors[vIdx2], vendorCount);
-		var vendorTax = toNumber(vTaxInfo.totalDeductibleTax);
-		if (vendorTax === 0 && (toNumber(vendors[vIdx2].tax_amount) > 0 || toNumber(vendors[vIdx2]['tax.amount']) > 0)) {
-			vendorTax = toNumber(vendors[vIdx2].tax_amount) || toNumber(vendors[vIdx2]['tax.amount']);
+	if (vendors.length > 0) {
+		for (var vIdx2 = 0; vIdx2 < vendors.length; vIdx2++) {
+			var vTaxInfo = getInvoiceTaxInfo(paymentId, vendors[vIdx2], vendorCount);
+			var vendorTax = toNumber(vTaxInfo.totalDeductibleTax);
+			if (vendorTax === 0 && (toNumber(vendors[vIdx2].tax_amount) > 0 || toNumber(vendors[vIdx2]['tax.amount']) > 0)) {
+				vendorTax = toNumber(vendors[vIdx2].tax_amount) || toNumber(vendors[vIdx2]['tax.amount']);
+			}
+			totalTaxAmount += vendorTax;
 		}
-		totalTaxAmount += vendorTax;
+	} else {
+		var links = getLinkedInvoices(paymentId);
+		for (var invIdx = 0; invIdx < links.length; invIdx++) {
+			var inv = getInvoiceById(links[invIdx].invoice_id);
+			totalTaxAmount += toNumber(inv.total_tax);
+		}
+	}
+	if (totalTaxAmount === 0 && (req.total_tax_amount || req['total.tax.amount'])) {
+		totalTaxAmount = toNumber(req.total_tax_amount || req['total.tax.amount']);
 	}
 
 	// 2. Số tiền thanh toán sau thuế bằng chữ (Text)
@@ -331,17 +343,17 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		glCostCenterOptions: params.glCostCenterOptions,
 		transactionOfficeOptions: params.transactionOfficeOptions,
 		defaultTransactionOfficeCode: params.defaultTransactionOfficeCode,
-		// 1. Tổng số tiền thanh toán sau thuế (NUMBER)
+		// 1. Tổng số tiền thanh toán sau thuế (NUMBER) - Tổng số tiền đề nghị thanh toán của tất cả các NCC thuộc DNTT
 		totalAmountAfterTax: totalPaidAmount,
 		totalPaidAmount: totalPaidAmount,
 		total_amount_paid: totalPaidAmount,
 		total_amount_after_tax: totalPaidAmount,
-		// 2. Số tiền bằng chữ (Text)
+		// 2. Số tiền bằng chữ (Text) - Số tiền thanh toán sau thuế bằng chữ
 		amountInWords: amountInWords,
 		totalAmountInWords: amountInWords,
 		moneyInWords: amountInWords,
 		amount_in_words: amountInWords,
-		// 3. Tổng số tiền thuế (NUMBER)
+		// 3. Tổng số tiền thuế (NUMBER / Text) - Số tiền thuế của DNTT
 		totalTaxAmount: totalTaxAmount,
 		totalTax: totalTaxAmount,
 		total_tax_amount: totalTaxAmount,
@@ -349,7 +361,7 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		currency: currency,
 		currencyType: currency,
 		currency_type: currency,
-		// 5. Số NCC thanh toán (NUMBER)
+		// 5. Số NCC thanh toán (NUMBER) - Tổng số NCC được lựa chọn tại Tab thông tin đề nghị
 		vendorCount: vendorCount,
 		totalVendorCount: vendorCount,
 		totalVendors: vendorCount,
@@ -550,9 +562,166 @@ function getPreservedAutoEntriesForOtherVendors(savedEntries, successfulVendorId
 // SECTION 02A - SOURCE CHANGE: xác định phiếu bị ảnh hưởng và gọi LOAD / SYNC
 // -----------------------------------------------------------------------------
 
+/** Lấy thông tin bản ghi payment từ bảng esdHTKTpayment theo paymentId. */
+function getPaymentById(paymentId) {
+	if (!paymentId) {
+		return null;
+	}
+
+	var file = null;
+	var payment = null;
+	try {
+		file = new SCFile(TABLE_PAYMENT, SCFILE_READONLY);
+		var rc = file.doSelect('id="' + escapeQueryValue(paymentId) + '"');
+		if (rc === RC_SUCCESS) {
+			payment = {
+				"id": file["id"],
+				"current.phase": file["current.phase"]
+			};
+		}
+	} catch (e) {
+		logger.info("getPaymentById failed for paymentId: " + paymentId + " | Exception: " + e);
+	} finally {
+		if (file) {
+			try {
+				file.doClose();
+			} catch (ignoreClose) {}
+		}
+	}
+	return payment;
+}
+
+/**
+ * Trigger handler cho esdHTKTpaymentCostDivision
+ * Chỉ chạy khi record Payment ở Phase 'initial_kttc'
+ */
+function handlePaymentCostDivisionAndAccountingSync(rec) {
+	if (!rec) {
+		return;
+	}
+
+	var paymentId = rec["payment.id"] || rec["id"];
+	if (!paymentId) {
+		return;
+	}
+
+	var payment = getPaymentById(paymentId);
+	logger.info("handlePaymentCostDivisionAndAccountingSync | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+
+	if (!payment || payment["current.phase"] !== "initial_kttc") {
+		return;
+	}
+
+	try {
+		syncPaymentEntryBySourceChange(
+				"esdHTKTpaymentCostDivision",
+				rec
+		);
+	} catch (ex) {
+		logger.info("handlePaymentCostDivisionAndAccountingSync failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+	}
+}
+
+/**
+ * Trigger handler cho esdHTKTpaymentInvoice
+ * Chỉ chạy khi record Payment ở Phase 'initial_kttc'
+ */
+function handleSyncPaymentEntryByInvoice(rec) {
+	if (!rec) {
+		return;
+	}
+
+	var paymentId = rec["payment.id"] || rec["id"];
+	if (!paymentId) {
+		return;
+	}
+
+	var payment = getPaymentById(paymentId);
+	logger.info("handleSyncPaymentEntryByInvoice | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+
+	if (!payment || payment["current.phase"] !== "initial_kttc") {
+		return;
+	}
+
+	try {
+		syncPaymentEntryBySourceChange(
+				"esdHTKTpaymentInvoice",
+				rec
+		);
+	} catch (ex) {
+		logger.info("handleSyncPaymentEntryByInvoice failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+	}
+}
+
+/**
+ * Trigger handler cho esdHTKTpaymentVendor (Add/Delete/Sync)
+ * Hàm đồng bộ bút toán Payment Entry từ sự thay đổi của Payment Vendor
+ * Chỉ thực thi khi record ở Phase 'initial_kttc'
+ */
+function handleSyncPaymentEntryByVendor(rec) {
+	if (!rec) {
+		return;
+	}
+
+	var paymentId = rec["payment.id"] || rec["id"];
+	if (!paymentId) {
+		return;
+	}
+
+	var payment = getPaymentById(paymentId);
+	logger.info("handleSyncPaymentEntryByVendor | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+
+	if (!payment || payment["current.phase"] !== "initial_kttc") {
+		return;
+	}
+
+	try {
+		syncPaymentEntryBySourceChange(
+				"esdHTKTpaymentVendor",
+				rec
+		);
+	} catch (ex) {
+		logger.info("handleSyncPaymentEntryByVendor failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+	}
+}
+
+/**
+ * Trigger handler cho esdHTKTpaymentVendor (Update)
+ * Hàm điều phối cập nhật tổng tiền ĐNTT và đồng bộ bút toán
+ * Chỉ chạy khi record ở Phase 'initial_kttc'
+ */
+function handleUpdatePaymentVendorAndAccountingSync(rec, oldRec) {
+	if (typeof lib !== 'undefined' && lib.ESD_HTKT_PAYMENT_VENDOR && typeof lib.ESD_HTKT_PAYMENT_VENDOR.handleVendorChangeUpdate === 'function') {
+		lib.ESD_HTKT_PAYMENT_VENDOR.handleVendorChangeUpdate(rec);
+	}
+	if (!rec) {
+		return;
+	}
+
+	var paymentId = rec["payment.id"] || rec["id"];
+	if (!paymentId) {
+		return;
+	}
+
+	var payment = getPaymentById(paymentId);
+	logger.info("handleUpdatePaymentVendorAndAccountingSync | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+
+	if (!payment || payment["current.phase"] !== "initial_kttc") {
+		return;
+	}
+
+	try {
+		syncPaymentEntryBySourceChange(
+				"esdHTKTpaymentVendor",
+				rec
+		);
+	} catch (ex) {
+		logger.info("handleUpdatePaymentVendorAndAccountingSync failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+	}
+}
+
 /** Đồng bộ các đề nghị chịu ảnh hưởng sau khi bản ghi nguồn được lưu. */
 function syncPaymentEntryBySourceChange(sourceTable, sourceRecord) {
-	print("Tesstt");
 	var source = sourceRecord || {};
 	var paymentIds = resolvePaymentIdsFromSourceChange(sourceTable, source);
 	var results = [];
@@ -2499,7 +2668,8 @@ function getPaymentRequest(paymentId) {
 					total_advance_amount: readNumber(record, 'total.advance.amount'),
 					total_amount_paid: readNumber(record, 'total.amount.paid'),
 					total_refund_amount: readNumber(record, 'total.refund.amount'),
-					currency: readText(record, 'currentcy')
+					total_tax_amount: readNumber(record, 'total.tax.amount'),
+					currency: readText(record, 'currency') || readText(record, 'currentcy')
 				};
 			}) || {}
 	);
