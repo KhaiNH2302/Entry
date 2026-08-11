@@ -1691,8 +1691,11 @@ function getSelectedPrepaymentSummary(paymentId, vendorId) {
 		while (rc === RC_SUCCESS) {
 			// Chỉ tính dòng AP hoàn ứng; PREPAYMENT loại GL không thuộc luồng này.
 			if (normalizeText(readText(f, 'type')) === normalizeText(TYPE.AP)) {
-				result.rowCount++;
-				result.totalAmount += readNumber(f, 'amount');
+				var amt = readNumber(f, 'amount');
+				if (amt > 0) {
+					result.rowCount++;
+					result.totalAmount += amt;
+				}
 			}
 			rc = f.getNext();
 		}
@@ -1721,9 +1724,10 @@ function hasUserAccountingActionEntry(paymentId, vendorId) {
 		while (rc === RC_SUCCESS) {
 			var type = normalizeText(readText(f, 'type'));
 			var entryType = normalizeEntryType(readText(f, 'entry.type'));
+			var amount = readNumber(f, 'amount');
 			var isManualGl = type === normalizeText(TYPE.GL);
 			var isManualPrepayment = type === normalizeText(TYPE.AP) &&
-					entryType === ENTRY_TYPE.PREPAYMENT;
+					entryType === ENTRY_TYPE.PREPAYMENT && amount > 0;
 			var isManualPayable = type === normalizeText(TYPE.AP) &&
 					entryType === ENTRY_TYPE.PAYABLE &&
 					toStoredAccountType(readText(f, 'account.type')) === ACCOUNT_TYPE.ASSET &&
