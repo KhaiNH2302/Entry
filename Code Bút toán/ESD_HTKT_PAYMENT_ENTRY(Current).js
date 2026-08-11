@@ -552,6 +552,7 @@ function getPreservedAutoEntriesForOtherVendors(savedEntries, successfulVendorId
 
 /** Đồng bộ các đề nghị chịu ảnh hưởng sau khi bản ghi nguồn được lưu. */
 function syncPaymentEntryBySourceChange(sourceTable, sourceRecord) {
+	print("Tesstt");
 	var source = sourceRecord || {};
 	var paymentIds = resolvePaymentIdsFromSourceChange(sourceTable, source);
 	var results = [];
@@ -859,21 +860,11 @@ function savePaymentEntryEdit(details) {
 		};
 	}
 
-	var summaryMeta = getPaymentSummaryMeta(paymentId, request, {
-		currentPhase: request.current_phase,
-		userCheckerKttc: request.user_checker_kttc,
-		initialRole: request.initial_role,
-		createdBy: request.created_by,
-		additionalUnitCode: creatorUnit.code,
-		additionalUnitName: creatorUnit.name,
-		transactionOfficeOptions: transactionOfficeOptions,
-		defaultTransactionOfficeCode: defaultTransactionOfficeCode
+	return makeResult(getSavedPaymentEntries(paymentId), 'saved', {
+		paymentId: paymentId,
+		deleted: deleted,
+		inserted: inserted
 	});
-	summaryMeta.paymentId = paymentId;
-	summaryMeta.deleted = deleted;
-	summaryMeta.inserted = inserted;
-
-	return makeResult(getSavedPaymentEntries(paymentId), 'saved', summaryMeta);
 }
 
 function validateAccountingBalanceRows(rows) {
