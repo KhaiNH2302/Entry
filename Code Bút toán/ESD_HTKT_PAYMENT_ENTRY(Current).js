@@ -960,10 +960,10 @@ function savePaymentEntryEdit(details) {
 	if (!isAccountingEditablePhase(request.current_phase)) {
 		return makeError('Giai đoạn hiện tại không cho phép chỉnh sửa bút toán.');
 	}
-	var currentUser = getCurrentOperatorName();
+//    var currentUser = getCurrentOperatorName();
 	var isKttcCreator =
 			normalizeText(request.initial_role) === 'kttc';
-	var isAssignedKttc = isSameUser(request.user_checker_kttc, currentUser);
+	var isAssignedKttc = isSameUser(request.user_checker_kttc, details.currentUser);
 
 
 	if (!isKttcCreator && !isAssignedKttc) {

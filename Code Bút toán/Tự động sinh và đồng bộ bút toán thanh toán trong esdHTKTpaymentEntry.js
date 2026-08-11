@@ -296,15 +296,26 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		totalPaidAmount = toNumber(req.total_amount_paid);
 	}
 
-	// 3. Tổng số tiền thuế của DNTT (tổng tiền thuế của mỗi NCC)
+	// 3. Tổng số tiền thuế của DNTT (tổng tiền thuế của mỗi NCC / hóa đơn)
 	var totalTaxAmount = 0;
-	for (var vIdx2 = 0; vIdx2 < vendors.length; vIdx2++) {
-		var vTaxInfo = getInvoiceTaxInfo(paymentId, vendors[vIdx2], vendorCount);
-		var vendorTax = toNumber(vTaxInfo.totalDeductibleTax);
-		if (vendorTax === 0 && (toNumber(vendors[vIdx2].tax_amount) > 0 || toNumber(vendors[vIdx2]['tax.amount']) > 0)) {
-			vendorTax = toNumber(vendors[vIdx2].tax_amount) || toNumber(vendors[vIdx2]['tax.amount']);
+	if (vendors.length > 0) {
+		for (var vIdx2 = 0; vIdx2 < vendors.length; vIdx2++) {
+			var vTaxInfo = getInvoiceTaxInfo(paymentId, vendors[vIdx2], vendorCount);
+			var vendorTax = toNumber(vTaxInfo.totalDeductibleTax);
+			if (vendorTax === 0 && (toNumber(vendors[vIdx2].tax_amount) > 0 || toNumber(vendors[vIdx2]['tax.amount']) > 0)) {
+				vendorTax = toNumber(vendors[vIdx2].tax_amount) || toNumber(vendors[vIdx2]['tax.amount']);
+			}
+			totalTaxAmount += vendorTax;
 		}
-		totalTaxAmount += vendorTax;
+	} else {
+		var links = getLinkedInvoices(paymentId);
+		for (var invIdx = 0; invIdx < links.length; invIdx++) {
+			var inv = getInvoiceById(links[invIdx].invoice_id);
+			totalTaxAmount += toNumber(inv.total_tax);
+		}
+	}
+	if (totalTaxAmount === 0 && (req.total_tax_amount || req['total.tax.amount'])) {
+		totalTaxAmount = toNumber(req.total_tax_amount || req['total.tax.amount']);
 	}
 
 	// 2. Số tiền thanh toán sau thuế bằng chữ (Text)
@@ -332,17 +343,17 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		glCostCenterOptions: params.glCostCenterOptions,
 		transactionOfficeOptions: params.transactionOfficeOptions,
 		defaultTransactionOfficeCode: params.defaultTransactionOfficeCode,
-		// 1. Tổng số tiền thanh toán sau thuế (NUMBER)
+		// 1. Tổng số tiền thanh toán sau thuế (NUMBER) - Tổng số tiền đề nghị thanh toán của tất cả các NCC thuộc DNTT
 		totalAmountAfterTax: totalPaidAmount,
 		totalPaidAmount: totalPaidAmount,
 		total_amount_paid: totalPaidAmount,
 		total_amount_after_tax: totalPaidAmount,
-		// 2. Số tiền bằng chữ (Text)
+		// 2. Số tiền bằng chữ (Text) - Số tiền thanh toán sau thuế bằng chữ
 		amountInWords: amountInWords,
 		totalAmountInWords: amountInWords,
 		moneyInWords: amountInWords,
 		amount_in_words: amountInWords,
-		// 3. Tổng số tiền thuế (NUMBER)
+		// 3. Tổng số tiền thuế (NUMBER / Text) - Số tiền thuế của DNTT
 		totalTaxAmount: totalTaxAmount,
 		totalTax: totalTaxAmount,
 		total_tax_amount: totalTaxAmount,
@@ -350,7 +361,7 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		currency: currency,
 		currencyType: currency,
 		currency_type: currency,
-		// 5. Số NCC thanh toán (NUMBER)
+		// 5. Số NCC thanh toán (NUMBER) - Tổng số NCC được lựa chọn tại Tab thông tin đề nghị
 		vendorCount: vendorCount,
 		totalVendorCount: vendorCount,
 		totalVendors: vendorCount,
@@ -679,7 +690,7 @@ function handleSyncPaymentEntryByVendor(rec) {
  * Hàm điều phối cập nhật tổng tiền ĐNTT và đồng bộ bút toán
  * Chỉ chạy khi record ở Phase 'initial_kttc'
  */
-function handleUpdatePaymentVendorAndAccountingSync(rec) {
+function handleUpdatePaymentVendorAndAccountingSync(rec, oldRec) {
 	if (typeof lib !== 'undefined' && lib.ESD_HTKT_PAYMENT_VENDOR && typeof lib.ESD_HTKT_PAYMENT_VENDOR.handleVendorChangeUpdate === 'function') {
 		lib.ESD_HTKT_PAYMENT_VENDOR.handleVendorChangeUpdate(rec);
 	}
@@ -949,10 +960,10 @@ function savePaymentEntryEdit(details) {
 	if (!isAccountingEditablePhase(request.current_phase)) {
 		return makeError('Giai đoạn hiện tại không cho phép chỉnh sửa bút toán.');
 	}
-	var currentUser = getCurrentOperatorName();
+//    var currentUser = getCurrentOperatorName();
 	var isKttcCreator =
 			normalizeText(request.initial_role) === 'kttc';
-	var isAssignedKttc = isSameUser(request.user_checker_kttc, currentUser);
+	var isAssignedKttc = isSameUser(request.user_checker_kttc, details.currentUser);
 
 
 	if (!isKttcCreator && !isAssignedKttc) {
@@ -2657,7 +2668,8 @@ function getPaymentRequest(paymentId) {
 					total_advance_amount: readNumber(record, 'total.advance.amount'),
 					total_amount_paid: readNumber(record, 'total.amount.paid'),
 					total_refund_amount: readNumber(record, 'total.refund.amount'),
-					currency: readText(record, 'currentcy')
+					total_tax_amount: readNumber(record, 'total.tax.amount'),
+					currency: readText(record, 'currency') || readText(record, 'currentcy')
 				};
 			}) || {}
 	);
