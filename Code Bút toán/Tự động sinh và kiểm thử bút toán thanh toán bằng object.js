@@ -1538,11 +1538,21 @@ function savePaymentEntryEdit(details) {
 		};
 	}
 
-	return makeResult(getSavedPaymentEntries(paymentId), 'saved', {
-		paymentId: paymentId,
-		deleted: deleted,
-		inserted: inserted
+	var summaryMeta = getPaymentSummaryMeta(paymentId, request, {
+		currentPhase: request.current_phase,
+		userCheckerKttc: request.user_checker_kttc,
+		initialRole: request.initial_role,
+		createdBy: request.created_by,
+		additionalUnitCode: creatorUnit.code,
+		additionalUnitName: creatorUnit.name,
+		transactionOfficeOptions: transactionOfficeOptions,
+		defaultTransactionOfficeCode: defaultTransactionOfficeCode
 	});
+	summaryMeta.paymentId = paymentId;
+	summaryMeta.deleted = deleted;
+	summaryMeta.inserted = inserted;
+
+	return makeResult(getSavedPaymentEntries(paymentId), 'saved', summaryMeta);
 }
 
 function validateAccountingBalanceRows(rows) {
