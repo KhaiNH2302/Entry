@@ -1763,7 +1763,7 @@ function classifyPaymentCase(c) {
 	var tax = c.hasTax;
 
 	// Không có hóa đơn, chỉ đề nghị thanh toán.
-	if (moneyIsZero(invoice) && moneyIsPositive(payment)) return PAYMENT_CASE.TT17;
+	if (moneyIsZero(invoice) && moneyIsPositive(payment) && moneyIsZero(refund)) return PAYMENT_CASE.TT17;
 
 	// Không hoàn ứng: (1) = (2).
 	if (moneyIsZero(refund) && moneyEquals(invoice, payment)) {
@@ -2181,6 +2181,7 @@ function buildEntryRow(params) {
 		id: '',
 		payment_id: params.paymentId,
 		entry_type: entryType,
+		rule_code: params.entryCode,
 		ledger_type: getAutoLedgerType(params.entryCode),
 		account_type: getAutoAccountType(params.entryCode),
 		account_number: account.number,
@@ -3252,6 +3253,7 @@ function getPaymentEntryFields() {
 		['e.type', 'type', 'S'],
 		['e.order', 'order', 'N'],
 		['e.accounting.request.id', 'accounting_request_id', 'S'],
+		['e.ref.id', 'ref_id', 'S'],
 		['pv.vendor.site.id', 'vendor_site_id', 'S'],
 		['vs.ogl.site.code', 'vendor_site_code', 'S'],
 		['pv.payment.method', 'payment_method', 'S'],
@@ -3383,7 +3385,8 @@ function toPaymentEntryRecord(row) {
 		'vendor.id': row.vendor_id,
 		type: row.type,
 		order: row.order,
-		'accounting.request.id': row.accounting_request_id
+		'accounting.request.id': row.accounting_request_id,
+		'ref.id': safeString(row.ref_id || row['ref.id']).trim()
 	};
 }
 
@@ -3411,7 +3414,9 @@ function deleteAutoPaymentEntries(paymentId) {
 			payment_id: f['payment.id'],
 			vendor_id: f['vendor.id'],
 			type: f['type'],
-			entry_type: f['entry.type']
+			entry_type: f['entry.type'],
+			ref_id: f['ref.id'],
+			'ref.id': f['ref.id']
 		})) {
 			var deleteRc = f.doDelete();
 			debugPaymentEntry('DB-DELETE-AUTO-ROW', 'id=' + safeString(f['id']) + ', rc=' + deleteRc);
@@ -3474,6 +3479,9 @@ function isAutoEntry(row) {
 	// Code tự động hiện không còn sinh Có TK tạm ứng. Vì vậy AP/PREPAYMENT là
 	// dòng phát sinh sau từ xử lý hoàn ứng và phải được giữ khi sinh lại.
 	if (normalizeEntryType(row.entry_type) === ENTRY_TYPE.PREPAYMENT) return false;
+
+	// Dòng AP/PAYABLE có ref.id (mã YCTT cũ chọn từ tab Công nợ) phải được giữ lại.
+	if (normalizeEntryType(row.entry_type) === ENTRY_TYPE.PAYABLE && safeString(row.ref_id || row['ref.id']).trim()) return false;
 
 	// Dong AP do nguoi dung them co ID MANUAL va phai duoc giu khi dong bo lai.
 	if (isUserAddedEntryId(row.id)) return false;

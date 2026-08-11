@@ -759,7 +759,6 @@ function saveListPaymentEntryPayable(input) {
 		var parsedData = JSON.parse(rawDetails);
 		var dataObj = [];
 
-
 		if (parsedData.dataFromPopup && Array.isArray(parsedData.dataFromPopup)) {
 			dataObj = parsedData.dataFromPopup;
 		} else if (Array.isArray(parsedData)) {
@@ -774,6 +773,7 @@ function saveListPaymentEntryPayable(input) {
 
 		var updatedIds = [];
 		var addedIds = [];
+		var deletedIds = [];
 		var failedIds = [];
 		var affectedPaymentIds = {};
 
@@ -782,12 +782,10 @@ function saveListPaymentEntryPayable(input) {
 
 			var paymentId = feeData['paymentId'] || "";
 			var vendorId = feeData['vendorId'] || "";
-			var currentPayment = feeData['currentPayment'] || 0;
+			var currentPayment = Number(feeData['currentPayment']) || 0;
 			var currency = feeData['currency'] || "";
 			var description = feeData['description'] || "";
-			//TODO: xem lai
-//            var refId = feeData['refId'] || "";
-			var refId = feeData['prepaymentId'] || "";
+			var refId = feeData['prepaymentId'] || feeData['refId'] || "";
 			var order = feeData['order'] || 0;
 
 			if (paymentId === "" || vendorId === "") {
@@ -799,69 +797,103 @@ function saveListPaymentEntryPayable(input) {
 			var entryFile = new SCFile("esdHTKTpaymentEntry");
 			var query = "payment.id=\"" + paymentId + "\" AND vendor.id=\"" + vendorId + "\" AND ref.id=\"" + refId + "\"";
 
-
 			var rcEntry = entryFile.doSelect(query);
 
-			if (rcEntry == RC_SUCCESS) {
-				// ĐÃ CÓ -> UPDATE (giữ nguyên id cũ)
-				entryFile["entry.type"] = "PAYABLE";
-				entryFile["ledger.type"] = "Standard";
-				entryFile["account.type"] = "ASSET";
-				entryFile["amount"] = currentPayment;
-				entryFile["currency"] = currency;
-				entryFile["description"] = description;
-				entryFile["type"] = "AP";
-				entryFile["ref.id"] = refId;
-				var rcUpdate = entryFile.doUpdate();
-
-				if (rcUpdate == RC_SUCCESS) {
-					updatedIds.push(paymentId);
-					affectedPaymentIds[paymentId] = true;
-				} else {
-					print("Lỗi hệ thống khi cập nhật DB cho paymentId: " + paymentId);
-					failedIds.push(paymentId);
+			if (currentPayment <= 0) {
+				// Nếu số tiền thanh toán khoản phải trả = 0 thì không sinh bút toán.
+				// Nếu trước đó đã tồn tại dòng bút toán thì xóa đi để không hiển thị lên.
+				if (rcEntry == RC_SUCCESS) {
+					var rcDelete = entryFile.doDelete();
+					if (rcDelete == RC_SUCCESS || rcDelete === true) {
+						deletedIds.push(paymentId);
+						affectedPaymentIds[paymentId] = true;
+					} else {
+						print("Lỗi hệ thống khi xóa bút toán cho paymentId: " + paymentId);
+						failedIds.push(paymentId);
+					}
+				}
+			} else {
+				// Tìm tài khoản phải trả của NCC từ vendorSite
+				var accountNumber = "";
+				var accountName = "";
+				var vendorSiteFile = new SCFile("esdHTKTvendorSite");
+				var rcSite = vendorSiteFile.doSelect('vendor.id="' + vendorId + '"');
+				if (rcSite == RC_SUCCESS) {
+					accountNumber = String(vendorSiteFile['credit.account'] || "").replace(/[^\d]/g, '');
+				}
+				if (accountNumber) {
+					var glAccountFile = new SCFile("esdDMglAccount");
+					var rcGl = glAccountFile.doSelect('account.number="' + accountNumber + '"');
+					if (rcGl == RC_SUCCESS) {
+						accountName = glAccountFile['account.name'] || "";
+					}
 				}
 
-			} else {
-				// CHƯA CÓ -> SINH ID THEO FORMAT payment.id + "." + số thứ tự bút toán
-				var newId = generatePaymentEntryIdV2(paymentId);
+				if (rcEntry == RC_SUCCESS) {
+					// ĐÃ CÓ -> UPDATE (giữ nguyên id cũ)
+					entryFile["entry.type"] = "PAYABLE";
+					entryFile["ledger.type"] = "Standard";
+					entryFile["account.type"] = "DEBIT";
+					entryFile["amount"] = currentPayment;
+					entryFile["currency"] = currency;
+					entryFile["description"] = description;
+					if (accountNumber) {
+						entryFile['account.number'] = accountNumber;
+						entryFile['account.name'] = accountName;
+					}
+					entryFile["type"] = "AP";
+					entryFile["ref.id"] = refId;
+					var rcUpdate = entryFile.doUpdate();
 
-				var newEntryFile = new SCFile("esdHTKTpaymentEntry");
+					if (rcUpdate == RC_SUCCESS) {
+						updatedIds.push(paymentId);
+						affectedPaymentIds[paymentId] = true;
+					} else {
+						print("Lỗi hệ thống khi cập nhật DB cho paymentId: " + paymentId);
+						failedIds.push(paymentId);
+					}
 
-				newEntryFile['id'] = newId;
-				newEntryFile['payment.id'] = paymentId;
-				newEntryFile['vendor.id'] = vendorId;
-				newEntryFile['entry.type'] = "PAYABLE";
-				newEntryFile['ledger.type'] = "Standard";
-				newEntryFile['account.type'] = "ASSET";
-				newEntryFile['amount'] = currentPayment;
-				newEntryFile['currency'] = currency;
-				newEntryFile['description'] = description;
-				newEntryFile['type'] = "AP";
-				newEntryFile['order'] = +order;
-				newEntryFile["ref.id"] = refId;
-				var rcInsert = newEntryFile.doInsert();
-
-				if (rcInsert === true || rcInsert === RC_SUCCESS) {
-					addedIds.push(newId);
-					affectedPaymentIds[paymentId] = true;
 				} else {
-					print("Lỗi hệ thống khi thêm mới DB cho paymentId: " + paymentId + ", id dự kiến: " + newId);
-					failedIds.push(paymentId);
+					// CHƯA CÓ -> SINH ID THEO FORMAT payment.id + "." + số thứ tự bút toán
+					var newId = generatePaymentEntryIdV2(paymentId);
+					var newEntryFile = new SCFile("esdHTKTpaymentEntry");
+
+					newEntryFile['id'] = newId;
+					newEntryFile['payment.id'] = paymentId;
+					newEntryFile['vendor.id'] = vendorId;
+					newEntryFile['entry.type'] = "PAYABLE";
+					newEntryFile['ledger.type'] = "Standard";
+					newEntryFile['account.type'] = "DEBIT";
+					newEntryFile['amount'] = currentPayment;
+					newEntryFile['currency'] = currency;
+					newEntryFile['account.number'] = accountNumber;
+					newEntryFile['account.name'] = accountName;
+					newEntryFile['description'] = description;
+					newEntryFile['type'] = "AP";
+					newEntryFile['order'] = +order || 1;
+					newEntryFile["ref.id"] = refId;
+					var rcInsert = newEntryFile.doInsert();
+
+					if (rcInsert === true || rcInsert === RC_SUCCESS) {
+						addedIds.push(newId);
+						affectedPaymentIds[paymentId] = true;
+					} else {
+						print("Lỗi hệ thống khi thêm mới DB cho paymentId: " + paymentId + ", id dự kiến: " + newId);
+						failedIds.push(paymentId);
+					}
 				}
 			}
 		}
 
-		// syncPaymentEntries(affectedPaymentIds); // Bỏ comment nếu hàm này đã tồn tại trong SL
-
 		var msgParts = [];
 		if (updatedIds.length > 0) msgParts.push("Đã cập nhật: " + updatedIds.join(", "));
 		if (addedIds.length > 0) msgParts.push("Đã thêm mới: " + addedIds.join(", "));
+		if (deletedIds.length > 0) msgParts.push("Đã xóa: " + deletedIds.join(", "));
 		if (failedIds.length > 0) msgParts.push("Thất bại: " + failedIds.join(", "));
 
 		return {
-			success: (updatedIds.length + addedIds.length) > 0,
-			message: msgParts.join(" | ")
+			success: (updatedIds.length + addedIds.length + deletedIds.length) > 0 || (failedIds.length === 0),
+			message: msgParts.length > 0 ? msgParts.join(" | ") : "Không có thay đổi"
 		};
 
 	} catch (parseError) {
