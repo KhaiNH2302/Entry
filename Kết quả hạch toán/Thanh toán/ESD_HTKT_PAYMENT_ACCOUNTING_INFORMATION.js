@@ -54,6 +54,7 @@ var TYPE_AP = 'AP';
 var TYPE_GL = 'GL';
 var TYPE_CORE = 'CORE';
 var SUB_PAYMENT = 'THANH_TOAN';
+var SUB_TAT_TOAN = 'TAT_TOAN';
 var SUB_TAX = 'THUE';
 var SUB_INHOUSE = 'INHOUSE';
 var SUB_CITAD = 'CITAD';
@@ -236,14 +237,20 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 			glEntries.push(entry);
 			continue;
 		}
-		if (entryType === 'CUSTOMER' && isCredit(entry.account_type) &&
-				isBankTransfer(vendorRow.payment_method)) {
-			customerPaymentAmount += toNumber(entry.amount);
-			coreEntries.push(entry);
-			continue;
-		}
 		if (entryType === 'CUSTOMER' && isCredit(entry.account_type)) {
 			customerPaymentAmount += toNumber(entry.amount);
+			if (isBankTransfer(vendorRow.payment_method)) {
+				coreEntries.push(entry);
+			}
+			continue;
+		}
+		var isCase17 = toNumber(vendorRow.approved_invoice_amount) <= 0 &&
+				toNumber(vendorRow.amount) > 0 &&
+				toNumber(vendorRow.refund_amount) <= 0;
+		if (isCase17) {
+			if (debit) {
+				payablePayments.push(entry);
+			}
 			continue;
 		}
 		if (entryType === 'PAYABLE' && isCredit(entry.account_type)) {
@@ -252,10 +259,6 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 		if (entryType === 'PREPAYMENT' && entry.ap_code && toNumber(entry.amount) > 0) {
 			applyList.push({ invoiceNumber: entry.ap_code, amount: entry.amount });
 			apEntryIds.push(entry.id);
-		}
-		if (entryType === 'PAYABLE' && debit && toNumber(vendorRow.approved_invoice_amount) <= 0) {
-			payablePayments.push(entry);
-			continue;
 		}
 		if (entryType === 'PAYABLE' && debit && toNumber(entry.amount) > 0) {
 			if (!safeString(entry.ap_code).trim()) {
@@ -310,7 +313,7 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 
 	for (var pp = 0; pp < payablePayments.length; pp++) {
 		var payableEntry = payablePayments[pp];
-		var invoiceNumber = safeString(payableEntry.ref_id).trim();
+		var invoiceNumber = safeString(payableEntry.ap_code).trim();
 		if (!invoiceNumber) return errorResult(
 				'Entry ' + payableEntry.id + ' cua TT-17 thieu ref.id (ma giao dich YCTT cu).');
 		var paymentRequestId = uuid();
@@ -323,7 +326,7 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 		};
 		var paymentValidation = validatePaymentPayload(paymentPayload);
 		if (!paymentValidation.success) return invalidPayload('AP_PAYMENT', paymentValidation, paymentPayload);
-		result.push(makePrepared(paymentRequestId, TYPE_AP, SUB_PAYMENT,
+		result.push(makePrepared(paymentRequestId, TYPE_AP, SUB_TAT_TOAN,
 				vendorRow.vendor_id, payableEntry.amount, paymentPayload, [payableEntry.id]));
 	}
 

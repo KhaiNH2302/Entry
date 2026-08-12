@@ -11,6 +11,7 @@ var ACCOUNTING_SUB_TYPE = {
 	THUE: "THUE",
 	HOAN_UNG: "HOAN_UNG",
 	THANH_TOAN: "THANH_TOAN",
+	TAT_TOAN: "TAT_TOAN",
 	INHOUSE: "INHOUSE", // CORE chuyển tiền trong hệ thống
 	CITAD: "CITAD" // CORE chuyển tiền ngoài hệ thống di CITAD
 };
@@ -261,11 +262,20 @@ function callApiAp(esdHTKTacountingInfo) {
 		logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiAp: sub.type không xác định");
 	}
 
-	if (payload && (esdHTKTacountingInfo['sub.type'] == ACCOUNTING_SUB_TYPE.TAM_UNG ||
-			esdHTKTacountingInfo['sub.type'] == ACCOUNTING_SUB_TYPE.THUE ||
-			esdHTKTacountingInfo['sub.type'] == ACCOUNTING_SUB_TYPE.THANH_TOAN ||
-			esdHTKTacountingInfo['sub.type'] == ACCOUNTING_SUB_TYPE.HOAN_UNG)) {
-		var response = lib.ESD_HTKT_INVOICE_OGL_INTEGRATION.createApInvoice(payload);
+	if (payload) {
+		var response = null;
+		var subType = esdHTKTacountingInfo['sub.type'];
+		if (subType == ACCOUNTING_SUB_TYPE.TAM_UNG ||
+				subType == ACCOUNTING_SUB_TYPE.THUE ||
+				subType == ACCOUNTING_SUB_TYPE.THANH_TOAN ||
+				subType == ACCOUNTING_SUB_TYPE.HOAN_UNG) {
+			response = lib.ESD_HTKT_INVOICE_OGL_INTEGRATION.createApInvoice(payload);
+		} else if (subType == ACCOUNTING_SUB_TYPE.TAT_TOAN) {
+			response = lib.ESD_HTKT_INVOICE_OGL_INTEGRATION.createApPayment(payload);
+		} else {
+			logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiAp: sub.type không xác định");
+		}
+
 		if (response) {
 			success = response.success;
 			var itemAccounting = new SCFile('esdHTKTaccountingInformation');

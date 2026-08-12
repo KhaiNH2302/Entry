@@ -7,6 +7,7 @@ var CORE_ENTRY_TYPE = 'CORE';
 var SUB_TYPE_PREPAYMENT = 'TAM_UNG';
 var SUB_TYPE_STANDARD = 'THUE';
 var SUB_TYPE_PAYMENT = 'THANH_TOAN';
+var SUB_TYPE_TAT_TOAN = 'TAT_TOAN';
 var ACCOUNTING_STATUS = {
 	CREATED: 'CREATED',
 	// INITIAL: 'INITIAL',
@@ -161,6 +162,7 @@ function mapAccountingTypeLabel(accountingType, subType) {
 	if (sub === SUB_TYPE_PAYMENT || sub === 'PAYMENT') return 'AP-Standard';
 	if (sub === SUB_TYPE_PREPAYMENT) return 'AP-Prepayment';
 	if (sub === SUB_TYPE_STANDARD) return 'AP-Standard';
+	if (sub === SUB_TYPE_TAT_TOAN || sub === 'TAT_TOAN') return 'AP-Payment';
 
 	return type;
 }

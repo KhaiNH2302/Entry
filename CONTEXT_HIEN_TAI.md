@@ -202,7 +202,7 @@ payment.created.by
 
 - TT-01 đến TT-16: một payload `/ap/create-invoice` cho mỗi NCC.
 - TT-02, TT-05, TT-10, TT-13, TT-16: có thêm payload `/general-ledger/interface` khi KT đã nhập các dòng GL.
-- TT-17: dùng `/ap/create-payment`; bắt buộc dòng PAYABLE ghi Nợ có `paymentEntry.ref.id` là mã YCTT cũ.
+- TT-17: dùng `/ap/create-payment` (bản ghi `esdHTKTaccountingInformation` có `sub.type = 'TAT_TOAN'`, hiển thị nhãn `AP-Payment`); bắt buộc dòng PAYABLE ghi Nợ có `paymentEntry.ref.id` là mã YCTT cũ.
 - Dòng AP/PREPAYMENT và PAYABLE ghi Nợ trả khoản cũ được đưa vào `applyList` với:
   - `invoiceNumber = paymentEntry.ref.id`
   - `amount = paymentEntry.amount`
