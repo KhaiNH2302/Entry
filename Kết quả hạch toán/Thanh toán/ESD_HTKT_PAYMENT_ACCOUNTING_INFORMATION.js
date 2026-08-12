@@ -48,7 +48,7 @@ var TABLE_VENDOR_SITE = 'esdHTKTvendorSite';
 var TABLE_CONTACT = 'contacts';
 var TABLE_ENTITY = 'esdDMentity';
 
-var PHASE_END = 'end';
+var CURRENT_PHASE_END = 'end';
 var STATUS_CREATED = 'CREATED';
 var TYPE_AP = 'AP';
 var TYPE_GL = 'GL';
@@ -67,6 +67,14 @@ var SEGMENT_5_DEFAULT = '0000000';
 var SEGMENT_6_DEFAULT = '0000000';
 var SEGMENT_7_DEFAULT = '0000000';
 
+var DEDUCTION_FULL = 'KHAUTRU_001';
+var DEDUCTION_RATE = 'KHAUTRU_002';
+var DEDUCTION_NONE = 'KHAUTRU_003';
+var CATEGORY_TAX_ACCOUNT_NUMBER = 'dmhtkt_stk_loai_khau_tru';
+var DISCOUNT_FULL = 'KHAU_TRU_TOAN_BO';
+var DISCOUNT_RATE = 'KHAU_TRU_TY_LE';
+var DISCOUNT_NONE = 'KHONG_KHAU_TRU';
+
 function generatePaymentAccountingInformationByInputDetails(details) {
 	var paymentId = safeString(details.paymentId).trim() ||
 			safeString(details.payment_id).trim() || safeString(details.id).trim();
@@ -83,12 +91,19 @@ function generatePaymentAccountingInformation(paymentId, previewOnly) {
 	if (!paymentId) return errorResult('Missing paymentId.');
 	var payment = getPayment(paymentId);
 	if (!payment.id) return errorResult('Khong tim thay de nghi thanh toan: ' + paymentId + '.');
-	// if (safeString(payment.current_phase).trim() !== PHASE_END) return {
-	// 	success: true, mode: 'skipped', paymentId: paymentId,
-	// 	currentPhase: payment.current_phase,
-	// 	message: 'Chi sinh accounting information khi current.phase = end.',
-	// 	deleted: 0, inserted: 0, updatedEntries: 0, data: []
-	// };
+	// if (safeString(payment.current_phase).trim() !== CURRENT_PHASE_END) {
+	//     return {
+	//         success: true,
+	//         mode: 'skipped',
+	//         paymentId: paymentId,
+	//         currentPhase: paymentId.current_phase,
+	//         message: 'Chi sinh accounting information khi current.phase = end.',
+	//         deleted: 0,
+	//         inserted: 0,
+	//         updatedEntries: 0,
+	//         data: []
+	//     };
+	// }
 
 	var vendors = getPaymentVendors(paymentId);
 	var entries = getPaymentEntries(paymentId);
@@ -193,9 +208,9 @@ function summarizeEntryTypes(entries) {
 	var result = [];
 	for (var i = 0; i < entries.length; i++) {
 		result.push(
-			safeString(entries[i].type).trim().toUpperCase() + '/' +
-			safeString(entries[i].entry_type).trim().toUpperCase() + '/' +
-			safeString(entries[i].account_type).trim().toUpperCase()
+				safeString(entries[i].type).trim().toUpperCase() + '/' +
+				safeString(entries[i].entry_type).trim().toUpperCase() + '/' +
+				safeString(entries[i].account_type).trim().toUpperCase()
 		);
 	}
 	return uniqueText(result);
@@ -234,8 +249,8 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 		if (entryType === 'PAYABLE' && isCredit(entry.account_type)) {
 			liabilityAccount = liabilityAccount || entry.account_number;
 		}
-		if (entryType === 'PREPAYMENT' && entry.ref_id && toNumber(entry.amount) > 0) {
-			applyList.push({ invoiceNumber: entry.ref_id, amount: entry.amount });
+		if (entryType === 'PREPAYMENT' && entry.ap_code && toNumber(entry.amount) > 0) {
+			applyList.push({ invoiceNumber: entry.ap_code, amount: entry.amount });
 			apEntryIds.push(entry.id);
 		}
 		if (entryType === 'PAYABLE' && debit && toNumber(vendorRow.approved_invoice_amount) <= 0) {
@@ -243,12 +258,12 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 			continue;
 		}
 		if (entryType === 'PAYABLE' && debit && toNumber(entry.amount) > 0) {
-			if (!safeString(entry.ref_id).trim()) {
+			if (!safeString(entry.ap_code).trim()) {
 				return errorResult(
 						'Entry ' + entry.id + ' tra khoan phai tra cu thieu ref.id.'
 				);
 			}
-			applyList.push({ invoiceNumber: entry.ref_id, amount: entry.amount });
+			applyList.push({ invoiceNumber: entry.ap_code, amount: entry.amount });
 			apEntryIds.push(entry.id);
 			continue;
 		}
@@ -270,17 +285,23 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 				: vendorRow.amount;
 		var invoicePayload = {
 			requestId: invoiceRequestId, referenceId: payment.id,
-			vendorNumber: context.vendorNumber, vendorSiteCode: context.vendorSiteCode,
-			entity: context.entity, invoiceType: 'STANDARD', invoiceDate: accountingDate,
+			vendorNumber: context.vendorNumber,
+			vendorSiteCode: context.vendorSiteCode,
+			entity: context.entity,
+			invoiceType: 'STANDARD',
+			invoiceDate: accountingDate,
 			currency: vendorRow.currency,
 			amount: invoiceAmount,
 			amountPay: amountPay,
 			description: payment.description,
-			maker: context.maker, checker: context.checker, cashout: context.cashout,
+			maker: context.maker,
+			checker: context.checker,
+			cashout: context.cashout,
 			contractId: payment.contract_id, liabilityAccount: liabilityAccount,
 			invoiceLineList: apLines, applyList: applyList,
 			vatList: getVatList(payment.id, context.vendorNumber, vendorRow.payment_vendor_count)
 		};
+		print("validateInvoicePayload " + JSON.stringify(invoicePayload))
 		var invoiceValidation = validateInvoicePayload(invoicePayload);
 		if (!invoiceValidation.success) return invalidPayload('AP_INVOICE', invoiceValidation, invoicePayload);
 		result.push(makePrepared(invoiceRequestId, TYPE_AP, SUB_PAYMENT,
@@ -330,7 +351,7 @@ function makePrepared(requestId, type, subType, vendorId, amount, payload, entry
 
 function buildAccountingInformationRow(payment, item, createdTime) {
 	return {
-		'request.id': item.requestId, 'payment.id': payment.id,
+		'request.id': item.requestId, 'prepayment.id': payment.id,
 		'vendor.id': item.vendorId, type: item.type, 'sub.type': item.subType,
 		data: JSON.stringify(item.payload), status: STATUS_CREATED, message: '', response: '',
 		'transaction.id': '', 'ref.id': '', 'ap.code': '', 'batch.name': '',
@@ -343,76 +364,61 @@ function buildVendorContext(payment, vendorRow) {
 	var vendor = selectOne(TABLE_VENDOR, 'id="' + escapeQueryValue(vendorRow.vendor_id) + '"', function (f) {
 		return { number: readText(f, 'vendor.number'), name: readText(f, 'vendor.name') };
 	});
-	var vendorSiteCode = getVendorSiteCode(vendorRow.vendor_site_id, vendorRow.vendor_id);
-	if (!vendorSiteCode) {
-		var debugInfo = [];
-		var f = new SCFile(TABLE_VENDOR_SITE, SCFILE_READONLY);
-		var rc = f.doSelect('vendor.id="' + escapeQueryValue(vendorRow.vendor_id) + '"');
-		while (rc === RC_SUCCESS) {
-			debugInfo.push({
-				id: readText(f, 'id').trim(),
-				vendorId: readText(f, 'vendor.id').trim(),
-				siteCode: readText(f, 'ogl.site.code').trim()
-			});
-			rc = f.getNext();
-		}
-		closeFile(f);
-		return errorResult('Khong tim thay vendorSiteCode cho vendorSiteId="' + vendorRow.vendor_site_id + 
-			'" va vendorId="' + vendorRow.vendor_id + '". Cac site cua vendor nay trong DB: ' + JSON.stringify(debugInfo));
+	var vendorSite = mapVendorSite(vendorRow.vendor_site_id);
+	if (!vendorSite) {
+		return errorResult('Khong tim thay vendorSite cho vendorSiteId="' + vendorRow.vendor_site_id +
+				'" va vendorId="' + vendorRow.vendor_id + '".');
 	}
 	var entityResult = entityByUser(payment.created_by);
 	if (!vendor || !vendor.number) return errorResult('Khong tim thay vendor.number cua NCC ' + vendorRow.vendor_id + '.');
 	if (!entityResult.success) return entityResult;
-	var maker = safeString(payment.created_by).trim();
-	var checker = safeString(payment.user_checker_kttc).trim();
+
+	var initialRole = safeString(payment.initial_role).trim().toLowerCase();
+	var maker = '';
+
+	if (initialRole === 'kttc') {
+		maker = safeString(payment.created_by).trim();
+	} else if (initialRole === 'dmms') {
+		maker = safeString(
+				payment.user_checker_kttc
+		).trim();
+	} else {
+		return errorResult(
+				'INVALID_PAYMENT_INITIAL_ROLE ' +
+				'Khong map duoc initial.role="' +
+				payment.initial_role +
+				'" sang can bo KTTC tao/tiep nhan.'
+		);
+	}
+
+	var checker = safeString(payment.user_approver_kttc).trim();
 	var cashout = mapPaymentMethodToCashout(vendorRow.payment_method);
 	if (!cashout) {
 		return errorResult('Khong map duoc payment.method="' + vendorRow.payment_method + '" sang cashout.');
 	}
 	return { success: true, data: {
-		vendorNumber: vendor.number,
-		vendorSiteCode: vendorSiteCode,
-		entity: entityResult.data,
-		segment1: entityResult.segment1, maker: maker, checker: checker,
-		cashout: cashout,
-		beneficiaryBank: vendorRow.beneficiary_bank
-	} };
+			vendorNumber: vendor.number,
+			vendorSiteCode: vendorSite.vendor_site_code,
+			entity: vendorSite.ogl_entity,
+			segment1: entityResult.segment1, maker: maker, checker: checker,
+			cashout: cashout,
+			beneficiaryBank: vendorRow.beneficiary_bank
+		} };
 }
 
-function getVendorSiteCode(vendorSiteId, vendorId) {
-	if (!vendorSiteId) return '';
+function mapVendorSite(vendorSiteId) {
+	if (!vendorSiteId) return null;
 
-	var exact = selectOne(TABLE_VENDOR_SITE, 'id="' + escapeQueryValue(vendorSiteId) + '"', function (f) {
-		return safeString(readText(f, 'ogl.site.code')).trim();
-	});
-	if (exact) return exact;
-
-	var f = new SCFile(TABLE_VENDOR_SITE, SCFILE_READONLY);
-	var query = vendorId ? 'vendor.id="' + escapeQueryValue(vendorId) + '"' : '';
-	var rc;
-	var onlyCandidate = '';
-	var candidateCount = 0;
-	try {
-		rc = f.doSelect(query);
-		while (rc === RC_SUCCESS) {
-			candidateCount++;
-			var code = safeString(readText(f, 'ogl.site.code')).trim();
-			onlyCandidate = code;
-			if (lookupIdsEqual(readText(f, 'id'), vendorSiteId)) {
-				closeFile(f);
-				return code;
+	return selectOne(
+			TABLE_VENDOR_SITE,
+			'id="' + escapeQueryValue(vendorSiteId) + '"',
+			function (record) {
+				return {
+					vendor_site_code: readText(record, 'ogl.site.code').trim(),
+					ogl_entity: readText(record, 'ogl.entity').trim()
+				};
 			}
-			rc = f.getNext();
-		}
-	} catch (e) {
-		// ignore
-	}
-	closeFile(f);
-
-	if (candidateCount === 1) {
-		return onlyCandidate;
-	}
-	return '';
+	);
 }
 
 function lookupIdsEqual(left, right) {
@@ -499,10 +505,10 @@ function mapGlPayload(requestId, accountingDate, payment, vendorRow, context, en
 			lineDesc: entries[i].description });
 	}
 	return { success: true, data: { requestId: requestId, accountingDate: accountingDate,
-		currencyCode: vendorRow.currency, transactionDesc: vendorRow.transaction_des || payment.description,
-		branchCode: entries[0].branch, source: 'QLTS', category: entries[0].type,
-		createdby: context.maker, approvedby: context.checker, line: lines,
-		text1: '', text2: '', text3: '', text4: '', text5: '' } };
+			currencyCode: vendorRow.currency, transactionDesc: vendorRow.transaction_des || payment.description,
+			branchCode: entries[0].branch, source: 'QLTS', category: entries[0].type,
+			createdby: context.maker, approvedby: context.checker, line: lines,
+			text1: '', text2: '', text3: '', text4: '', text5: '' } };
 }
 
 function mapCorePayload(requestId, entry, context) {
@@ -512,21 +518,21 @@ function mapCorePayload(requestId, entry, context) {
 	var description = normalizeBusinessText(entry.description).toUpperCase();
 	var clientDate = safeString(lib.ESD_HTKT_Utils.formatDateToISOWithOffset()).trim();
 	if (internal) return { subType: SUB_INHOUSE, data: {
-		requestId: requestId, clientDt: clientDate, channel: 'A101_IBR',
-		spname: 'com.xesapi.xferadd20.FunsTransferAdd', data: {
-			depAcctIdFrom: { acctId: '1111', acctCur: entry.currency },
-			depAcctIdTo: { acctId: entry.account_number, acctCur: entry.currency },
-			amount: amount, curCode: entry.currency, reversedInd: 'N',
-			trnRefNum: requestId, notes: description } } };
+			requestId: requestId, clientDt: clientDate, channel: 'A101_IBR',
+			spname: 'com.xesapi.xferadd20.FunsTransferAdd', data: {
+				depAcctIdFrom: { acctId: '1111', acctCur: entry.currency },
+				depAcctIdTo: { acctId: entry.account_number, acctCur: entry.currency },
+				amount: amount, curCode: entry.currency, reversedInd: 'N',
+				trnRefNum: requestId, notes: description } } };
 	return { subType: SUB_CITAD, data: {
-		requestId: requestId, clientDt: clientDate, channel: 'A101_IBR', reftype: 'IB',
-		spname: 'com.fnf.xes.PRF', data: {
-			serviceBranch: '', pmtType: 'Outgoing IBPS_Bilateral', pmtMethod: 'Account',
-			trnType: 'Transaction Internet Banking', fromAcctId: '101870783864',
-			toAcctId: entry.account_number, toBankId: safeString(bankParts[1]).trim(),
-			toBranchId: safeString(bankParts[0]).trim(), toAcctName: truncate(entry.account_name, 150),
-			amount: [{ amount: amount, crcd: entry.currency, amountType: 'TRAN_AMOUNT' }],
-			trnDesc: truncate(description, 269), chanRefNum: requestId } } };
+			requestId: requestId, clientDt: clientDate, channel: 'A101_IBR', reftype: 'IB',
+			spname: 'com.fnf.xes.PRF', data: {
+				serviceBranch: '', pmtType: 'Outgoing IBPS_Bilateral', pmtMethod: 'Account',
+				trnType: 'Transaction Internet Banking', fromAcctId: '101870783864',
+				toAcctId: entry.account_number, toBankId: safeString(bankParts[1]).trim(),
+				toBranchId: safeString(bankParts[0]).trim(), toAcctName: truncate(entry.account_name, 150),
+				amount: [{ amount: amount, crcd: entry.currency, amountType: 'TRAN_AMOUNT' }],
+				trnDesc: truncate(description, 269), chanRefNum: requestId } } };
 }
 
 function validateInvoicePayload(p) {
@@ -612,8 +618,8 @@ function getPayment(paymentId) {
 	return selectOne(TABLE_PAYMENT, 'id="' + escapeQueryValue(paymentId) + '"', function (f) {
 		return { id: readText(f, 'id').trim(), current_phase: readText(f, 'current.phase').trim(),
 			description: readText(f, 'description').trim(), contract_id: readText(f, 'contract.id').trim(),
-			created_by: readText(f, 'created.by').trim(),
-			user_checker_kttc: readText(f, 'user.checker.kttc').trim() };
+			created_by: readText(f, 'created.by').trim(), initial_role: readText(f, 'initial.role').trim(),
+			user_approver_kttc: readText(f, 'user.approver.kttc').trim(), user_checker_kttc: readText(f, 'user.checker.kttc').trim() };
 	}) || {};
 }
 
@@ -636,7 +642,7 @@ function getPaymentEntries(paymentId) {
 			account_type: readText(f, 'account.type').trim(), account_number: readText(f, 'account.number').trim(),
 			account_name: readText(f, 'account.name').trim(), branch: readText(f, 'branch').trim(),
 			department: readText(f, 'department').trim(), transaction_code: readText(f, 'transaction.code').trim(),
-			amount: readNumber(f, 'amount'), currency: readText(f, 'currency').trim(),
+			amount: readNumber(f, 'amount'), currency: readText(f, 'currency').trim(), ap_code: readText(f, 'ap.code').trim(),
 			description: readText(f, 'description').trim(), vendor_id: readText(f, 'vendor.id').trim(),
 			type: readText(f, 'type').trim(), order: readNumber(f, 'order'), ref_id: readText(f, 'ref.id').trim() };
 	});
@@ -662,11 +668,17 @@ function getVatList(paymentId, vendorNumber, vendorCount) {
 	return result;
 }
 
-function mapDiscountType(value) {
-	var v = normalizeIdentity(value);
-	if (v === 'khautru001' || v === 'khautrutoanbo') return 'KHAU_TRU_TOAN_BO';
-	if (v === 'khautru002' || v === 'khautrutyle') return 'KHAU_TRU_TY_LE';
-	return 'KHONG_KHAU_TRU';
+/**
+ * map deduction.type nội bộ sang discountType của API.
+ */
+function mapDiscountType(deductionType) {
+	var value = safeString(deductionType).trim().toUpperCase();
+
+	if (value === DEDUCTION_FULL) return DISCOUNT_FULL;
+	if (value === DEDUCTION_RATE) return DISCOUNT_RATE;
+	if (value === DEDUCTION_NONE) return DISCOUNT_NONE;
+
+	return '';
 }
 
 function mapPaymentMethodToCashout(value) {
@@ -767,7 +779,7 @@ function deleteAccountingInformation(paymentId) {
 	var deleted = 0, f;
 	try {
 		f = new SCFile(TABLE_AI);
-		var rc = f.doSelect('payment.id="' + escapeQueryValue(paymentId) + '"');
+		var rc = f.doSelect('prepayment.id="' + escapeQueryValue(paymentId) + '"');
 		while (rc === RC_SUCCESS) { if (f.doDelete() === RC_SUCCESS) deleted++; rc = f.getNext(); }
 	} finally { closeFile(f); }
 	return deleted;

@@ -1,25 +1,25 @@
 var ACCOUNTING_INFORMATION_TABLE = 'esdHTKTaccountingInformation';
-var PAYMENT_ENTRY_TABLE = 'esdHTKTpaymentEntry';
+var PREPAYMENT_ENTRY_TABLE = 'esdHTKTprepaymentEntry';
 var DEBIT_ACCOUNT_TYPE = '\u006e\u1ee3';
 var AP_ENTRY_TYPE = 'AP';
 var GL_ENTRY_TYPE = 'GL';
 var CORE_ENTRY_TYPE = 'CORE';
-var SUB_TYPE_PAYMENT = 'THANH_TOAN';
-var SUB_TYPE_TAX = 'THUE';
-var SUB_TYPE_INHOUSE = 'INHOUSE';
-var SUB_TYPE_CITAD = 'CITAD';
-
+var SUB_TYPE_PREPAYMENT = 'TAM_UNG';
+var SUB_TYPE_STANDARD = 'THUE';
+// trưởng thêm: mã dòng ghi Có AP tự sinh dùng cho kết quả chuyển tiền
+var AUTO_PAYMENT_ENTRY_CODE = 'TU-BT-03';
 var ACCOUNTING_STATUS = {
 	CREATED: 'CREATED',
+	// INITIAL: 'INITIAL',
 	INITIAL: 'NEW',
 	PROCESSING: 'PROCESSING',
 	COMPLETED: 'COMPLETED',
 	ERROR: 'ERROR',
 	NOT_FOUND: 'NOT_FOUND'
 };
-
 var ACCOUNTING_STATUS_MAP = {
 	CREATED: 'Đang xử lý',
+	// INITIAL: 'Đang xử lý hạch toán',
 	NEW: 'Đang xử lý',
 	PROCESSING: 'Đang xử lý',
 	COMPLETED: 'Thành Công',
@@ -29,31 +29,31 @@ var ACCOUNTING_STATUS_MAP = {
 
 function renderTabAccountingResults() {
 	var currentRecord = vars['$L.file'];
-	var paymentId = textValue(vars['$G.payment.id']).trim();
+	var prepaymentId = textValue(vars['$G.prepayment.id']).trim();
 
-	if (!paymentId && currentRecord) {
-		paymentId = textValue(currentRecord['id']).trim();
+	if (!prepaymentId && currentRecord) {
+		prepaymentId = textValue(currentRecord['id']).trim();
 	}
 
-	var result = loadAccountingResults(paymentId);
+	var result = loadAccountingResults(prepaymentId);
 
 	return buildAccountingResultsHtml(result.rows, result.error);
 }
 
-function loadAccountingResults(paymentId) {
+function loadAccountingResults(prepaymentId) {
 	var result = { rows: [], error: '' };
 	var groupMap = {};
 	var groups = [];
 	var f;
 
-	if (!paymentId) {
-		result.error = 'Kh&#244;ng nh&#7853;n &#273;&#432;&#7907;c m&#227; &#273;&#7873; ngh&#7883; thanh to&#225;n.';
+	if (!prepaymentId) {
+		result.error = 'Kh&#244;ng nh&#7853;n &#273;&#432;&#7907;c m&#227; &#273;&#7873; ngh&#7883; t&#7841;m &#7913;ng.';
 		return result;
 	}
 
 	try {
 		f = new SCFile(ACCOUNTING_INFORMATION_TABLE, SCFILE_READONLY);
-		var query = 'payment.id="' + escapeQueryValue(paymentId) + '"';
+		var query = 'prepayment.id="' + escapeQueryValue(prepaymentId) + '"';
 		var rc = f.doSelect(query);
 
 		while (rc === RC_SUCCESS) {
@@ -66,6 +66,8 @@ function loadAccountingResults(paymentId) {
 	} catch (e) {
 		result.error = 'Kh&#244;ng th&#7875; t&#7843;i k&#7871;t qu&#7843; h&#7841;ch to&#225;n.';
 	} finally {
+		// closeFile(f);
+		// trưởng thêm: gọi trực tiếp doClose để đóng SCFile
 		try {
 			if (f) f.doClose();
 		} catch (eClose) {}
@@ -102,6 +104,7 @@ function addAccountingResultGroup(groupMap, groups, record) {
 			contentLines: [],
 			amount: 0,
 			currency: '',
+			// trưởng thêm: tài khoản thụ hưởng lấy từ account.number của dòng ghi Có AP
 			beneficiaryAccount: '',
 			batchName: '',
 			invoiceNumber: '',
@@ -113,6 +116,7 @@ function addAccountingResultGroup(groupMap, groups, record) {
 	}
 
 	appendContentLines(group.contentLines, entrySummary.contentLines);
+	// trưởng thêm: gộp STK thụ hưởng khi nhóm có nhiều kết quả CORE
 	group.beneficiaryAccount = mergeTextValue(
 			group.beneficiaryAccount,
 			entrySummary.beneficiaryAccount
@@ -145,15 +149,15 @@ function makeAccountingResultGroupKey(info) {
 }
 
 /**
- * Map type và sub.type thành nhãn loại bút toán hiển thị trên giao diện Thanh Toán.
+ * map type và sub.type thành nhãn loại bút toán hiển thị trên giao diện.
  */
 function mapAccountingTypeLabel(accountingType, subType) {
 	var type = textValue(accountingType).trim().toUpperCase();
 	var sub = textValue(subType).trim().toUpperCase();
 
 	if (type !== AP_ENTRY_TYPE) return type;
-	if (sub === SUB_TYPE_PAYMENT || sub === SUB_TYPE_TAX) return 'AP-Standard';
-	if (sub === 'PAYMENT' || sub === 'AP_PAYMENT') return 'AP-Payment';
+	if (sub === SUB_TYPE_PREPAYMENT) return 'AP-Prepayment';
+	if (sub === SUB_TYPE_STANDARD) return 'AP-Standard';
 
 	return type;
 }
@@ -245,6 +249,7 @@ function getEntrySummary(requestId, vendorId, accountingType) {
 		contentLines: [],
 		debitAmount: 0,
 		currency: '',
+		// trưởng thêm: STK của dòng ghi Có AP tự sinh
 		beneficiaryAccount: '',
 		glGroupOrder: ''
 	};
@@ -253,15 +258,22 @@ function getEntrySummary(requestId, vendorId, accountingType) {
 	if (!requestId) return summary;
 
 	try {
-		f = new SCFile(PAYMENT_ENTRY_TABLE, SCFILE_READONLY);
+		f = new SCFile(PREPAYMENT_ENTRY_TABLE, SCFILE_READONLY);
 		var query = 'accounting.request.id="' + escapeQueryValue(requestId) + '"';
 		var accountingTypeCode = textValue(accountingType).trim().toUpperCase();
 		var entryType = getEntryTypeFilter(accountingType);
 
-		if (entryType) {
+		// if (entryType) {
+		//     query += ' and type="' + entryType + '"';
+		// }
+		// trưởng thêm: CORE chỉ lấy dòng ghi Có TU-BT-03 của bút toán AP tự sinh
+		if (accountingTypeCode === CORE_ENTRY_TYPE) {
+			query += ' and type="' + AP_ENTRY_TYPE + '"';
+			query += ' and entry.type="' + AUTO_PAYMENT_ENTRY_CODE + '"';
+		} else if (entryType) {
 			query += ' and type="' + entryType + '"';
 		}
-		if (entryType !== GL_ENTRY_TYPE && vendorId && accountingTypeCode !== CORE_ENTRY_TYPE) {
+		if (entryType !== GL_ENTRY_TYPE && vendorId) {
 			query += ' and vendor.id="' + escapeQueryValue(vendorId) + '"';
 		}
 		var rc = f.doSelect(query);
@@ -271,7 +283,7 @@ function getEntrySummary(requestId, vendorId, accountingType) {
 
 			if (entryType === GL_ENTRY_TYPE && !summary.glGroupOrder) {
 				summary.glGroupOrder = getGlEntryGroupOrder(
-						textValue(f['payment.id']),
+						textValue(f['prepayment.id']),
 						textValue(f['id'])
 				);
 			}
@@ -280,7 +292,7 @@ function getEntrySummary(requestId, vendorId, accountingType) {
 				summary.currency = textValue(f['currency']);
 			}
 
-			// Với CORE: account.number là tài khoản thụ hưởng của dòng CUSTOMER
+			// trưởng thêm: account.number của TU-BT-03 là tài khoản thụ hưởng
 			if (
 					accountingTypeCode === CORE_ENTRY_TYPE &&
 					!summary.beneficiaryAccount
@@ -295,6 +307,8 @@ function getEntrySummary(requestId, vendorId, accountingType) {
 			rc = f.getNext();
 		}
 	} finally {
+		// closeFile(f);
+		// trưởng thêm: gọi trực tiếp doClose để đóng SCFile
 		try {
 			if (f) f.doClose();
 		} catch (eClose) {}
@@ -304,14 +318,14 @@ function getEntrySummary(requestId, vendorId, accountingType) {
 }
 
 /**
- * Đọc số bút toán từ ID GL <paymentId>.GL.<số bút toán>.<số dòng>.
- * ID GL cũ <paymentId>.GL.<số dòng> được xem là bút toán số 1.
+ * Đọc số bút toán từ ID GL <prepaymentId>.GL.<số bút toán>.<số dòng>.
+ * ID GL cũ <prepaymentId>.GL.<số dòng> được xem là bút toán số 1.
  */
-function getGlEntryGroupOrder(paymentId, entryId) {
-	var prefix = textValue(paymentId).trim() + '.' + GL_ENTRY_TYPE + '.';
+function getGlEntryGroupOrder(prepaymentId, entryId) {
+	var prefix = textValue(prepaymentId).trim() + '.' + GL_ENTRY_TYPE + '.';
 	var id = textValue(entryId).trim();
 
-	if (!paymentId || id.indexOf(prefix) !== 0) return '';
+	if (!prepaymentId || id.indexOf(prefix) !== 0) return '';
 
 	var parts = id.substring(prefix.length).split('.');
 
@@ -400,7 +414,14 @@ function buildAccountingResultsHtml(rows, error) {
 		'.empty{text-align:center;color:#64748b}',
 		'.c-index{width:5%}.c-type{width:11%}.c-content{width:15%}.c-amount{width:10%}.c-currency{width:8%}',
 		'.c-batch{width:13%}.c-invoice{width:14%}.c-status{width:13%}.c-time{width:11%}',
+		// trưởng thêm: độ rộng 7 cột của bảng kết quả chuyển tiền theo Figma
 		'#transfer-results-table{min-width:900px}',
+		// '.c-transfer-index{width:5%}.c-transfer-content{width:29%}.c-transfer-amount{width:12%}.c-transfer-currency{width:10%}',
+		// '.c-beneficiary-account{width:20%}.c-transfer-status{width:14%}.c-transfer-time{width:10%}',
+		// trưởng thêm: thu cột Nội dung hạch toán còn 2/3 và chuyển phần rộng còn lại sang Tài khoản thụ hưởng
+		// '.c-transfer-index{width:5%}.c-transfer-content{width:19.33%}.c-transfer-amount{width:12%}.c-transfer-currency{width:10%}',
+		// '.c-beneficiary-account{width:29.67%}.c-transfer-status{width:14%}.c-transfer-time{width:10%}',
+		// trưởng thêm: giữ Nội dung hạch toán 19.33%, chia đều phần còn lại cho STK, trạng thái và thời gian
 		'.c-transfer-index{width:5%}.c-transfer-content{width:19.33%}.c-transfer-amount{width:12%}.c-transfer-currency{width:10%}',
 		'.c-beneficiary-account{width:20%}.c-transfer-status{width:18%}.c-transfer-time{width:15.67%}',
 		'@media(max-width:768px){.result{padding:12px}.result-head{align-items:flex-start;flex-direction:column}}',
@@ -414,6 +435,15 @@ function buildAccountingResultsHtml(rows, error) {
 				'accounting-results-table',
 				false
 		),
+		// buildAccountingResultSection(
+		//     'Kết quả chuyển tiền',
+		//     'Số giao dịch đồng bộ thành công',
+		//     transferRows,
+		//     error,
+		//     'transfer-results-table',
+		//     true
+		// ),
+		// trưởng thêm: bảng chuyển tiền riêng theo đúng 7 cột trên Figma
 		buildTransferResultSection(
 				'Kết quả chuyển tiền',
 				'Số giao dịch đồng bộ thành công',
@@ -444,7 +474,7 @@ function buildAccountingResultSection(
 	for (var i = 0; i < rows.length; i++) {
 		var status = getStatusView(rows[i].status);
 		var accountingTypeLabel = isTransferSection
-				? 'Hạch toán thanh toán - AP'
+				? 'Hạch toán tạm ứng - AP'
 				: rows[i].accountingType;
 
 		if (status.code === 'success') successCount++;
@@ -495,6 +525,7 @@ function buildAccountingResultSection(
 	].join('');
 }
 
+// trưởng thêm: giao diện riêng cho kết quả chuyển tiền theo Figma
 function buildTransferResultSection(title, counterLabel, rows, error, tableId) {
 	var successCount = 0;
 	var bodyRows = [];
@@ -570,6 +601,7 @@ function buildAccountingResultRow(row, status, displayIndex, accountingTypeLabel
 	].join('');
 }
 
+// trưởng thêm: dòng kết quả chuyển tiền lấy nội dung và STK từ dòng ghi Có AP TU-BT-03
 function buildTransferResultRow(row, status, displayIndex) {
 	var contentSortValue = (row.contentLines || []).join(' ');
 	var content = buildAccountingContent(row.contentLines);
@@ -681,7 +713,19 @@ function getStatusView(value) {
 			ACCOUNTING_STATUS_MAP[status] ||
 			status;
 
+	// if (
+	//     status === ACCOUNTING_STATUS.CREATED ||
+	//     status === ACCOUNTING_STATUS.PROCESSING
+	// ) {
+	// trưởng thêm: INITIAL dùng cùng màu vàng/cam với trạng thái đang xử lý
+	// if (
+	//     status === ACCOUNTING_STATUS.INITIAL ||
+	//     status === ACCOUNTING_STATUS.CREATED ||
+	//     status === ACCOUNTING_STATUS.PROCESSING
+	// ) {
+	// trưởng thêm: NEW dùng cùng màu vàng/cam với nhóm trạng thái đang xử lý
 	if (
+			// status === ACCOUNTING_STATUS.NEW ||
 			status === ACCOUNTING_STATUS.INITIAL ||
 			status === ACCOUNTING_STATUS.CREATED ||
 			status === ACCOUNTING_STATUS.PROCESSING
