@@ -1,11 +1,11 @@
-Date: Wed, 5 Aug 2026 04:21:52 +0000 (UTC)
-Message-ID: <462158958.27.1785903712270@86a7dda0945d>
+Date: Thu, 13 Aug 2026 02:49:06 +0000 (UTC)
+Message-ID: <392540041.27.1786589346080@c69499afdb7a>
 Subject: Exported From Confluence
 MIME-Version: 1.0
 Content-Type: multipart/related; 
-	boundary="----=_Part_26_718623732.1785903712269"
+	boundary="----=_Part_26_933508036.1786589346079"
 
-------=_Part_26_718623732.1785903712269
+------=_Part_26_933508036.1786589346079
 Content-Type: text/html; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 Content-Location: file:///C:/exported.html
@@ -450,7 +450,7 @@ th=3D"773" data-unresolved-comment-count=3D"0" data-linked-resource-id=3D"3=
 ttachment" data-linked-resource-default-alias=3D"image-20260724-094221.png"=
  data-base-url=3D"https://vietinbank.atlassian.net/wiki" data-linked-resour=
 ce-content-type=3D"image/png" data-linked-resource-container-id=3D"36339846=
-8" data-linked-resource-container-version=3D"37" data-media-id=3D"ed63f133-=
+8" data-linked-resource-container-version=3D"38" data-media-id=3D"ed63f133-=
 94c9-4e75-92a0-bb6118118ae3" data-media-type=3D"file" height=3D"268"></span=
 >
 <h3 local-id=3D"626435d310c8" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3t=C3=ADchh=
@@ -1342,7 +1342,7 @@ t=3D"0" data-linked-resource-id=3D"365823634" data-linked-resource-version=
 t-alias=3D"image-20260721-092029.png" data-base-url=3D"https://vietinbank.a=
 tlassian.net/wiki" data-linked-resource-content-type=3D"image/png" data-lin=
 ked-resource-container-id=3D"363398468" data-linked-resource-container-vers=
-ion=3D"37" data-media-id=3D"59c70fc3-6dce-4685-abf7-77e440465d38" data-medi=
+ion=3D"38" data-media-id=3D"59c70fc3-6dce-4685-abf7-77e440465d38" data-medi=
 a-type=3D"file" height=3D"279"></span>
 <h3 local-id=3D"7162a971a296" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3t=C3=ADchh=
 =E1=BB=A3pOGL-2.2.1.T=E1=BA=A1om=E1=BB=9Biy=C3=AAuc=E1=BA=A7uthanhto=C3=A1n=
@@ -1953,10 +1953,16 @@ nceTd">
 <p local-id=3D"f35af53e1067"><span class=3D"inline-comment-marker" data-ref=
 =3D"a9082294-2910-44e6-ac21-38973163071b">M=C3=A3 ph=C3=B2ng ban - Tab ph=
 =C3=A2n chia chi ph=C3=AD</span></p>
-<p local-id=3D"5df4f592d4ac">Quan h=E1=BB=87 v=E1=BB=9Bi =C4=91=C6=A1n v=E1=
-=BB=8B l=E1=BB=B1a ch=E1=BB=8Dn: 10xxxyy: 10xxx theo m=C3=A3 =C4=91=C6=A1n =
-v=E1=BB=8B =C4=91=C3=A3 l=E1=BB=B1a ch=E1=BB=8Dn, yy l=C3=A0 =C4=91u=C3=B4i=
- ph=C3=B2ng ban thu=E1=BB=99c =C4=91=C6=A1n v=E1=BB=8B</p></td>
+<ul local-id=3D"ba2344fd-067a-42fb-b7a9-503c38b97e2e">
+<li local-id=3D"a9f1a920-5e92-4b38-8039-ed0b4ef9133f">
+<p local-id=3D"404bb2441c6f">N=E1=BA=BFu m=C3=A3 =C4=91=C6=A1n v=E1=BB=8B =
+=3D1010098 =E2=86=92 hi=E1=BB=83n th=E1=BB=8B m=C3=A3 ph=C3=B2ng ban tr=E1=
+=BB=AB =C4=91=E1=BA=A7u 3</p></li>
+<li local-id=3D"fb6663c9-c2f1-4286-9782-3f85d1ee3b2c">
+<p local-id=3D"11810966f0d3">N=E1=BA=BFu m=C3=A3 =C4=91=C6=A1n v=E1=BB=8B #=
+ 1010098 =E2=86=92 hi=E1=BB=83n th=E1=BB=8B m=C3=A3 ph=C3=B2ng ban =3D3</p>=
+</li>
+</ul></td>
 </tr>
 <tr data-local-id=3D"75b6b33f-8494-4530-82b7-329e3c753e72">
 <td data-local-id=3D"60b068a7-0736-45ca-bf96-5380dd75b1e2" class=3D"conflue=
@@ -2042,18 +2048,11 @@ nceTd">
 nceTd">
 <p local-id=3D"c52554aeb474">M=C3=A3 ph=C3=B2ng giao d=E1=BB=8Bch - Tab ph=
 =C3=A2n chia chi ph=C3=AD</p>
-<p local-id=3D"93ab77c85560">M=E1=BB=91i quan h=E1=BB=87 trong droplist:</p=
->
-<ul local-id=3D"8c0d50289351">
-<li local-id=3D"084e8acdff01">
-<p local-id=3D"9357fd056d8d">N=E1=BA=BFu m=C3=A3 =C4=91=C6=A1n v=E1=BB=8B =
-=3D1010098 =E2=86=92 hi=E1=BB=83n th=E1=BB=8B m=C3=A3 ph=C3=B2ng giao d=E1=
-=BB=8Bch tr=E1=BB=AB =C4=91=E1=BA=A7u 3</p></li>
-<li local-id=3D"7548b7db16a3">
-<p local-id=3D"39d5ebcaa2f7">N=E1=BA=BFu m=C3=A3 =C4=91=C6=A1n v=E1=BB=8B #=
- 1010098 =E2=86=92 hi=E1=BB=83n th=E1=BB=8B m=C3=A3 ph=C3=B2ng giao d=E1=BB=
-=8Bch =3D3</p></li>
-</ul></td>
+<p local-id=3D"93ab77c85560">M=E1=BB=91i quan h=E1=BB=87 trong droplist: Qu=
+an h=E1=BB=87 v=E1=BB=9Bi =C4=91=C6=A1n v=E1=BB=8B l=E1=BB=B1a ch=E1=BB=8Dn=
+: 10xxxyy: 10xxx theo m=C3=A3 =C4=91=C6=A1n v=E1=BB=8B =C4=91=C3=A3 l=E1=BB=
+=B1a ch=E1=BB=8Dn, yy l=C3=A0 =C4=91u=C3=B4i ph=C3=B2ng giao d=E1=BB=8Bch t=
+hu=E1=BB=99c =C4=91=C6=A1n v=E1=BB=8B</p></td>
 </tr>
 <tr data-local-id=3D"05ec325a-9d11-441c-8516-68ff3024e1d1">
 <td data-local-id=3D"50a09540-50bb-4efc-807b-0314b71504bf" class=3D"conflue=
@@ -3604,7 +3603,7 @@ ta-linked-resource-type=3D"attachment" data-linked-resource-default-alias=
 =3D"image-20260724-103345.png" data-base-url=3D"https://vietinbank.atlassia=
 n.net/wiki" data-linked-resource-content-type=3D"image/png" data-linked-res=
 ource-container-id=3D"363398468" data-linked-resource-container-version=3D"=
-37" data-media-id=3D"21370a0a-2e76-4547-b0b0-5e3249e17c80" data-media-type=
+38" data-media-id=3D"21370a0a-2e76-4547-b0b0-5e3249e17c80" data-media-type=
 =3D"file" height=3D"854"></span>
 <h3 local-id=3D"f1d5759fec8c" id=3D"id-=C4=90=E1=BA=B7ct=E1=BA=A3t=C3=ADchh=
 =E1=BB=A3pOGL-2.3.1.Ki=E1=BB=83mtratr=E1=BA=A1ngth=C3=A1ic=E1=BB=A7agiaod=
@@ -3993,8 +3992,8 @@ nceTd">
 <p local-id=3D"cea07382033e">POST /batch/status HTTP/1.1</p>
 <p local-id=3D"994fac2243a6">Authorization: Bearer &lt;JWT_ACCESS_TOKEN&gt;=
 </p>
-<p local-id=3D"e1a1cfba5245">Host: <a class=3D"external-link" href=3D"http:=
-//oglconnect.vietinbank.vn/api/v1" rel=3D"nofollow">oglconnect.vietinbank.v=
+<p local-id=3D"e1a1cfba5245">Host: <a href=3D"http://oglconnect.vietinbank.=
+vn/api/v1" class=3D"external-link" rel=3D"nofollow">oglconnect.vietinbank.v=
 n/api/v1</a></p>
 <p local-id=3D"707121176ec2">Content-Type: application/json</p>
 <p local-id=3D"f910cb3e71b9">{</p>
@@ -4139,7 +4138,7 @@ nceTd">
     </div>
 </body>
 </html>
-------=_Part_26_718623732.1785903712269
+------=_Part_26_933508036.1786589346079
 Content-Type: application/octet-stream
 Content-Transfer-Encoding: base64
 Content-Location: file:///C:/cddbb33368f41d7841abbe79a8e1f815985f6af34060c17419ac139a866a7fd0
@@ -4780,7 +4779,7 @@ JK666qqrrvpfBQBlpvkfRBJPecpTOHbsGGfOnME2L4wkLly4wMWLF3nYwx6Gba666qqrrvpfAwBl
 pvkfSBK2eVFIAsA2V1111VVX/a8CQOV/KNu8qGxz1VVXXXXV/0oAVK666qqrrrrqvw8Alauuuuqq
 q6767wNA5aqrrrrqqqv++wBQueqqq6666qr/PgBUrrrqqquuuuq/DwCVq6666qqrrvrvA0Dlqquu
 uuqqq/77AFC56qqrrrrqqv8+AFSuuuqqq6666r8PAP8IAsANV/adLHQAAAAASUVORK5CYII=
-------=_Part_26_718623732.1785903712269
+------=_Part_26_933508036.1786589346079
 Content-Type: application/octet-stream
 Content-Transfer-Encoding: base64
 Content-Location: file:///C:/ee88bd39ba2cdd023a216b4ac1e343c0a24110b3b5e74947092a924bd2e5a6b7
@@ -5229,7 +5228,7 @@ a43VasVV/2cBEPwbSCIzuXTpEpnJwcEBkrjq/xwAKv8Gtrnnnns4fvw4i8WCe+65h1IKi8UC21z1
 fwYAwb+SJC5cuMDGxgYbGxtI4vTp01y8eJHWGlf9nwKAMtP8K2UmEcH9JNFaQxKSuOr/BknY/rPK
 v0FE8EC2iQiu+j8HgMpVV71gAFRJXHXVC4Akqu0/4qqrnr8K/N0/ApUpWDH+5LIsAAAAAElFTkSu
 QmCC
-------=_Part_26_718623732.1785903712269
+------=_Part_26_933508036.1786589346079
 Content-Type: application/octet-stream
 Content-Transfer-Encoding: base64
 Content-Location: file:///C:/71567111b4878eabb8c633163c6c91eb39b8ee513a326f71d210437b39fa493d
@@ -5849,4 +5848,4 @@ nD59Gtv8SyRx6dIlMpMTJ05gm6uuuuqqq656AQBQZpr/RJIAsM2LShIAtrnqqquuuuqqFwKAyn8y
 2/xr2eaqq6666qqrXgQAVK666qqrrrrqfy8AKlddddVVV131vxcAlauuuuqqq6763wuAylVXXXXV
 VVf97wVA5aqrrrrqqqv+9wKgctVVV1111VX/ewFQueqqq6666qr/vQAI21x11VVXXXXV/1IAyLa5
 6qqrrrrqqv+dAKjA+wO01iilcNVVV1111VX/iwDwj8I/i+icWW0XAAAAAElFTkSuQmCC
-------=_Part_26_718623732.1785903712269--
+------=_Part_26_933508036.1786589346079--
