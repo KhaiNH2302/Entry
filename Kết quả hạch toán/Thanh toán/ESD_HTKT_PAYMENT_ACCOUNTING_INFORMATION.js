@@ -141,6 +141,49 @@ function generatePaymentAccountingInformation(paymentId, previewOnly) {
 		prepared = prepared.concat(payloadResults.data);
 	}
 
+	var glEntries = [];
+	for (var ge = 0; ge < entries.length; ge++) {
+		if (safeString(entries[ge].type).trim().toUpperCase() === TYPE_GL) {
+			glEntries.push(entries[ge]);
+		}
+	}
+
+	if (glEntries.length) {
+		var glGroups = {};
+		var glGroupKeys = [];
+		for (var g = 0; g < glEntries.length; g++) {
+			var glEntry = glEntries[g];
+			var groupOrder = getGlEntryGroupOrder(paymentId, glEntry.id);
+			var groupKey = safeString(groupOrder);
+			if (!glGroups[groupKey]) {
+				glGroups[groupKey] = [];
+				glGroupKeys.push(groupKey);
+			}
+			glGroups[groupKey].push(glEntry);
+		}
+
+		var glMaker = safeString(payment.created_by).trim();
+		var glChecker = safeString(payment.user_approver_kttc).trim();
+		var glContext = { maker: glMaker, checker: glChecker };
+
+		for (var gk = 0; gk < glGroupKeys.length; gk++) {
+			var currentGroupKey = glGroupKeys[gk];
+			var currentGroupEntries = glGroups[currentGroupKey];
+			var glRequestId = uuid();
+			var glPayloadResult = mapGlPayload(glRequestId, accountingDate, payment, glContext, currentGroupEntries);
+			if (!glPayloadResult.success) return glPayloadResult;
+
+			var defaultVendorId = currentGroupEntries[0].vendor_id || (vendors.length > 0 ? vendors[0].vendor_id : '');
+			var glAmount = sumEntryDebitAmounts(currentGroupEntries);
+			if (glAmount <= 0) glAmount = sumEntryAmounts(currentGroupEntries);
+
+			prepared.push(makePrepared(
+					glRequestId, TYPE_GL, SUB_PAYMENT,
+					defaultVendorId, glAmount, glPayloadResult.data, entryIds(currentGroupEntries)
+			));
+		}
+	}
+
 	if (previewOnly) {
 		var previewCreatedTime = system.functions.tod();
 		var previewRows = [];
@@ -223,7 +266,6 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 	var apEntryIds = [];
 	var applyList = [];
 	var liabilityAccount = '';
-	var glEntries = [];
 	var coreEntries = [];
 	var payablePayments = [];
 	var customerPaymentAmount = 0;
@@ -234,7 +276,6 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 		var entryType = safeString(entry.entry_type).trim().toUpperCase();
 		var debit = isDebit(entry.account_type);
 		if (type === TYPE_GL) {
-			glEntries.push(entry);
 			continue;
 		}
 		if (entryType === 'CUSTOMER' && isCredit(entry.account_type)) {
@@ -330,14 +371,6 @@ function buildVendorPayloads(payment, vendorRow, entries, context, accountingDat
 				vendorRow.vendor_id, payableEntry.amount, paymentPayload, [payableEntry.id]));
 	}
 
-	if (glEntries.length) {
-		var glRequestId = uuid();
-		var glPayloadResult = mapGlPayload(glRequestId, accountingDate, payment, vendorRow,
-				context, glEntries);
-		if (!glPayloadResult.success) return glPayloadResult;
-		result.push(makePrepared(glRequestId, TYPE_GL, SUB_PAYMENT,
-				vendorRow.vendor_id, sumEntryAmounts(glEntries), glPayloadResult.data, entryIds(glEntries)));
-	}
 	for (var c = 0; c < coreEntries.length; c++) {
 		var coreRequestId = uuid();
 		var core = mapCorePayload(coreRequestId, coreEntries[c], context);
@@ -448,24 +481,31 @@ function formatSegment1(branch, defaultSegment1) {
 function formatSegment2(segment1, department) {
 	var seg1 = safeString(segment1).trim();
 	var dept = safeString(department).trim();
+
+	if (!dept || dept === '000000' || dept === '0' || dept === '00') {
+		return SEGMENT_2_DEFAULT;
+	}
+
 	if (seg1.length === 7 && seg1.substring(0, 2) === '10') {
 		var prefix = seg1.substring(0, 5); // 10xxx
-		var suffix = '00';
+		var suffix = '';
 		if (dept.length === 9) {
 			suffix = dept.substring(7, 9); // yy (last 2 digits)
 		} else if (dept.length === 6) {
 			suffix = dept.substring(4, 6); // yy (last 2 digits)
 		} else if (dept.length === 7 && dept.substring(0, 2) === '10') {
-			suffix = dept.substring(5, 7); // yy (last 2 digits)
+			return dept;
 		} else if (dept.length === 2) {
 			suffix = dept;
 		}
-		return prefix + suffix; // 10xxxyy (7 characters)
+		if (suffix && suffix !== '00') {
+			return prefix + suffix; // 10xxxyy (7 characters)
+		}
 	}
 	if (dept.length === 9 && dept.charAt(0) === '0') {
 		return dept.substring(2, 8); // 6 characters
 	}
-	return dept.length === 6 ? dept : SEGMENT_2_DEFAULT;
+	return dept.length === 6 || dept.length === 7 ? dept : SEGMENT_2_DEFAULT;
 }
 
 function mapInvoiceLine(entry, defaultSegment1) {
@@ -479,26 +519,15 @@ function mapInvoiceLine(entry, defaultSegment1) {
 		segment7: SEGMENT_7_DEFAULT, description: entry.description };
 }
 
-function mapGlPayload(requestId, accountingDate, payment, vendorRow, context, entries) {
+function mapGlPayload(requestId, accountingDate, payment, context, entries) {
 	var lines = [];
 	for (var i = 0; i < entries.length; i++) {
 		var debit = isDebit(entries[i].account_type);
-		var segment1 = SEGMENT_1_DEFAULT;
-		if (safeString(entries[i].branch).trim() !== '000') {
-			var segment1Result = mapEntityCodeByTransactionCode('98', entries[i].branch);
-			if (!segment1Result.success) return segment1Result;
-			segment1 = segment1Result.data;
-		}
-		var segment6 = SEGMENT_6_DEFAULT;
-		var transactionCode = safeString(entries[i].transaction_code).trim();
-		if (transactionCode && transactionCode !== SEGMENT_6_DEFAULT) {
-			var segment6Result = mapEntityCodeByTransactionCode(transactionCode, entries[i].branch);
-			if (!segment6Result.success) return segment6Result;
-			segment6 = segment6Result.data;
-		}
-		var finalSegment1 = formatSegment1(entries[i].branch, segment1);
-		lines.push({ segment1: finalSegment1,
-			segment2: formatSegment2(finalSegment1, entries[i].department),
+		var segment1 = formatSegment1(entries[i].branch, SEGMENT_1_DEFAULT);
+		var segment2 = formatSegment2(segment1, entries[i].department);
+		var segment6 = safeString(entries[i].transaction_code).trim() || SEGMENT_6_DEFAULT;
+		lines.push({ segment1: segment1,
+			segment2: segment2,
 			segment3: entries[i].account_number, segment4: SEGMENT_4_DEFAULT,
 			segment5: SEGMENT_5_DEFAULT,
 			segment6: segment6,
@@ -508,8 +537,8 @@ function mapGlPayload(requestId, accountingDate, payment, vendorRow, context, en
 			lineDesc: entries[i].description });
 	}
 	return { success: true, data: { requestId: requestId, accountingDate: accountingDate,
-			currencyCode: vendorRow.currency, transactionDesc: vendorRow.transaction_des || payment.description,
-			branchCode: entries[0].branch, source: 'QLTS', category: entries[0].type,
+			currencyCode: entries[0].currency || 'VND', transactionDesc: payment.description || 'Hach toan GL',
+			branchCode: entries[0].branch || '000', source: 'QLTS', category: entries[0].type || TYPE_GL,
 			createdby: context.maker, approvedby: context.checker, line: lines,
 			text1: '', text2: '', text3: '', text4: '', text5: '' } };
 }
@@ -723,30 +752,26 @@ function entityByUser(userName) {
 	};
 }
 
-/** Mapping GL giữ nguyên quy tắc từ file AccountingInformation của Tạm ứng. */
 function mapEntityCodeByTransactionCode(transactionCode, branchCode) {
 	var code = safeString(transactionCode).trim();
 	if (!code) return errorResult('Thieu ' + TABLE_ENTRY + '.transaction.code.');
 	var branch = safeString(branchCode).trim();
 	if (!branch) return errorResult('Thieu ' + TABLE_ENTRY + '.branch de map entity.code.');
-	var oglBranchCode = '0' + branch;
+	var query = 'entity.code="' + escapeQueryValue(branch) + '"';
 	var entityCodes = selectMany(
 			TABLE_ENTITY,
-			'org.transaction.code="' + escapeQueryValue(code) +
-			'" and ogl.branch.code="' + escapeQueryValue(oglBranchCode) + '"',
+			query,
 			function (f) { return readText(f, 'entity.code').trim(); }
 	);
 	var uniqueCodes = uniqueText(entityCodes);
 	if (!uniqueCodes.length) {
 		return errorResult(
-				'Khong tim thay entity.code voi org.transaction.code="' + code +
-				'" va ogl.branch.code="' + oglBranchCode + '".'
+				'Khong tim thay entity.code voi entity.code="' + branch + '".'
 		);
 	}
 	if (uniqueCodes.length > 1) {
 		return errorResult(
-				'Tim thay nhieu entity.code voi org.transaction.code="' + code +
-				'" va ogl.branch.code="' + oglBranchCode + '".'
+				'Tim thay nhieu entity.code voi entity.code="' + branch + '".'
 		);
 	}
 	return { success: true, data: uniqueCodes[0] };
@@ -843,3 +868,31 @@ function escapeQueryValue(value) { return safeString(value).replace(/\\/g, '\\\\
 function uniqueText(values) { var seen = {}, r = []; for (var i = 0; i < values.length; i++) { var v = safeString(values[i]); if (v && !seen[v]) { seen[v] = true; r.push(v); } } return r; }
 function errorResult(message) { return { success: false, error: message }; }
 function closeFile(file) { try { if (file) file.doClose(); } catch (e) {} }
+
+function getGlEntryGroupOrder(paymentId, entryId) {
+	var pid = safeString(paymentId).trim();
+	var id = safeString(entryId).trim();
+	if (!pid || !id) return 1;
+
+	var prefix = pid + '.' + TYPE_GL + '.';
+	if (id.indexOf(prefix) !== 0) return 1;
+
+	var parts = id.substring(prefix.length).split('.');
+	if (parts.length >= 2 && /^\d+$/.test(parts[0]) && Number(parts[0]) > 0) {
+		return Number(parts[0]);
+	}
+	if (parts.length === 1 && /^\d+$/.test(parts[0]) && Number(parts[0]) > 0) {
+		return 1;
+	}
+	return 1;
+}
+
+function sumEntryDebitAmounts(rows) {
+	var n = 0;
+	for (var i = 0; i < rows.length; i++) {
+		if (isDebit(rows[i].account_type)) {
+			n += toNumber(rows[i].amount);
+		}
+	}
+	return n;
+}
