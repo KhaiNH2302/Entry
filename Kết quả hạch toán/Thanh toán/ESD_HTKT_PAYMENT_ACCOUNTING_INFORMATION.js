@@ -163,8 +163,8 @@ function generatePaymentAccountingInformation(paymentId, previewOnly) {
 		}
 
 		var glMaker = safeString(payment.created_by).trim();
-		var glChecker = safeString(payment.user_approver_kttc).trim();
-		var glContext = { maker: glMaker, checker: glChecker };
+		var glApprover = safeString(payment.user_approver_final).trim();
+		var glContext = { maker: glMaker, approver: glApprover, checker: glApprover };
 
 		for (var gk = 0; gk < glGroupKeys.length; gk++) {
 			var currentGroupKey = glGroupKeys[gk];
@@ -539,7 +539,7 @@ function mapGlPayload(requestId, accountingDate, payment, context, entries) {
 	return { success: true, data: { requestId: requestId, accountingDate: accountingDate,
 			currencyCode: entries[0].currency || 'VND', transactionDesc: payment.description || 'Hach toan GL',
 			branchCode: entries[0].branch || '000', source: 'QLTS', category: entries[0].type || TYPE_GL,
-			createdby: context.maker, approvedby: context.checker, line: lines,
+			createdby: context.maker, approvedby: context.approver, line: lines,
 			text1: '', text2: '', text3: '', text4: '', text5: '' } };
 }
 
@@ -651,7 +651,8 @@ function getPayment(paymentId) {
 		return { id: readText(f, 'id').trim(), current_phase: readText(f, 'current.phase').trim(),
 			description: readText(f, 'description').trim(), contract_id: readText(f, 'contract.id').trim(),
 			created_by: readText(f, 'created.by').trim(), initial_role: readText(f, 'initial.role').trim(),
-			user_approver_kttc: readText(f, 'user.approver.kttc').trim(), user_checker_kttc: readText(f, 'user.checker.kttc').trim() };
+			user_approver_kttc: readText(f, 'user.approver.kttc').trim(), user_checker_kttc: readText(f, 'user.checker.kttc').trim(),
+			user_approver_final: readText(f, 'user.approver.final').trim() };
 	}) || {};
 }
 
