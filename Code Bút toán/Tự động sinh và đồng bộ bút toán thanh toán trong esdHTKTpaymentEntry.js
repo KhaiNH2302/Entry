@@ -3,32 +3,6 @@ var logger = typeof getLog === 'function' ? getLog("ESD_HTKT_PAYMENT_ENTRY") : {
 
 /*
  * ===========================================================================
- *  TODO CÒN LẠI
- * ---------------------------------------------------------------------------
- *  ĐÃ CHỐT TRONG CODE:
- *    - (1) approved.invoice.amount; (2) amount; (3) refund.amount.
- *    - refund.amount dùng phân case; dòng AP/PREPAYMENT được tạo từ bước chọn
- *      hoàn ứng và được giữ lại khi sinh lại paymentEntry.
- *    - Phải trả còn lại được tính sau khi có PREPAYMENT thực tế:
- *      NCC thường = (1) - (2) - tổng PREPAYMENT;
- *      NCC cá nhân = ((1) - thuế) - (2) - tổng PREPAYMENT.
- *    - TK phải trả NCC = vendorSite.credit.account.
- *    - TK Khách hàng/TRANSFER = paymentVendor.beneficiary.account do người dùng nhập.
- *      Riêng phương thức Tiền mặt tạm dùng cố định STK 99999999.
- *    - Nội dung hạch toán tự động = paymentVendor.transaction.des.
- *    - TK tạm ứng lấy từ dòng AP/PREPAYMENT được tạo tại tab Công nợ;
- *      code sinh tự động không tạo dòng Có TK tạm ứng.
- *    - Cost Division lọc theo payment.id và vendor.id.
- *    - Invoice/thuế = Standard; hoàn ứng = ApplyPrepayment; đi tiền = Payment.
- *    - paymentEntry lưu theo phần "Hiển thị tại tab Hạch toán": đã khử TK phải trả.
- *    - TT-17 chỉ sinh Có Khách hàng (TT-BK-08), không sinh Nợ Phải trả.
- *    - NCC cá nhân: Chi phí/đi tiền để amount=null cho KT nhập; Phải trả tự tính
- *      theo phần còn lại sau thuế, thanh toán và PREPAYMENT.
- * ===========================================================================
- */
-
-/*
- * ===========================================================================
  *  SƠ ĐỒ LUỒNG CODE
  * ---------------------------------------------------------------------------
  *  01. ENTRY POINT
@@ -1556,8 +1530,8 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
 			? getPaymentCostDivisions(paymentId, vendor.vendor_id)
 			: [];
 	var isPersonal = isPersonalPaymentVendor(vendor.vendor_type);
-	// Cá nhân không dùng thuế GTGT tự động; thuế TNCN và số tiền do KT nhập.
-	var errors = isPersonal ? [] : taxInfo.errors.slice(0);
+	// Thuế GTGT từ hóa đơn sinh tự động cho mọi NCC (bao gồm cá nhân); Thuế TNCN do KT tự thêm sau dưới dạng dòng GL.
+	var errors = taxInfo.errors.slice(0);
 	debugPaymentEntry('CONTEXT', 'NCC ' + (vendor.vendor_id || '?') + ': approved=' + approvedAmount + ', PCCP=' + costDivisions.length + ', personal=' + isPersonal + ', taxGroups=' + taxInfo.groups.length);
 
 	if (approvedAmount > 0 && costDivisions.length === 0 && isPersonal && !vendor.debit_account) {
@@ -1999,6 +1973,20 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCr
 			departmentOverride: expenseAccounts[i].department,
 			branchOverride: expenseAccounts[i].branch
 		}));
+	}
+
+	if (c.hasTax) {
+		for (i = 0; i < c.taxInfo.groups.length; i++) {
+			rows.push(buildEntryRow({
+				paymentId: c.paymentId,
+				request: c.request,
+				vendor: c.vendor,
+				entryCode: AUTO_ENTRY_CODE.TAX,
+				amount: c.taxInfo.groups[i].amount,
+				order: order++,
+				taxInfo: c.taxInfo.groups[i]
+			}));
+		}
 	}
 
 	// SỬA NGHIỆP VỤ HOÀN ỨNG:

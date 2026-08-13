@@ -1530,8 +1530,8 @@ function buildPaymentCaseContext(paymentId, request, vendor, vendorCount, firstO
 			? getPaymentCostDivisions(paymentId, vendor.vendor_id)
 			: [];
 	var isPersonal = isPersonalPaymentVendor(vendor.vendor_type);
-	// Cá nhân không dùng thuế GTGT tự động; thuế TNCN và số tiền do KT nhập.
-	var errors = isPersonal ? [] : taxInfo.errors.slice(0);
+	// Thuế GTGT từ hóa đơn sinh tự động cho mọi NCC (bao gồm cá nhân); Thuế TNCN do KT tự thêm sau dưới dạng dòng GL.
+	var errors = taxInfo.errors.slice(0);
 	debugPaymentEntry('CONTEXT', 'NCC ' + (vendor.vendor_id || '?') + ': approved=' + approvedAmount + ', PCCP=' + costDivisions.length + ', personal=' + isPersonal + ', taxGroups=' + taxInfo.groups.length);
 
 	if (approvedAmount > 0 && costDivisions.length === 0 && isPersonal && !vendor.debit_account) {
@@ -1973,6 +1973,20 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCr
 			departmentOverride: expenseAccounts[i].department,
 			branchOverride: expenseAccounts[i].branch
 		}));
+	}
+
+	if (c.hasTax) {
+		for (i = 0; i < c.taxInfo.groups.length; i++) {
+			rows.push(buildEntryRow({
+				paymentId: c.paymentId,
+				request: c.request,
+				vendor: c.vendor,
+				entryCode: AUTO_ENTRY_CODE.TAX,
+				amount: c.taxInfo.groups[i].amount,
+				order: order++,
+				taxInfo: c.taxInfo.groups[i]
+			}));
+		}
 	}
 
 	// SỬA NGHIỆP VỤ HOÀN ỨNG:
