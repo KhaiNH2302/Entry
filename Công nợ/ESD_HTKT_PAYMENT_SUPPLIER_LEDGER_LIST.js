@@ -224,7 +224,7 @@ function getListAccountsPayable(input) {
 			"ai.ap.code AS apCode, " +
 			"ai.checked.time AS checkedTime, " +
 			"ai.sub.type AS subType, " +
-			"ai.amount AS advance_amount, " +
+			"ai.amount, " +
 			"ai.contract.id AS contractId, " +
 			"ai.data AS ai_data, " +// Để lấy currency
 
@@ -234,7 +234,8 @@ function getListAccountsPayable(input) {
 
 			"pv.approved.invoice.amount, " +
 			"pv.amount, " +
-			"pv.refund.amount " +
+			"pv.refund.amount, " +
+			"pe.amount " +
 
 			"FROM esdHTKTaccountingInformation ai " +
 			"JOIN esdHTKTpaymentEntry pe " +
@@ -268,14 +269,14 @@ function getListAccountsPayable(input) {
 		while (rc == RC_SUCCESS) {
 			var accountingInformationId = String(file["requestId"] || "").trim();
 			var prepaymentId = String(file["prepaymentId"] || "").trim();
-			var advanceAmount = getNumberField(file, ["advance_amount", "ai.amount", "amount"]);
-			var currentPaymentEntryAmount = getNumberField(file, ["current_payment_entry_amount", "currentEntry.amount"]);
+			var amount = getNumberField(file, ["amount"]);
+			var currentPaymentEntryAmount = getNumberField(file, ["currentEntry.amount"]);
 			var currentPaymentEntryDescription = String(file["currentEntry.description"] || "").trim();
-			var peDescription = String(file["pe_description"] || "").trim(); // Lấy description từ payment entry
-
 			var approvedInvoiceAmount = getNumberField(file, ["pv.approved.invoice.amount"]);
 			var refundAmount = getNumberField(file, ["pv.refund.amount"]);
 			var paidAmount = getNumberField(file, ["pv.amount"]);
+			var payableAmount = getNumberField(file, ["pe.amount"]);
+			var totalPayableAssetAmount = getTotalPayableAssetAmount(prepaymentId);
 
 			var item = {
 				requestId: accountingInformationId,
@@ -289,15 +290,15 @@ function getListAccountsPayable(input) {
 				apCode: String(file["ap.code"] || file["apCode"] || ""),
 				checkedTime: file["checkedTime"] || "",
 				subType: String(file["subType"] || "").trim(),
-				amount: advanceAmount,
+				amount: amount, //Số tiền thanh toán sau 
 				contractId: String(file["contractId"] || "").trim(),
 				description: currentPaymentEntryDescription,           // Nội dung diễn giải của đề nghị lần này
 				id: String(file["currentEntry.id"] || "").trim(),
 				totalTax: 0, // Cot thue - chua biet lay o dau
-				advance_amount: advanceAmount, //Số tiền thanh toán sau thuế
-				totalAmountPaid: approvedInvoiceAmount - refundAmount - paidAmount,        // Số tiền đã hoàn thanh toán (đã hạch toán xong và không thuộc ĐNTT hiện tại)
+				totalAmountPaid: approvedInvoiceAmount - refundAmount - paidAmount - payableAmount,  // Số tiền đã thanh toán (đã hạch toán xong và không thuộc ĐNTT hiện tại)
 				other_pending_amount: 0,   // Số tiền chờ duyệt ở các ĐNTT khác
 				currentPaymentAmount: currentPaymentEntryAmount,   // Số tiền thanh toán lần này (của ĐNTT hiện tại)
+				totalRemainingAmount: payableAmount - totalPayableAssetAmount,
 				currency: ""
 			};
 
@@ -313,11 +314,6 @@ function getListAccountsPayable(input) {
 			} else {
 				item.currency = String(file["currency"] || "").trim();
 			}
-
-			item.remaining_amount =
-					item.advance_amount - item.paid_amount - item.other_pending_amount;
-			if (item.remaining_amount < 0) item.remaining_amount = 0;
-
 			itemList.push(item);
 			rc = file.getNext();
 		}
@@ -326,6 +322,35 @@ function getListAccountsPayable(input) {
 	}
 
 	return itemList;
+}
+
+
+function getTotalPayableAssetAmount(prepaymentId) {
+	var totalAmount = 0;
+	var paymentEntryFile = null;
+
+	if (!prepaymentId) return totalAmount;
+
+	var query =
+			"SELECT amount FROM esdHTKTpaymentEntry " +
+			'WHERE entry.type = "PAYABLE" ' +
+			'AND account.type = "ASSET" ' +
+			'AND accounting.request.id = NULL ' +
+			'AND payment.id = "' + escapeSmQueryValue(prepaymentId) + '"';
+
+	try {
+		paymentEntryFile = new SCFile("esdHTKTpaymentEntry", SCFILE_READONLY);
+		var rc = paymentEntryFile.doSelect(query);
+
+		while (rc == RC_SUCCESS) {
+			totalAmount += getNumberField(paymentEntryFile, ["amount"]);
+			rc = paymentEntryFile.getNext();
+		}
+	} finally {
+		closeSCFile(paymentEntryFile);
+	}
+
+	return totalAmount;
 }
 
 
