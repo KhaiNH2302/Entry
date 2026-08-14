@@ -46,6 +46,8 @@ function run() {
 		// danh sach hach toan
 		if (action === 'getListPaymentEntry') {
 			result = getListPaymentEntryByInputDetails(details);
+		} else if (action === 'getGLAddRowOptions') {
+			result = getGLAddRowOptions(details);
 			// sinh but toan tu dong
 		} else if (action === 'syncPaymentEntry') {
 			result = syncPaymentEntryNowByInputDetails(details);
@@ -60,7 +62,7 @@ function run() {
 			result = savePaymentEntryEdit(details);
 			// lay tai khoan GL
 		} else if (action === 'getListGLAccount') {
-			result = getListGlAccount();
+			result = getListGlAccount(details);
 			// lay don vi ke toan hien tai theo nguoi dung
 		} else if (action === 'getCreatorAccountingInfo') {
 			result = getCreatorAccountingInfo(details);
@@ -320,6 +322,7 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		initialRole: params.initialRole,
 		createdBy: params.createdBy,
 		additionalUnitCode: params.additionalUnitCode,
+		additionalUnitEntityCode: params.additionalUnitEntityCode,
 		additionalUnitName: params.additionalUnitName,
 		glUnitOptions: params.glUnitOptions,
 		glCostCenterOptions: params.glCostCenterOptions,
@@ -383,14 +386,22 @@ function getListPaymentEntryByInputDetails(details) {
 	var userCheckerKttc = request.user_checker_kttc;
 	var initialRole = request.initial_role;
 	var createdBy = request.created_by;
-	var creatorUnit = getCreatorAccountingUnit(createdBy);
-	var glUnitOptions = getGlUnitOptions();
-	var glCostCenterOptions = getGlCostCenterOptions();
-	var creatorTransactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.lv1Id);
-	var transactionOfficeOptions = getGlTransactionOfficeOptions();
-	var defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(creatorTransactionOfficeOptions);
+	var currentUser = safeString(details.currentUser).trim();
+	var creatorUnit = getCreatorAccountingUnit(currentUser || createdBy);
 	var savedEntries = getSavedPaymentEntries(paymentId);
 	debugPaymentEntry('GET-LIST', 'Đã đọc ' + savedEntries.length + ' dòng đã lưu, phase=' + currentPhase);
+
+	var glUnitOptions = [];
+	var glCostCenterOptions = [];
+	var transactionOfficeOptions = [];
+	var defaultTransactionOfficeCode = '';
+
+	// Khi có dữ liệu đã lưu, không query options đồng bộ ở API load list để tối ưu hiệu năng (tách API call)
+	// options sẽ được Frontend gọi bất đồng bộ riêng
+	if (savedEntries.length > 0) {
+		var creatorTransactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.lv1Id);
+		defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(creatorTransactionOfficeOptions);
+	}
 
 	var summaryMeta = getPaymentSummaryMeta(paymentId, request, {
 		currentPhase: currentPhase,
@@ -398,6 +409,7 @@ function getListPaymentEntryByInputDetails(details) {
 		initialRole: initialRole,
 		createdBy: createdBy,
 		additionalUnitCode: creatorUnit.code,
+		additionalUnitEntityCode: creatorUnit.entityCode,
 		additionalUnitName: creatorUnit.name,
 		glUnitOptions: glUnitOptions,
 		glCostCenterOptions: glCostCenterOptions,
@@ -412,7 +424,7 @@ function getListPaymentEntryByInputDetails(details) {
 				savedEntries,
 				creatorUnit.code,
 				defaultTransactionOfficeCode,
-				transactionOfficeOptions
+				glUnitOptions
 		);
 		return makeResult(savedEntries, 'saved', summaryMeta);
 	}
@@ -425,6 +437,48 @@ function getListPaymentEntryByInputDetails(details) {
 
 	debugPaymentEntry('GET-LIST', 'Không có dữ liệu, trả empty và không tự động sinh');
 	return makeResult([], 'empty', summaryMeta);
+}
+
+function enrichPaymentEntriesWithNames(entries) {
+	for (var i = 0; i < entries.length; i++) {
+		var entry = entries[i];
+		if (entry.branch) {
+			var branchName = selectOne(TABLE_ENTITY, 'entity.code="' + escapeQueryValue(entry.branch) + '"', function (r) {
+				return readText(r, 'branch.name');
+			});
+			if (branchName) {
+				var prefix = getBranchNamePrefix(branchName);
+				entry.branchLabel = entry.branch + ' - ' + prefix;
+				entry.branchName = prefix;
+				entry.branchEntityCode = entry.branch;
+			}
+		}
+		if (entry.department) {
+			var deptName = selectOne(TABLE_COST_CENTER, 'cost.center="' + escapeQueryValue(entry.department) + '"', function (r) {
+				return readText(r, 'name');
+			});
+			if (deptName) {
+				entry.departmentLabel = entry.department + ' - ' + deptName;
+				entry.departmentName = deptName;
+			}
+		}
+		if (entry.transaction_office) {
+			var transOfficeName = selectOne(TABLE_ENTITY, 'entity.code="' + escapeQueryValue(entry.transaction_office) + '"', function (r) {
+				return readText(r, 'branch.name');
+			});
+			if (transOfficeName) {
+				var prefix = getTransFromNamePrefix(transOfficeName);
+				entry.transactionOfficeLabel = entry.transaction_office + ' - ' + prefix;
+				entry.transactionOfficeName = prefix;
+			}
+		}
+	}
+}
+
+function getTransFromNamePrefix(value) {
+	var text = safeString(value).trim();
+	var index = text.indexOf('-');
+	return (index >= 0 ? text.substring(index + 1) : text).trim();
 }
 
 /** Tính lại dữ liệu nguồn, giữ trường được sửa và đồng bộ entry khi chưa khóa. */
@@ -1140,13 +1194,18 @@ function mapAccountingTableItems(rows) {
 // SECTION 03A - DANH MỤC GL: hỗ trợ chọn tài khoản khi chỉnh sửa
 // -----------------------------------------------------------------------------
 
-function getListGlAccount() {
+function getListGlAccount(details) {
 	var rows = [];
 	var f = new SCFile(TABLE_GL_ACCOUNT, SCFILE_READONLY);
 	var rc;
+	var query = 'true';
+	var accountType = details && (details.accountType || details.account_type);
+	if (accountType) {
+		query += ' and account.type="' + escapeQueryValue(accountType) + '"';
+	}
 
 	try {
-		rc = f.doSelect('true');
+		rc = f.doSelect(query);
 	} catch (e) {
 		closeFile(f);
 		return makeError('Cannot read GL account list: ' + e.toString());
@@ -2280,6 +2339,24 @@ function applyBeneficiaryByEntryType(rows) {
 		list[i].beneficiary_name = beneficiary.name;
 		list[i].beneficiary_bank = beneficiary.bank;
 		list[i].bank_name = beneficiary.bank_name;
+
+		var rawBranch = list[i].branch;
+		if (rawBranch) {
+			var matchingEntity = selectOne(
+				TABLE_ENTITY,
+				'ogl.branch.code="' + escapeQueryValue(rawBranch) + '" or ogl.branch.code="' + escapeQueryValue('0' + rawBranch) + '" or ogl.branch.code="' + escapeQueryValue(removeFirstLeadingZero(rawBranch)) + '"',
+				function (record) {
+					return {
+						entityCode: readText(record, 'entity.code'),
+						branchName: getBranchNamePrefix(readText(record, 'branch.name'))
+					};
+				}
+			);
+			if (matchingEntity) {
+				list[i].branch_entity_code = matchingEntity.entityCode;
+				list[i].branch_name = matchingEntity.branchName;
+			}
+		}
 	}
 
 	return list;
@@ -2744,10 +2821,11 @@ function getCreatorAccountingUnit(createdBy) {
 				return {
 					code: removeFirstLeadingZero(readText(record, 'ogl.branch.code')).trim(),
 					name: getBranchNamePrefix(readText(record, 'branch.name')),
-					lv1Id: lv1Id
+					lv1Id: lv1Id,
+					entityCode: readText(record, 'entity.code')
 				};
 			}
-	) || { code: '', name: '', lv1Id: lv1Id };
+	) || { code: '', name: '', lv1Id: lv1Id, entityCode: '' };
 }
 
 function getCreatorAccountingInfo(details) {
@@ -2787,6 +2865,39 @@ function getCreatorAccountingInfo(details) {
 	return {
 		success: true,
 		data: entityInfo
+	};
+}
+
+function getGLAddRowOptions(details) {
+	var paymentId = safeString(details.paymentId).trim();
+	if (!paymentId) {
+		return { success: false, error: 'Thiếu mã đề nghị thanh toán.' };
+	}
+
+	var request = getPaymentRequest(paymentId);
+	var createdBy = request.created_by;
+	var currentUser = safeString(details.currentUser).trim();
+	var creatorUnit = getCreatorAccountingUnit(currentUser || createdBy);
+	var glUnitOptions = getGlUnitOptions();
+	var glCostCenterOptions = getGlCostCenterOptions();
+	var creatorTransactionOfficeOptions = creatorUnit ? getTransactionOfficeOptions(creatorUnit.lv1Id) : [];
+	var transactionOfficeOptions = getGlTransactionOfficeOptions();
+	var defaultTransactionOfficeCode = creatorTransactionOfficeOptions ? getDefaultTransactionOfficeCode(creatorTransactionOfficeOptions) : '';
+
+	return {
+		success: true,
+		glUnitOptions: glUnitOptions,
+		glCostCenterOptions: glCostCenterOptions,
+		transactionOfficeOptions: transactionOfficeOptions,
+		defaultTransactionOfficeCode: defaultTransactionOfficeCode,
+		creatorUnit: creatorUnit ? {
+			value: creatorUnit.entityCode || creatorUnit.code,
+			label: (creatorUnit.entityCode || creatorUnit.code) + ' - ' + creatorUnit.name,
+			entityCode: creatorUnit.entityCode || creatorUnit.code,
+			branchCode: creatorUnit.code,
+			name: creatorUnit.name,
+			matchBranchCode: creatorUnit.code
+		} : null
 	};
 }
 
@@ -3045,7 +3156,7 @@ function getGlUnitOptions() {
 
 
 /** map danh sách Phòng ban GL từ esdDMcostCenter lọc theo status ACTIVE và quy tắc mã đơn vị. */
-function getGlCostCenterOptions() {
+function getGlCostCenterOptions(unitId) {
 	var options = [];
 	var fields = [
 		['d.cost.center', 'cost_center', 'S'],
@@ -3066,7 +3177,12 @@ function getGlCostCenterOptions() {
 		return options;
 	}
 
-	var unitOptions = getGlUnitOptions() || [];
+	var unitOptions = [];
+	if (unitId) {
+		unitOptions.push({ entityCode: unitId });
+	} else {
+		unitOptions = getGlUnitOptions() || [];
+	}
 
 	for (var u = 0; u < unitOptions.length; u++) {
 		var unitCode = safeString(unitOptions[u].entityCode).trim();
@@ -3160,7 +3276,7 @@ function compareGlUnitOption(left, right) {
 
 
 /** map danh sách PGD segment6 của GL khác mã 98, 00 và kèm segment1EntityCode để lọc theo Đơn vị. */
-function getGlTransactionOfficeOptions() {
+function getGlTransactionOfficeOptions(unitId) {
 	var options = [];
 	var fields = [
 		['d.entity.code', 'entity_code', 'S'],
@@ -3184,7 +3300,12 @@ function getGlTransactionOfficeOptions() {
 		return options;
 	}
 
-	var unitOptions = getGlUnitOptions() || [];
+	var unitOptions = [];
+	if (unitId) {
+		unitOptions.push({ entityCode: unitId });
+	} else {
+		unitOptions = getGlUnitOptions() || [];
+	}
 
 	for (var u = 0; u < unitOptions.length; u++) {
 		var unitCode = safeString(unitOptions[u].entityCode).trim();
@@ -3222,6 +3343,7 @@ function getGlTransactionOfficeOptions() {
 					entityCode.substring(0, 5) === prefix &&
 					transactionCode &&
 					transactionCode !== GL_UNIT_TRANSACTION_CODE &&
+					transactionCode.slice(-2) !== '98' &&
 					transactionCode !== '00' &&
 					branchCode
 			) {
@@ -3352,10 +3474,24 @@ function applyCreatorUnitToEntries(entries, unitCode, defaultOffice, options) {
 		if (unitCode && !isAdditionalEntryType(entries[i].type)) {
 			entries[i].branch = unitCode;
 		}
-//        if (defaultOffice &&
-//                !isTransactionOfficeCodeAllowed(entries[i].transaction_office, options)) {
-//            entries[i].transaction_office = defaultOffice;
-//        }
+
+		var rawBranch = entries[i].branch;
+		if (rawBranch) {
+			var matchingEntity = selectOne(
+				TABLE_ENTITY,
+				'ogl.branch.code="' + escapeQueryValue(rawBranch) + '" or ogl.branch.code="' + escapeQueryValue('0' + rawBranch) + '" or ogl.branch.code="' + escapeQueryValue(removeFirstLeadingZero(rawBranch)) + '"',
+				function (record) {
+					return {
+						entityCode: readText(record, 'entity.code'),
+						branchName: getBranchNamePrefix(readText(record, 'branch.name'))
+					};
+				}
+			);
+			if (matchingEntity) {
+				entries[i].branch_entity_code = matchingEntity.entityCode;
+				entries[i].branch_name = matchingEntity.branchName;
+			}
+		}
 	}
 }
 
@@ -3366,8 +3502,28 @@ function removeFirstLeadingZero(value) {
 
 function getBranchNamePrefix(value) {
 	var text = safeString(value).trim();
-	var index = text.indexOf('-');
-	return (index >= 0 ? text.substring(0, index) : text).trim();
+	var parts = text.split('-');
+	var cleanedParts = [];
+	for (var i = 0; i < parts.length; i++) {
+		var part = parts[i].trim();
+		var isNum = true;
+		if (part.length === 0) {
+			isNum = false;
+		} else {
+			for (var j = 0; j < part.length; j++) {
+				var ch = part.charAt(j);
+				if (ch < '0' || ch > '9') {
+					isNum = false;
+					break;
+				}
+			}
+		}
+		if (!isNum) {
+			cleanedParts.push(part);
+		}
+	}
+	var name = cleanedParts.join(' - ').trim();
+	return name || text;
 }
 
 function getPaymentVendors(paymentId, vendorId) {
