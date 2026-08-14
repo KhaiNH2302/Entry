@@ -106,7 +106,7 @@ var TABLES = [
   },
   {
     name: 'esdDMcostCenter',
-    fields: ['org.code', 'cost.center', 'name']
+    fields: ['org.code', 'cost.center', 'name', 'status']
   }
 ];
 

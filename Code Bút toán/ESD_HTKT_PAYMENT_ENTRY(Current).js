@@ -61,6 +61,15 @@ function run() {
 			// lay tai khoan GL
 		} else if (action === 'getListGLAccount') {
 			result = getListGlAccount();
+			// lay don vi ke toan hien tai theo nguoi dung
+		} else if (action === 'getCreatorAccountingInfo') {
+			result = getCreatorAccountingInfo(details);
+			// lay danh sach phong ban (cost center)
+		} else if (action === 'getCostCenterOptions') {
+			result = getCostCenterOptions(details);
+			// lay danh sach phong giao dich (transaction office)
+		} else if (action === 'getTransactionOfficeOptions') {
+			result = getTransactionOfficeOptionsApi(details);
 		} else {
 			result = { success: false, error: 'Invalid action: ' + action };
 		}
@@ -2723,8 +2732,10 @@ function getCreatorAccountingUnit(createdBy) {
 			'contact.name="' + escapeQueryValue(creator) + '"',
 			function (record) { return readText(record, 'lv1.id'); }
 	);
-	var psCode = removeFirstLeadingZero(lv1Id);
-	if (!psCode) return { code: '', name: '', lv1Id: '' };
+	if (!lv1Id) return { code: '', name: '', lv1Id: '' };
+
+	// ps.code = lv1Id (giữ nguyên lv1.id, không cắt số 0 đầu)
+	var psCode = lv1Id;
 
 	return selectOne(
 			TABLE_ENTITY,
@@ -2737,6 +2748,212 @@ function getCreatorAccountingUnit(createdBy) {
 				};
 			}
 	) || { code: '', name: '', lv1Id: lv1Id };
+}
+
+function getCreatorAccountingInfo(details) {
+	var currentUser = safeString(details.currentUser || details.createdBy).trim();
+	if (!currentUser) {
+		return { success: false, error: 'User is required.' };
+	}
+
+	var lv1Id = selectOne(
+			TABLE_CONTACT,
+			'contact.name="' + escapeQueryValue(currentUser) + '"',
+			function (record) { return readText(record, 'lv1.id'); }
+	);
+	if (!lv1Id) {
+		return { success: false, error: 'User contact info not found: ' + currentUser };
+	}
+
+	// ps.code = lv1Id (giữ nguyên lv1.id, không cắt số 0 đầu)
+	var entityInfo = selectOne(
+			TABLE_ENTITY,
+			'ps.code="' + escapeQueryValue(lv1Id) + '"',
+			function (record) {
+				var rawBranchCode = readText(record, 'ogl.branch.code').trim();
+				return {
+					entityCode: readText(record, 'entity.code').trim(),
+					branchCode: removeFirstLeadingZero(rawBranchCode).trim(), // 100 (chuẩn hóa từ 0100)
+					branchName: getBranchNamePrefix(readText(record, 'branch.name')),
+					rawBranchCode: rawBranchCode // 0100
+				};
+			}
+	);
+
+	if (!entityInfo) {
+		return { success: false, error: 'Accounting unit not found for contact ID: ' + lv1Id };
+	}
+
+	return {
+		success: true,
+		data: entityInfo
+	};
+}
+
+function getCostCenterOptions(details) {
+	var entityCode = safeString(details.entityCode || details.entity_code || details.code).trim();
+	if (!entityCode) {
+		return {
+			success: true,
+			data: [{
+				value: '000000',
+				label: '000000 - Không xác định',
+				name: 'Không xác định'
+			}]
+		};
+	}
+
+	var options = getCostCenterOptionsForUnit(entityCode);
+	return {
+		success: true,
+		data: options
+	};
+}
+
+function getCostCenterOptionsForUnit(entityCode) {
+	var options = [];
+
+	// Mặc định gán giá trị không xác định
+	options.push({
+		value: '000000',
+		label: '000000 - Không xác định',
+		name: 'Không xác định'
+	});
+
+	var code = safeString(entityCode).trim();
+	if (!code) return options;
+
+	// Tách 3 chữ số giữa (xxx) từ mã đơn vị (ví dụ 1010098 -> xxx = 100)
+	var xxx = '';
+	if (code.length >= 5 && code.substring(0, 2) === '10') {
+		xxx = code.substring(2, 5);
+	}
+
+	if (!xxx) return options;
+
+	var query = 'status="ACTIVE"';
+	if (xxx === '100') {
+		query += ' and not org.code like "3*"';
+	} else {
+		query += ' and org.code like "3*"';
+	}
+
+	var list = [];
+	var f = new SCFile('esdDMcostCenter', SCFILE_READONLY);
+	var rc;
+	try {
+		rc = f.doSelect(query);
+	} catch (e) {
+		closeFile(f);
+		return options;
+	}
+
+	while (rc === RC_SUCCESS) {
+		var ccCode = safeString(readText(f, 'cost.center')).trim();
+		var ccName = safeString(readText(f, 'name')).trim();
+
+		if (ccCode && ccCode !== '000000') {
+			list.push({
+				value: ccCode,
+				label: ccCode + (ccName ? ' - ' + ccName : ''),
+				name: ccName
+			});
+		}
+		rc = f.getNext();
+	}
+	closeFile(f);
+
+	list.sort(function (left, right) {
+		var a = left.value;
+		var b = right.value;
+		return a === b ? 0 : a < b ? -1 : 1;
+	});
+
+	return options.concat(list);
+}
+
+function getTransactionOfficeOptionsApi(details) {
+	var entityCode = safeString(details.entityCode || details.entity_code || details.code).trim();
+	if (!entityCode) {
+		return {
+			success: true,
+			data: [{
+				value: '000000',
+				label: '000000 - Không xác định',
+				name: 'Không xác định'
+			}]
+		};
+	}
+
+	var options = getTransactionOfficeOptionsForUnit(entityCode);
+	return {
+		success: true,
+		data: options
+	};
+}
+
+function getTransactionOfficeOptionsForUnit(entityCode) {
+	var options = [];
+
+	// Mặc định gán giá trị không xác định
+	options.push({
+		value: '000000',
+		label: '000000 - Không xác định',
+		name: 'Không xác định'
+	});
+
+	var code = safeString(entityCode).trim();
+	if (!code) return options;
+
+	// Tìm ogl.branch.code từ esdDMentity dựa trên entity.code
+	var branchCode = selectOne(
+			'esdDMentity',
+			'entity.code="' + escapeQueryValue(code) + '"',
+			function (record) { return readText(record, 'ogl.branch.code'); }
+	);
+
+	if (!branchCode) return options;
+
+	var query = 'status="ACTIVE" and ogl.branch.code="' + escapeQueryValue(branchCode) + '"';
+	var list = [];
+	var f = new SCFile('esdDMentity', SCFILE_READONLY);
+	var rc;
+	try {
+		rc = f.doSelect(query);
+	} catch (e) {
+		closeFile(f);
+		return options;
+	}
+
+	while (rc === RC_SUCCESS) {
+		var entCode = safeString(readText(f, 'entity.code')).trim();
+		var branchName = safeString(readText(f, 'branch.name')).trim();
+
+		var isMainUnit = (entCode.length >= 2 && entCode.substring(entCode.length - 2) === '98');
+
+		if (entCode && entCode !== '0000000' && !isMainUnit) {
+			var branchNameSeparatorIndex = branchName.indexOf('-');
+			if (branchNameSeparatorIndex >= 0) {
+				branchName = branchName.substring(branchNameSeparatorIndex + 1).trim();
+			}
+
+			list.push({
+				value: entCode,
+				label: entCode + (branchName ? ' - ' + branchName : ''),
+				name: branchName
+			});
+		}
+		rc = f.getNext();
+	}
+	closeFile(f);
+
+	list.sort(function (left, right) {
+		var a = left.value;
+		var b = right.value;
+		return a === b ? 0 : a < b ? -1 : 1;
+	});
+
+	return options.concat(list);
 }
 
 /** map danh sách đơn vị segment1 của GL theo org.transaction.code = 98. */
@@ -2827,21 +3044,20 @@ function getGlUnitOptions() {
 }
 
 
-/** map danh sách Phòng ban GL theo seg1.entity của Đơn vị người dùng chọn. */
+/** map danh sách Phòng ban GL từ esdDMcostCenter lọc theo status ACTIVE và quy tắc mã đơn vị. */
 function getGlCostCenterOptions() {
-	var optionMap = {};
 	var options = [];
 	var fields = [
-		['d.seg1.entity', 'segment1_entity_code', 'S'],
 		['d.cost.center', 'cost_center', 'S'],
-		['d.name', 'name', 'S']
+		['d.name', 'name', 'S'],
+		['d.org.code', 'org_code', 'S']
 	];
 	var sql =
 			'SELECT ' +
 			selectFields(fields) +
 			' FROM ' +
 			TABLE_COST_CENTER +
-			' d';
+			' d WHERE d.status="ACTIVE"';
 	var rows;
 
 	try {
@@ -2850,21 +3066,50 @@ function getGlCostCenterOptions() {
 		return options;
 	}
 
-	for (var i = 0; i < rows.length; i++) {
-		var segment1EntityCode = safeString(rows[i].segment1_entity_code).trim();
-		var costCenter = safeString(rows[i].cost_center).trim();
-		var name = safeString(rows[i].name).trim();
-		var optionKey = segment1EntityCode + '|' + costCenter;
+	var unitOptions = getGlUnitOptions() || [];
 
-		if (!segment1EntityCode || !costCenter || optionMap[optionKey]) continue;
+	for (var u = 0; u < unitOptions.length; u++) {
+		var unitCode = safeString(unitOptions[u].entityCode).trim();
+		if (!unitCode) continue;
 
-		optionMap[optionKey] = true;
+		var xxx = '';
+		if (unitCode.length >= 5 && unitCode.substring(0, 2) === '10') {
+			xxx = unitCode.substring(2, 5);
+		}
+
+		// Thêm mã mặc định 000000 - Không xác định cho đơn vị này
 		options.push({
-			value: costCenter,
-			label: costCenter + (name ? ' - ' + name : ''),
-			name: name,
-			segment1EntityCode: segment1EntityCode
+			value: GL_DEFAULT_COST_CENTER,
+			label: GL_DEFAULT_COST_CENTER + ' - Không xác định',
+			name: 'Không xác định',
+			segment1EntityCode: unitCode
 		});
+
+		for (var i = 0; i < rows.length; i++) {
+			var costCenter = safeString(rows[i].cost_center).trim();
+			var name = safeString(rows[i].name).trim();
+			var orgCode = safeString(rows[i].org_code).trim();
+
+			if (!costCenter || costCenter === GL_DEFAULT_COST_CENTER) continue;
+
+			var startsWith3 = costCenter.charAt(0) === '3';
+			var isValid = false;
+
+			if (xxx === '100') {
+				if (!startsWith3) isValid = true;
+			} else {
+				if (startsWith3) isValid = true;
+			}
+
+			if (isValid) {
+				options.push({
+					value: costCenter,
+					label: costCenter + (name ? ' - ' + name : ''),
+					name: name,
+					segment1EntityCode: unitCode
+				});
+			}
+		}
 	}
 
 	options.sort(function (left, right) {
@@ -2914,9 +3159,8 @@ function compareGlUnitOption(left, right) {
 }
 
 
-/** map danh sách PGD segment6 của GL khác mã 98, 00 và kèm ogl.branch.code để lọc theo Đơn vị. */
+/** map danh sách PGD segment6 của GL khác mã 98, 00 và kèm segment1EntityCode để lọc theo Đơn vị. */
 function getGlTransactionOfficeOptions() {
-	var optionMap = {};
 	var options = [];
 	var fields = [
 		['d.entity.code', 'entity_code', 'S'],
@@ -2940,34 +3184,56 @@ function getGlTransactionOfficeOptions() {
 		return options;
 	}
 
-	for (var i = 0; i < rows.length; i++) {
-		var entityCode = safeString(rows[i].entity_code).trim();
-		var transactionCode = safeString(rows[i].transaction_code).trim();
-		var branchCode = safeString(rows[i].branch_code).trim();
-		var branchName = safeString(rows[i].branch_name).trim();
-		var branchNameSeparatorIndex = branchName.indexOf('-');
-		var optionKey = branchCode + '|' + transactionCode;
+	var unitOptions = getGlUnitOptions() || [];
 
-		// map tên PGD bằng phần bên phải dấu "-" trong branch.name.
-		if (branchNameSeparatorIndex >= 0) {
-			branchName = branchName.substring(branchNameSeparatorIndex + 1).trim();
+	for (var u = 0; u < unitOptions.length; u++) {
+		var unitCode = safeString(unitOptions[u].entityCode).trim();
+		if (!unitCode) continue;
+
+		var prefix = '';
+		if (unitCode.length >= 5 && unitCode.substring(0, 2) === '10') {
+			prefix = unitCode.substring(0, 5);
 		}
 
-		if (
-				transactionCode &&
-				transactionCode !== GL_UNIT_TRANSACTION_CODE &&
-				transactionCode !== '00' &&
-				branchCode &&
-				!optionMap[optionKey]
-		) {
-			optionMap[optionKey] = true;
-			options.push({
-				value: entityCode,
-				label: entityCode + (branchName ? ' - ' + branchName : ''),
-				name: branchName,
-				branchCode: branchCode,
-				transactionCode: transactionCode
-			});
+		// Thêm mã mặc định 0000000 - Không xác định cho đơn vị này
+		options.push({
+			value: GL_DEFAULT_TRANSACTION_OFFICE,
+			label: GL_DEFAULT_TRANSACTION_OFFICE + ' - Không xác định',
+			name: 'Không xác định',
+			segment1EntityCode: unitCode
+		});
+
+		if (!prefix) continue;
+
+		for (var i = 0; i < rows.length; i++) {
+			var entityCode = safeString(rows[i].entity_code).trim();
+			var transactionCode = safeString(rows[i].transaction_code).trim();
+			var branchCode = safeString(rows[i].branch_code).trim();
+			var branchName = safeString(rows[i].branch_name).trim();
+			var branchNameSeparatorIndex = branchName.indexOf('-');
+
+			if (branchNameSeparatorIndex >= 0) {
+				branchName = branchName.substring(branchNameSeparatorIndex + 1).trim();
+			}
+
+			// Kiểm tra PGD thuộc đơn vị (cùng tiền tố 10xxx) và không phải là 98 hoặc 00
+			if (
+					entityCode.length === 7 &&
+					entityCode.substring(0, 5) === prefix &&
+					transactionCode &&
+					transactionCode !== GL_UNIT_TRANSACTION_CODE &&
+					transactionCode !== '00' &&
+					branchCode
+			) {
+				options.push({
+					value: entityCode,
+					label: entityCode + (branchName ? ' - ' + branchName : ''),
+					name: branchName,
+					branchCode: branchCode,
+					transactionCode: transactionCode,
+					segment1EntityCode: unitCode
+				});
+			}
 		}
 	}
 
@@ -3046,8 +3312,8 @@ function getTransactionOfficeByLv2(lv2Id) {
 }
 
 function compareTransactionOfficeOption(left, right) {
-	var a = safeString(left.psCode) + '|' + safeString(left.value);
-	var b = safeString(right.psCode) + '|' + safeString(right.value);
+	var a = safeString(left.segment1EntityCode || left.psCode) + '|' + safeString(left.value);
+	var b = safeString(right.segment1EntityCode || right.psCode) + '|' + safeString(right.value);
 	return a === b ? 0 : a < b ? -1 : 1;
 }
 
@@ -3793,17 +4059,21 @@ function makeUniqueTextList(values) {
 
 /**
  * Chuẩn hóa số tài khoản từ vendor site.
- * Dạng mới: lấy đoạn giữa dấu chấm thứ hai và thứ ba; dạng cũ giữ nguyên.
+ * Dạng mới: lấy đoạn giữa dấu phân cách thứ hai và thứ ba (hỗ trợ dấu chấm hoặc gạch ngang); dạng cũ giữ nguyên.
  */
 function extractAccountNumber(value) {
 	var account = safeString(value).trim();
-	var firstDot = account.indexOf('.');
-	var secondDot = firstDot >= 0 ? account.indexOf('.', firstDot + 1) : -1;
-	var thirdDot = secondDot >= 0 ? account.indexOf('.', secondDot + 1) : -1;
+	var separator = '.';
+	if (account.indexOf('-') >= 0) {
+		separator = '-';
+	}
+	var firstSep = account.indexOf(separator);
+	var secondSep = firstSep >= 0 ? account.indexOf(separator, firstSep + 1) : -1;
+	var thirdSep = secondSep >= 0 ? account.indexOf(separator, secondSep + 1) : -1;
 
-	if (secondDot < 0 || thirdDot < 0) return account;
+	if (secondSep < 0 || thirdSep < 0) return account;
 
-	var extracted = account.substring(secondDot + 1, thirdDot).trim();
+	var extracted = account.substring(secondSep + 1, thirdSep).trim();
 	return extracted || account;
 }
 
