@@ -1199,9 +1199,9 @@ function getListGlAccount(details) {
 	var f = new SCFile(TABLE_GL_ACCOUNT, SCFILE_READONLY);
 	var rc;
 	var query = 'true';
-	var accountType = details && (details.accountType || details.account_type);
-	if (accountType) {
-		query += ' and account.type="' + escapeQueryValue(accountType) + '"';
+	var typeFilter = details && (details.type || details.accountType || details.account_type);
+	if (typeFilter) {
+		query += ' and (type="' + escapeQueryValue(typeFilter) + '" or type like "' + escapeQueryValue(typeFilter) + '*")';
 	}
 
 	try {
@@ -1216,10 +1216,12 @@ function getListGlAccount(details) {
 
 		if (account) {
 			var accountType = readText(f, 'account.type');
+			var type = readText(f, 'type');
 
 			rows.push({
 				account: account,
 				name: readText(f, 'name'),
+				type: type,
 				account_type: accountType,
 				is_debit_eligible: isDebitEligibleAccountType(accountType),
 				apply_currency: readText(f, 'apply.currency')
