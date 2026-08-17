@@ -1201,7 +1201,7 @@ function getListGlAccount(details) {
 	var query = 'true';
 	var typeFilter = details && (details.type || details.accountType || details.account_type);
 	if (typeFilter) {
-		query += ' and (type="' + escapeQueryValue(typeFilter) + '" or type like "' + escapeQueryValue(typeFilter) + '*")';
+		query += ' and type="' + escapeQueryValue(typeFilter) + '"';
 	}
 
 	try {

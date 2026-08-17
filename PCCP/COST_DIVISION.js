@@ -676,19 +676,17 @@ function getGlTransactionOfficeOptions(input) {
 }
 
 /**
- * Lấy danh sách Tài khoản GL từ esdDMglAccount
+ * Lấy danh sách Tài khoản GL từ esdDMglAccount (lọc theo type = "Chi phí")
  */
 function getGlAccounts(input) {
 	var list = [];
-	var query = "true";
 	var page = 1;
-	var pageSize = 200;
+	var pageSize = 9999;
 
 	try {
 		var rawDetails = extractRawDetails(input);
 		if (rawDetails) {
 			var parsedObj = JSON.parse(rawDetails);
-			if (parsedObj.query) query = parsedObj.query;
 			if (parsedObj.page && Number(parsedObj.page) > 0)
 				page = Number(parsedObj.page);
 			if (parsedObj.pageSize && Number(parsedObj.pageSize) > 0)
@@ -699,29 +697,27 @@ function getGlAccounts(input) {
 	var fieldMappings = [
 		["account", "accountNumber", "S"],
 		["name", "accountName", "S"],
+		["type", "type", "S"],
 		["account.type", "accountType", "S"]
 	];
 
 	var f = new SCFile("esdDMglAccount", SCFILE_READONLY);
+	var rc = f.doSelect("true");
 
-	var totalRecords = f.doCount(query);
-	var totalPages = Math.ceil(totalRecords / pageSize);
+	while (rc === RC_SUCCESS) {
+		var account = safeString(f["account"]).trim();
+		if (account) {
+			var rawType = safeString(f["type"]).trim();
+			var isCost = rawType === "Chi phí" || rawType === "COST";
 
-	var rc = f.doSelect(query);
-	var startIndex = (page - 1) * pageSize;
-	var currentIndex = 0;
-
-	while (rc === RC_SUCCESS && currentIndex < startIndex) {
-		currentIndex++;
-		rc = f.getNext();
-	}
-
-	while (rc === RC_SUCCESS && list.length < pageSize) {
-		var item = mapRowToObject(f, fieldMappings);
-		// Format label cho dropdown
-		item.label = item.accountNumber + " - " + item.accountName;
-		item.value = item.accountNumber;
-		list.push(item);
+			if (isCost) {
+				var item = mapRowToObject(f, fieldMappings);
+				item.label = item.accountNumber + " - " + item.accountName;
+				item.value = item.accountNumber;
+				item.type = rawType;
+				list.push(item);
+			}
+		}
 		rc = f.getNext();
 	}
 
@@ -735,8 +731,8 @@ function getGlAccounts(input) {
 		pagination: {
 			page: page,
 			pageSize: pageSize,
-			totalRecords: totalRecords,
-			totalPages: totalPages
+			totalRecords: list.length,
+			totalPages: 1
 		}
 	};
 }
