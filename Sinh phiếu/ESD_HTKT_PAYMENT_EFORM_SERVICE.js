@@ -7,10 +7,10 @@ var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
 
-var HTKT_CASH_TEMPLATE_ID = "HTKT-02-TTTM";
-var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "HTKT-04-TTCK";
-var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
+var HTKT_CASH_TEMPLATE_ID = "ef740dce-17ac-4949-9238-65df29acc009";
+var HTKT_CASH_TEMPLATE_CODE = "HTKT-10-TTTM";
+var HTKT_TRANSFER_TEMPLATE_ID = "2231502e-4a8f-40b9-9fe9-42e6970d951a";
+var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-10-TTCK";
 var HTKT_PAYMENT_RECIPIENT = "Lãnh đạo đơn vị";
 
 
@@ -98,16 +98,58 @@ function htktGetBankNameByCitadCode(citadCode) {
 
 	bankFile = HTKT_COMMON.selectOne(
 			HTKT_TABLE.BANK,
-			["citad.branch.code"],
+			["citad.branch.code", "citad.code", "code", "napas.code", "id", "name"],
 			safeCitadCode
 	);
 
 	if (bankFile) {
-		bankName = HTKT_COMMON.readString(bankFile, ["name"]);
+		bankName = HTKT_COMMON.readString(bankFile, ["name", "bank.name", "full.name"]);
 	}
 
 	HTKT_COMMON.closeFile(bankFile);
 	HTKT_BANK_NAME_CACHE[safeCitadCode] = bankName;
+	return bankName;
+}
+
+function htktResolveBeneficiaryBankName(beneficiaryBank, directBankName) {
+	var direct = HTKT_COMMON.trim(directBankName);
+	if (direct) {
+		return direct;
+	}
+
+	var rawValue = HTKT_COMMON.trim(beneficiaryBank);
+	if (!rawValue) {
+		return "";
+	}
+
+	if (Object.prototype.hasOwnProperty.call(HTKT_BANK_NAME_CACHE, rawValue)) {
+		return HTKT_BANK_NAME_CACHE[rawValue];
+	}
+
+	var parts = rawValue.split("|");
+	var bankName = "";
+
+	for (var i = 0; i < parts.length; i++) {
+		var code = HTKT_COMMON.trim(parts[i]);
+		if (!code) {
+			continue;
+		}
+
+		bankName = htktGetBankNameByCitadCode(code);
+		if (bankName) {
+			break;
+		}
+	}
+
+	if (!bankName) {
+		bankName = htktGetBankNameByCitadCode(rawValue);
+	}
+
+	if (!bankName && isNaN(rawValue) && rawValue.indexOf("|") === -1) {
+		bankName = rawValue;
+	}
+
+	HTKT_BANK_NAME_CACHE[rawValue] = bankName;
 	return bankName;
 }
 
@@ -135,7 +177,15 @@ function htktGetPaymentVendorSourceRows(paymentId, defaultCurrency) {
 			);
 			var beneficiaryBank = HTKT_COMMON.readString(
 					vendorFile,
-					["beneficiary.bank"]
+					["beneficiary.bank", "beneficiary_bank"]
+			);
+			var vendorBankName = HTKT_COMMON.readString(
+					vendorFile,
+					["bank.name", "bank_name", "beneficiary.bank.name", "beneficiary_bank_name"]
+			);
+			var resolvedBankName = htktResolveBeneficiaryBankName(
+					beneficiaryBank,
+					vendorBankName
 			);
 			var amountRaw = HTKT_COMMON.readNumber(vendorFile, ["amount"]);
 
@@ -160,9 +210,7 @@ function htktGetPaymentVendorSourceRows(paymentId, defaultCurrency) {
 						["beneficiary.name"]
 				),
 				beneficiary_bank: beneficiaryBank,
-				beneficiary_bank_name: htktGetBankNameByCitadCode(
-						htktGetFirstBeneficiaryBankCitadCode(beneficiaryBank)
-				),
+				beneficiary_bank_name: resolvedBankName,
 				transaction_des: HTKT_COMMON.readString(
 						vendorFile,
 						["transaction.des"]
@@ -440,13 +488,11 @@ function htktBuildPrepaymentTemplateTotals(
 			var ledger = ledgerRows[ledgerIndex];
 
 			/*
-			 * (20), (24): chỉ lấy các khoản tạm ứng thực sự có phát sinh
-			 * hoàn ứng trên ĐNTT hiện tại.
+			 * (20), (24): Tính tổng toàn bộ các khoản tạm ứng và còn lại
+			 * của NCC / Hợp đồng trong danh sách công nợ.
 			 */
-			if (Number(ledger.current_refund_amount || 0) > 0) {
-				totalAdvanceRaw += Number(ledger.advance_amount || 0);
-				totalRemainingRaw += Number(ledger.remaining_amount || 0);
-			}
+			totalAdvanceRaw += Number(ledger.advance_amount || 0);
+			totalRemainingRaw += Number(ledger.remaining_amount || 0);
 		}
 	}
 
@@ -585,6 +631,11 @@ function htktBuildPaymentTemplateRows(sourceRows, paymentKind) {
 			beneficiary_name: source.beneficiary_name,
 			beneficiary_account: source.beneficiary_account,
 			beneficiary_bank_name: source.beneficiary_bank_name,
+			beneficiary_bank: source.beneficiary_bank_name || source.beneficiary_bank,
+			bank_name: source.beneficiary_bank_name,
+			bank: source.beneficiary_bank_name,
+			ten_ngan_hang: source.beneficiary_bank_name,
+			ngan_hang: source.beneficiary_bank_name,
 			transaction_des: source.transaction_des,
 			identity_number: source.identity_number,
 			issued_date: HTKT_COMMON.htktFormatDateShort(source.issued_date_raw),
@@ -991,9 +1042,9 @@ function htktGetPrepaymentCreditAccountNames(entryRows) {
 	return accountNames.join(", ");
 }
 
-function htktGetPrepaymentCreditBankAccounts(entryRows, vendorSourceRows) {
-	var bankAccounts = [];
-	var bankAccountSet = {};
+function htktGetPrepaymentCreditBankNames(entryRows, vendorSourceRows) {
+	var bankNames = [];
+	var bankNameSet = {};
 	var vendorById = {};
 
 	for (var vendorIndex = 0;
@@ -1018,19 +1069,16 @@ function htktGetPrepaymentCreditBankAccounts(entryRows, vendorSourceRows) {
 		}
 
 		var bankName = htktGetAccountingBankName(entry, vendorById);
-		var bankAccount = bankName
-				? bankName + " - " + accountNumber
-				: accountNumber;
 
-		if (bankAccountSet[bankAccount]) {
+		if (!bankName || bankNameSet[bankName]) {
 			continue;
 		}
 
-		bankAccountSet[bankAccount] = true;
-		bankAccounts.push(bankAccount);
+		bankNameSet[bankName] = true;
+		bankNames.push(bankName);
 	}
 
-	return bankAccounts.join(", ");
+	return bankNames.join(", ");
 }
 
 function htktBuildTemplateData(paymentId) {
@@ -1100,6 +1148,16 @@ function htktBuildTemplateData(paymentId) {
 	var amountRaw = vendorData.totalAmountRaw;
 	var lineTotalRaw = vendorData.totalLineTotalRaw || 0;
 	var amountWords = HTKT_COMMON.htktAmountToVietnameseWords(amountRaw, currency);
+	var prepaymentCreditAccountNumbers = htktGetPrepaymentCreditAccountNumbers(
+			entryRows
+	);
+	var prepaymentCreditAccountNames = htktGetPrepaymentCreditAccountNames(
+			entryRows
+	);
+	var prepaymentCreditBankNames = htktGetPrepaymentCreditBankNames(
+			entryRows,
+			vendorSourceRows
+	);
 	var data = {
 		unit_name: HTKT_COMMON.htktGetCreatorUnitName(createdByUsername),
 		created_at: HTKT_COMMON.htktFormatDateLong(createdAtValue),
@@ -1149,16 +1207,63 @@ function htktBuildTemplateData(paymentId) {
 		refund_amount_to_submit_words: hasRefundAmount
 				? HTKT_COMMON.htktAmountToVietnameseWords(refundAmountRaw, currency)
 				: "",
-		prepayment_credit_account_numbers: htktGetPrepaymentCreditAccountNumbers(
-				entryRows
-		),
-		prepayment_credit_account_names: htktGetPrepaymentCreditAccountNames(
-				entryRows
-		),
-		prepayment_credit_bank_accounts: htktGetPrepaymentCreditBankAccounts(
-				entryRows,
-				vendorSourceRows
-		),
+
+		/*
+		 * Mapping 3 trường hoàn tạm ứng khớp vị trí placeholder trên template Doc Service:
+		 * 1. Số TK ghi Có: accountNumber (ví dụ 126150610)
+		 * 2. Tên TK: accountName (ví dụ Tạm ứng cho nhà cung cấp hàng hóa, dịch vụ)
+		 * 3. Tại Ngân hàng: bankName (ví dụ VietinBank)
+		 */
+		prepayment_credit_account_numbers: prepaymentCreditAccountNumbers,
+		prepayment_credit_account_number: prepaymentCreditAccountNumbers,
+		prepayment_credit_account_names: prepaymentCreditAccountNumbers,
+		prepayment_credit_account_name: prepaymentCreditAccountNumbers,
+
+		prepayment_credit_bank_accounts: prepaymentCreditAccountNames,
+		prepayment_credit_bank_account: prepaymentCreditAccountNames,
+
+		prepayment_credit_bank_names: prepaymentCreditBankNames,
+		prepayment_credit_bank_name: prepaymentCreditBankNames,
+		prepayment_credit_banks: prepaymentCreditBankNames,
+		prepayment_credit_bank: prepaymentCreditBankNames,
+		prepayment_bank_names: prepaymentCreditBankNames,
+		prepayment_bank_name: prepaymentCreditBankNames,
+		prepayment_bank: prepaymentCreditBankNames,
+		prepayment_banks: prepaymentCreditBankNames,
+		refund_bank_name: prepaymentCreditBankNames,
+		refund_bank_names: prepaymentCreditBankNames,
+		refund_bank: prepaymentCreditBankNames,
+		refund_banks: prepaymentCreditBankNames,
+		credit_bank_name: prepaymentCreditBankNames,
+		credit_bank_names: prepaymentCreditBankNames,
+		credit_bank: prepaymentCreditBankNames,
+		credit_banks: prepaymentCreditBankNames,
+		credit_bank_account: prepaymentCreditBankNames,
+		credit_bank_accounts: prepaymentCreditBankNames,
+		bank_name: prepaymentCreditBankNames,
+		bank_names: prepaymentCreditBankNames,
+		bank: prepaymentCreditBankNames,
+		banks: prepaymentCreditBankNames,
+		tai_ngan_hang: prepaymentCreditBankNames,
+		ngan_hang: prepaymentCreditBankNames,
+		ten_ngan_hang: prepaymentCreditBankNames,
+		at_bank: prepaymentCreditBankNames,
+		at_bank_name: prepaymentCreditBankNames,
+		prepayment_credit_at_bank: prepaymentCreditBankNames,
+		prepayment_credit_at_bank_name: prepaymentCreditBankNames,
+		prepayment_credit_account_bank: prepaymentCreditBankNames,
+		prepayment_credit_account_bank_name: prepaymentCreditBankNames,
+		prepayment_credit_account_bank_names: prepaymentCreditBankNames,
+		prepayment_credit_account_banks: prepaymentCreditBankNames,
+		prepayment_credit_account_bank_account: prepaymentCreditBankNames,
+		prepayment_credit_account_bank_accounts: prepaymentCreditBankNames,
+		refund_at_bank: prepaymentCreditBankNames,
+		refund_at_bank_name: prepaymentCreditBankNames,
+		prepayment_at_bank: prepaymentCreditBankNames,
+		prepayment_at_bank_name: prepaymentCreditBankNames,
+		prepayment_credit_bank_branch: prepaymentCreditBankNames,
+		credit_account_bank: prepaymentCreditBankNames,
+		credit_account_bank_name: prepaymentCreditBankNames,
 
 		supplemental_entry_rows: supplementalEntryRows,
 
@@ -1480,12 +1585,3 @@ function RENDER() {
 			"</div>"
 	);
 }
-
-
-
-
-
-
-
-
-
