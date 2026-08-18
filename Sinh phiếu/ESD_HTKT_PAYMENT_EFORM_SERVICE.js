@@ -7,10 +7,18 @@ var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
 
-var HTKT_CASH_TEMPLATE_ID = "ef740dce-17ac-4949-9238-65df29acc009";
-var HTKT_CASH_TEMPLATE_CODE = "HTKT-10-TTTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "2231502e-4a8f-40b9-9fe9-42e6970d951a";
-var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-10-TTCK";
+var HTKT_CASH_TEMPLATE_ID = "fad265d8-e6d9-420d-95e2-278919ae0198";
+var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
+var HTKT_TRANSFER_TEMPLATE_ID = "8809f4c0-e4b6-4bc9-86ab-36e0a55bce5a";
+var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
+
+/**
+ * Mở comment khi  lên UAT
+ **/
+// var HTKT_CASH_TEMPLATE_ID = "c577c5e7-484f-401b-ad6e-a49186d64d57";
+// var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
+// var HTKT_TRANSFER_TEMPLATE_ID = "c5985acb-3a69-49fc-b41c-7d572d3279ec";
+// var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK__3_";
 var HTKT_PAYMENT_RECIPIENT = "Lãnh đạo đơn vị";
 
 
@@ -523,6 +531,7 @@ function htktBuildVendorTemplateRows(sourceRows, taxByVendor) {
 			amount_before_tax: HTKT_COMMON.htktFormatMoney(amountBeforeTaxRaw),
 			tax_amount: HTKT_COMMON.htktFormatMoney(taxRaw),
 			line_total: HTKT_COMMON.htktFormatMoney(lineTotalRaw),
+			currency: source.currency || "",
 			note: ""
 		});
 
@@ -567,7 +576,7 @@ function htktResolvePaymentTemplate(sourceRows) {
 	if (sourceRows.length === 0) {
 		return {
 			success: false,
-			message: "Phiếu chưa có dữ liệu esdHTKTpaymentVendor."
+			message: "Phiếu chưa có thông tin của Nhà cung cấp."
 		};
 	}
 
