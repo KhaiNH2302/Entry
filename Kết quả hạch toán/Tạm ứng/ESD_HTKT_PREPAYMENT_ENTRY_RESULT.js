@@ -12,6 +12,7 @@ var ACCOUNTING_STATUS = {
 	CREATED: 'CREATED',
 	// INITIAL: 'INITIAL',
 	INITIAL: 'NEW',
+	IN_QUEUE: 'IN_QUEUE',
 	PROCESSING: 'PROCESSING',
 	COMPLETED: 'COMPLETED',
 	ERROR: 'ERROR',
@@ -21,6 +22,7 @@ var ACCOUNTING_STATUS_MAP = {
 	CREATED: 'Đang xử lý',
 	// INITIAL: 'Đang xử lý hạch toán',
 	NEW: 'Đang xử lý',
+	IN_QUEUE: 'Đang xử lý',
 	PROCESSING: 'Đang xử lý',
 	COMPLETED: 'Thành Công',
 	ERROR: 'Gửi Thất Bại',
@@ -85,10 +87,36 @@ function addAccountingResultGroup(groupMap, groups, record) {
 		amount: numberValue(record['amount']),
 		batchName: textValue(record['batch.name']),
 		invoiceNumber: textValue(record['ap.code']),
+		paymentNumber: getAccountingResponsePaymentNumber(record['response']),
 		status: textValue(record['status']),
-		checkedTime: record['checked.time']
+		message: textValue(record['message']),
+		checkedTime: record['checked.time'],
+		payload: parseAccountingPayload(record['data'])
 	};
 	var entrySummary = getEntrySummary(info.requestId, info.vendorId, info.accountingType);
+	var payloadSummary = getAccountingPayloadSummary(
+			info.accountingType,
+			info.payload
+	);
+	var accountingTypeCode = textValue(info.accountingType)
+			.trim()
+			.toUpperCase();
+
+	if (
+			accountingTypeCode === GL_ENTRY_TYPE &&
+			hasContentValue(payloadSummary.contentLines)
+	) {
+		entrySummary.contentLines = payloadSummary.contentLines;
+	} else if (!hasContentValue(entrySummary.contentLines)) {
+		entrySummary.contentLines = payloadSummary.contentLines;
+	}
+	if (!entrySummary.currency) {
+		entrySummary.currency = payloadSummary.currency;
+	}
+	if (!entrySummary.beneficiaryAccount) {
+		entrySummary.beneficiaryAccount = payloadSummary.beneficiaryAccount;
+	}
+
 	info.glGroupOrder = entrySummary.glGroupOrder;
 	var key = makeAccountingResultGroupKey(info);
 	var group = groupMap[key];
@@ -108,7 +136,9 @@ function addAccountingResultGroup(groupMap, groups, record) {
 			beneficiaryAccount: '',
 			batchName: '',
 			invoiceNumber: '',
+			paymentNumber: '',
 			status: '',
+			message: '',
 			checkedTime: null
 		};
 		groupMap[key] = group;
@@ -124,12 +154,14 @@ function addAccountingResultGroup(groupMap, groups, record) {
 	group.amount +=
 			textValue(info.accountingType).trim().toUpperCase() === CORE_ENTRY_TYPE
 					? info.amount
-					: numberValue(entrySummary.debitAmount);
+					: numberValue(entrySummary.debitAmount) || info.amount;
 
 	if (!group.currency && entrySummary.currency) group.currency = entrySummary.currency;
 	group.batchName = mergeTextValue(group.batchName, info.batchName);
 	group.invoiceNumber = mergeTextValue(group.invoiceNumber, info.invoiceNumber);
+	group.paymentNumber = mergeTextValue(group.paymentNumber, info.paymentNumber);
 	group.status = mergeStatus(group.status, info.status);
+	group.message = mergeTextValue(group.message, info.message);
 	group.checkedTime = getLatestDateValue(group.checkedTime, info.checkedTime);
 }
 
@@ -176,7 +208,9 @@ function buildGroupedResultRows(groups) {
 			beneficiaryAccount: groups[i].beneficiaryAccount,
 			batchName: groups[i].batchName,
 			invoiceNumber: groups[i].invoiceNumber,
+			paymentNumber: groups[i].paymentNumber,
 			status: groups[i].status,
+			message: groups[i].message,
 			checkedTime: groups[i].checkedTime
 		});
 	}
@@ -188,8 +222,105 @@ function appendContentLines(target, lines) {
 	var values = lines || [];
 
 	for (var i = 0; i < values.length; i++) {
-		target.push(textValue(values[i]).trim());
+		var content = textValue(values[i]).trim();
+		if (content) target.push(content);
 	}
+}
+
+function hasContentValue(lines) {
+	var values = lines || [];
+
+	for (var i = 0; i < values.length; i++) {
+		if (textValue(values[i]).trim()) return true;
+	}
+
+	return false;
+}
+
+function parseAccountingPayload(value) {
+	try {
+		var payload = typeof value === 'string' ? JSON.parse(value) : value;
+		return payload && typeof payload === 'object' ? payload : {};
+	} catch (e) {
+		return {};
+	}
+}
+
+function getAccountingResponsePaymentNumber(value) {
+	var response = parseAccountingPayload(value);
+	var responseData =
+			response.data && typeof response.data === 'object'
+					? response.data
+					: {};
+
+	return textValue(responseData.paymentNumber).trim();
+}
+
+function getAccountingPayloadSummary(accountingType, payload) {
+	var type = textValue(accountingType).trim().toUpperCase();
+	var data = payload && typeof payload === 'object' ? payload : {};
+	var summary = {
+		contentLines: [],
+		currency: '',
+		beneficiaryAccount: ''
+	};
+
+	if (type === GL_ENTRY_TYPE) {
+		var glLines = isArrayValue(data.line) ? data.line : [];
+		summary.contentLines = [
+			textValue(
+					(glLines.length > 0 ? glLines[0].lineDesc : '') ||
+					data.transactionDesc
+			).trim()
+		];
+		summary.currency = textValue(data.currencyCode).trim();
+		return summary;
+	}
+
+	if (type === AP_ENTRY_TYPE) {
+		var invoiceLines = isArrayValue(data.invoiceLineList)
+				? data.invoiceLineList
+				: [];
+		summary.contentLines = [
+			textValue(
+					data.description ||
+					(invoiceLines.length > 0
+							? invoiceLines[0].description
+							: '')
+			).trim()
+		];
+		summary.currency = textValue(data.currency).trim();
+		return summary;
+	}
+
+	if (type === CORE_ENTRY_TYPE) {
+		var coreData =
+				data.data && typeof data.data === 'object' ? data.data : {};
+		var internalAccount =
+				coreData.depAcctIdTo && typeof coreData.depAcctIdTo === 'object'
+						? coreData.depAcctIdTo
+						: {};
+		var coreAmounts = isArrayValue(coreData.amount)
+				? coreData.amount
+				: [];
+
+		summary.contentLines = [
+			textValue(coreData.notes || coreData.trnDesc).trim()
+		];
+		summary.currency = textValue(
+				internalAccount.acctCur ||
+				(coreAmounts.length > 0 ? coreAmounts[0].crcd : '')
+		).trim();
+		summary.beneficiaryAccount = textValue(
+				internalAccount.acctId || coreData.toAcctId
+		).trim();
+	}
+
+	return summary;
+}
+
+function isArrayValue(value) {
+	return Object.prototype.toString.call(value) === '[object Array]';
 }
 
 function mergeTextValue(currentValue, nextValue) {
@@ -214,10 +345,12 @@ function mergeStatus(currentStatus, nextStatus) {
 			nextCode === ACCOUNTING_STATUS.NOT_FOUND;
 	var currentProcessing =
 			currentCode === ACCOUNTING_STATUS.PROCESSING ||
+			currentCode === ACCOUNTING_STATUS.IN_QUEUE ||
 			currentCode === ACCOUNTING_STATUS.CREATED ||
 			currentCode === ACCOUNTING_STATUS.INITIAL;
 	var nextProcessing =
 			nextCode === ACCOUNTING_STATUS.PROCESSING ||
+			nextCode === ACCOUNTING_STATUS.IN_QUEUE ||
 			nextCode === ACCOUNTING_STATUS.CREATED ||
 			nextCode === ACCOUNTING_STATUS.INITIAL;
 
@@ -390,7 +523,7 @@ function buildAccountingResultsHtml(rows, error) {
 		'.title{color:#173b7a;font-size:15px;font-weight:700}',
 		'.counter{padding:6px 12px;border-radius:6px;background:#ebf0ff;color:#173b7a;font-size:13px;font-weight:700}',
 		'.table-wrap{width:100%;overflow-x:auto;border:1px solid #d9e0eb;border-radius:8px}',
-		'table{width:100%;min-width:1080px;border-collapse:collapse;table-layout:fixed;font-size:13px}',
+		'table{width:100%;min-width:1240px;border-collapse:collapse;table-layout:fixed;font-size:13px}',
 		'th,td{padding:10px 12px;text-align:left;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
 		'th{height:44px;background:#dce8fb;font-weight:600}',
 		'td{height:50px;border-top:1px solid #d9e0eb}',
@@ -412,8 +545,8 @@ function buildAccountingResultsHtml(rows, error) {
 		'.status-processing{background:#fef3c7;color:#d97706}',
 		'.status-default{background:#eef2f7;color:#475569}',
 		'.empty{text-align:center;color:#64748b}',
-		'.c-index{width:5%}.c-type{width:11%}.c-content{width:15%}.c-amount{width:10%}.c-currency{width:8%}',
-		'.c-batch{width:13%}.c-invoice{width:14%}.c-status{width:13%}.c-time{width:11%}',
+		'.c-index{width:4%}.c-type{width:9%}.c-content{width:14%}.c-amount{width:9%}.c-currency{width:7%}',
+		'.c-batch{width:11%}.c-invoice{width:11%}.c-payment{width:10%}.c-status{width:13%}.c-time{width:12%}',
 		// trưởng thêm: độ rộng 7 cột của bảng kết quả chuyển tiền theo Figma
 		'#transfer-results-table{min-width:900px}',
 		// '.c-transfer-index{width:5%}.c-transfer-content{width:29%}.c-transfer-amount{width:12%}.c-transfer-currency{width:10%}',
@@ -490,7 +623,7 @@ function buildAccountingResultSection(
 
 	if (!bodyRows.length) {
 		bodyRows.push(
-				'<tr><td class="empty" colspan="9">' +
+				'<tr><td class="empty" colspan="10">' +
 				(error || 'Kh&#244;ng c&#243; d&#7919; li&#7879;u') +
 				'</td></tr>'
 		);
@@ -506,7 +639,7 @@ function buildAccountingResultSection(
 		'<div class="table-wrap"><table id="', attributeValue(tableId), '">',
 		'<colgroup>',
 		'<col class="c-index"><col class="c-type"><col class="c-content"><col class="c-amount"><col class="c-currency">',
-		'<col class="c-batch"><col class="c-invoice"><col class="c-status"><col class="c-time">',
+		'<col class="c-batch"><col class="c-invoice"><col class="c-payment"><col class="c-status"><col class="c-time">',
 		'</colgroup>',
 		'<thead><tr>',
 		buildHeader('c-index', 'STT', 0, 'number'),
@@ -516,8 +649,9 @@ function buildAccountingResultSection(
 		buildHeader('c-currency', 'Lo&#7841;i ti&#7873;n', 4, 'text'),
 		buildHeader('c-batch', 'Batch name (OGL)', 5, 'text'),
 		buildHeader('c-invoice', 'S&#7889; Invoice (OGL)', 6, 'text'),
-		buildHeader('c-status', 'Tr&#7841;ng th&#225;i x&#7917; l&#253; OGL', 7, 'text'),
-		buildHeader('c-time', 'Th&#7901;i gian c&#7853;p nh&#7853;t', 8, 'number'),
+		buildHeader('c-payment', 'S&#7889; Payment (OGL)', 7, 'text'),
+		buildHeader('c-status', 'Tr&#7841;ng th&#225;i x&#7917; l&#253; OGL', 8, 'text'),
+		buildHeader('c-time', 'Th&#7901;i gian c&#7853;p nh&#7853;t', 9, 'number'),
 		'</tr></thead><tbody>',
 		bodyRows.join(''),
 		'</tbody></table></div>',
@@ -585,6 +719,7 @@ function buildAccountingResultRow(row, status, displayIndex, accountingTypeLabel
 	var typeLabel = textValue(accountingTypeLabel).trim();
 	var amountLabel = formatAmount(row.amount);
 	var checkedTimeLabel = formatCheckedTime(row.checkedTime);
+	var statusTooltip = textValue(row.message).trim() || status.tooltip;
 
 	return [
 		'<tr data-result-row="true" data-original-index="', rowIndex, '">',
@@ -595,7 +730,8 @@ function buildAccountingResultRow(row, status, displayIndex, accountingTypeLabel
 		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.currency), '"', buildTooltipAttributes(row.currency), '>', htmlValue(row.currency), '</td>',
 		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.batchName), '"', buildTooltipAttributes(row.batchName), '>', htmlValue(row.batchName), '</td>',
 		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.invoiceNumber), '"', buildTooltipAttributes(row.invoiceNumber), '>', htmlValue(row.invoiceNumber), '</td>',
-		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.status), '"', buildTooltipAttributes(status.tooltip), '><span class="status status-', status.code, '">', status.label, '</span></td>',
+		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.paymentNumber), '"', buildTooltipAttributes(row.paymentNumber), '>', htmlValue(row.paymentNumber), '</td>',
+		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.status), '"', buildTooltipAttributes(statusTooltip), '><span class="status status-', status.code, '">', status.label, '</span></td>',
 		'<td class="accounting-tooltip-target" data-sort="', getDateSortValue(row.checkedTime), '"', buildTooltipAttributes(checkedTimeLabel), '>', htmlValue(checkedTimeLabel), '</td>',
 		'</tr>'
 	].join('');
@@ -728,6 +864,7 @@ function getStatusView(value) {
 			// status === ACCOUNTING_STATUS.NEW ||
 			status === ACCOUNTING_STATUS.INITIAL ||
 			status === ACCOUNTING_STATUS.CREATED ||
+			status === ACCOUNTING_STATUS.IN_QUEUE ||
 			status === ACCOUNTING_STATUS.PROCESSING
 	) {
 		return { code: 'processing', label: htmlValue(label), tooltip: label };
@@ -748,8 +885,8 @@ function getStatusView(value) {
 function formatAmount(value) {
 	var number = numberValue(value);
 	var parts = String(number).split('.');
-	var integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-	return parts.length > 1 ? integerPart + ',' + parts[1] : integerPart;
+	var integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+	return parts.length > 1 ? integerPart + '.' + parts[1] : integerPart;
 }
 
 function formatCheckedTime(value) {

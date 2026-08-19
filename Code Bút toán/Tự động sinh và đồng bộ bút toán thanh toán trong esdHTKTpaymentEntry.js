@@ -180,7 +180,7 @@ var GL_DEFAULT_TRANSACTION_OFFICE = '0000000';
 var GL_UNIT_PREFERRED_PS_CODE = {
 	'1010098': '99901000'
 };
-var CASH_CUSTOMER_ACCOUNT_NUMBER = '99999999';
+var CASH_CUSTOMER_ACCOUNT_NUMBER = '101110100';
 var CASH_CUSTOMER_ACCOUNT_NAME = 'Tài khoản tiền mặt';
 
 // =============================================================================
@@ -324,10 +324,6 @@ function getPaymentSummaryMeta(paymentId, request, metaParams) {
 		additionalUnitCode: params.additionalUnitCode,
 		additionalUnitEntityCode: params.additionalUnitEntityCode,
 		additionalUnitName: params.additionalUnitName,
-		glUnitOptions: params.glUnitOptions,
-		glCostCenterOptions: params.glCostCenterOptions,
-		transactionOfficeOptions: params.transactionOfficeOptions,
-		defaultTransactionOfficeCode: params.defaultTransactionOfficeCode,
 		// 1. Tổng số tiền thanh toán sau thuế (NUMBER) - Tổng số tiền đề nghị thanh toán của tất cả các NCC thuộc DNTT
 		totalAmountAfterTax: totalPaidAmount,
 		totalPaidAmount: totalPaidAmount,
@@ -391,18 +387,8 @@ function getListPaymentEntryByInputDetails(details) {
 	var savedEntries = getSavedPaymentEntries(paymentId);
 	debugPaymentEntry('GET-LIST', 'Đã đọc ' + savedEntries.length + ' dòng đã lưu, phase=' + currentPhase);
 
-	var glUnitOptions = [];
-	var glCostCenterOptions = [];
-	var transactionOfficeOptions = [];
-	var defaultTransactionOfficeCode = '';
-
 	// Khi có dữ liệu đã lưu, không query options đồng bộ ở API load list để tối ưu hiệu năng (tách API call)
 	// options sẽ được Frontend gọi bất đồng bộ riêng
-	if (savedEntries.length > 0) {
-		var creatorTransactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.lv1Id);
-		defaultTransactionOfficeCode = getDefaultTransactionOfficeCode(creatorTransactionOfficeOptions);
-	}
-
 	var summaryMeta = getPaymentSummaryMeta(paymentId, request, {
 		currentPhase: currentPhase,
 		userCheckerKttc: userCheckerKttc,
@@ -411,10 +397,7 @@ function getListPaymentEntryByInputDetails(details) {
 		additionalUnitCode: creatorUnit.code,
 		additionalUnitEntityCode: creatorUnit.entityCode,
 		additionalUnitName: creatorUnit.name,
-		glUnitOptions: glUnitOptions,
-		glCostCenterOptions: glCostCenterOptions,
-		transactionOfficeOptions: transactionOfficeOptions,
-		defaultTransactionOfficeCode: defaultTransactionOfficeCode
+
 	});
 
 	// Entry đã có thì trả ngay; dữ liệu nguồn được kiểm tra khi trigger gọi sinh lại.
@@ -422,9 +405,7 @@ function getListPaymentEntryByInputDetails(details) {
 		debugPaymentEntry('GET-LIST', 'Trả dữ liệu đã lưu, không sinh lại');
 		applyCreatorUnitToEntries(
 				savedEntries,
-				creatorUnit.code,
-				defaultTransactionOfficeCode,
-				glUnitOptions
+				creatorUnit.code
 		);
 		return makeResult(savedEntries, 'saved', summaryMeta);
 	}
@@ -1199,9 +1180,9 @@ function getListGlAccount(details) {
 	var f = new SCFile(TABLE_GL_ACCOUNT, SCFILE_READONLY);
 	var rc;
 	var query = 'true';
-	var accountType = details && (details.accountType || details.account_type);
-	if (accountType) {
-		query += ' and account.type="' + escapeQueryValue(accountType) + '"';
+	var typeFilter = details && (details.type || details.accountType || details.account_type);
+	if (typeFilter) {
+		query += ' and type="' + escapeQueryValue(typeFilter) + '"';
 	}
 
 	try {
@@ -1216,10 +1197,12 @@ function getListGlAccount(details) {
 
 		if (account) {
 			var accountType = readText(f, 'account.type');
+			var type = readText(f, 'type');
 
 			rows.push({
 				account: account,
 				name: readText(f, 'name'),
+				type: type,
 				account_type: accountType,
 				is_debit_eligible: isDebitEligibleAccountType(accountType),
 				apply_currency: readText(f, 'apply.currency')
@@ -1327,7 +1310,7 @@ function normalizeEditedEntry(raw) {
 		account_type: toStoredAccountType(raw.account_type),
 		account_number: safeString(raw.account_number).trim(),
 		account_name: safeString(raw.account_name).trim(),
-		branch: safeString(raw.branch).trim(),
+		branch: formatSegment1(raw.branch, GL_DEFAULT_ENTITY_CODE),
 		department: safeString(raw.department).trim(),
 		transaction_office: safeString(raw.transaction_office).trim(),
 		amount: toNumber(raw.amount),
@@ -1975,7 +1958,8 @@ function buildPaymentNoCase(c) {
 				order: order++,
 				accountOverride: { number: division.account_number, name: division.account_name },
 				departmentOverride: division.department,
-				branchOverride: division.branch
+				branchOverride: division.branch,
+				transactionOfficeOverride: division.transactionCode
 			}));
 		}
 
@@ -2039,7 +2023,8 @@ function buildPersonalPaymentCase(c, includeRefund, includePayment, accountingCr
 				name: expenseAccounts[i].account_name
 			},
 			departmentOverride: expenseAccounts[i].department,
-			branchOverride: expenseAccounts[i].branch
+			branchOverride: expenseAccounts[i].branch,
+			transactionOfficeOverride: expenseAccounts[i].transactionCode
 		}));
 	}
 
@@ -2112,6 +2097,7 @@ function getPersonalExpenseAccounts(c) {
 				account_name: division.account_name || getGlAccountName(accountNumber),
 				department: division.department,
 				branch: division.branch,
+				transactionCode: division.transaction_code,
 				amount: 0,
 				from_cost_division: true
 			};
@@ -2125,7 +2111,7 @@ function getPersonalExpenseAccounts(c) {
 		result.push({
 			account_number: c.vendor.debit_account,
 			account_name: getGlAccountName(c.vendor.debit_account),
-			department: c.request.department,
+			department: '',
 			branch: '',
 			amount: null,
 			from_cost_division: false
@@ -2155,6 +2141,7 @@ function getStandardExpenseAllocations(c) {
 				account_name: division.account_name || getGlAccountName(accountNumber),
 				department: division.department,
 				branch: division.branch,
+				transactionCode: division.transaction_code,
 				amount: 0
 			};
 			allocationByAccount[accountNumber] = allocation;
@@ -2168,7 +2155,7 @@ function getStandardExpenseAllocations(c) {
 		result.push({
 			account_number: c.vendor.debit_account,
 			account_name: getGlAccountName(c.vendor.debit_account),
-			department: c.request.department,
+			department: '',
 			branch: '',
 			amount: Math.max(0, c.approvedAmount - (c.hasTax ? c.taxInfo.totalDeductibleTax : 0))
 		});
@@ -2211,7 +2198,8 @@ function buildStandardPaymentCase(c, includeInvoice, includeTax, includeRefund, 
 				order: order++,
 				accountOverride: { number: division.account_number, name: division.account_name },
 				departmentOverride: division.department,
-				branchOverride: division.branch
+				branchOverride: division.branch,
+				transactionOfficeOverride: division.transactionCode
 			}));
 		}
 
@@ -2278,6 +2266,7 @@ function buildEntryRow(params) {
 	var account = params.accountOverride || resolveAccount(params.entryCode, params.vendor, params.taxInfo || {});
 	var entryType = getEntryTypeByRuleCode(params.entryCode);
 	var beneficiary = getBeneficiaryByEntryType(entryType, params.vendor);
+	var branch = params.branchOverride || params.request.creator_unit_code || '';
 
 	return {
 		id: '',
@@ -2288,10 +2277,9 @@ function buildEntryRow(params) {
 		account_type: getAutoAccountType(params.entryCode),
 		account_number: account.number,
 		account_name: account.name,
-		branch: params.branchOverride || params.request.creator_unit_code || '',
-		department: params.departmentOverride || params.request.department,
-		transaction_office: params.transactionOfficeOverride ||
-				params.request.default_transaction_office_code || '',
+		branch: formatSegment1(branch, GL_DEFAULT_ENTITY_CODE),
+		department: params.departmentOverride,
+		transaction_office: params.transactionOfficeOverride,
 		amount: params.amount,
 		currency: params.vendor.currency,
 		description: safeString(params.vendor.transaction_description).trim(),
@@ -2307,6 +2295,17 @@ function buildEntryRow(params) {
 		// Chỉ dùng trong bước validate lúc khởi tạo case cá nhân; không lưu DB.
 		allow_blank_amount: params.allowBlankAmount === true
 	};
+}
+
+function formatSegment1(branch, defaultSegment1) {
+	var br = safeString(branch).trim();
+	if (br.length === 7 && br.substring(0, 2) === '10') {
+		return br;
+	}
+	if (br.length === 3 && /^\d+$/.test(br)) {
+		return '10' + br + '98';
+	}
+	return defaultSegment1;
 }
 
 /** Chuẩn hóa thông tin thụ hưởng theo loại bút toán hiển thị. */
@@ -2760,6 +2759,7 @@ function getPaymentCostDivisions(paymentId, vendorId) {
 			currency: readText(f, 'currency'),
 			department: readText(f, 'department'),
 			department_name: readText(f, 'department.name'),
+			transaction_code: readText(f, 'transaction.code'),
 			branch: readText(f, 'branch'),
 			description: readText(f, 'description'),
 			vendor_id: readText(f, 'vendor.id'),
@@ -4265,7 +4265,7 @@ function normalizeText(value) {
 	var text = safeString(value).toLowerCase();
 
 	try {
-		if (text.normalize) text = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+		if (text.normalize) text =text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 	} catch (e) {}
 
 	return text
