@@ -7,9 +7,9 @@ var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
 
-var HTKT_CASH_TEMPLATE_ID = "fad265d8-e6d9-420d-95e2-278919ae0198";
+var HTKT_CASH_TEMPLATE_ID = "947565ad-f74d-475f-976b-bb811421f0d6";
 var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "8809f4c0-e4b6-4bc9-86ab-36e0a55bce5a";
+var HTKT_TRANSFER_TEMPLATE_ID = "a8016851-64ff-40ce-85ba-88e5835fd429";
 var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
 
 /**
@@ -40,11 +40,38 @@ var HTKT_ACCOUNTING_ENTRY_CUSTOMER = "CUSTOMER";
 var HTKT_VENDOR_INFO_CACHE = {};
 var HTKT_BANK_NAME_CACHE = {};
 
+function htktFormatMoney(value) {
+	if (value === null || value === undefined || value === "") {
+		return "0";
+	}
+
+	var amount = Number(value);
+	if (isNaN(amount)) {
+		return "0";
+	}
+
+	var isNegative = amount < 0;
+	var parts = String(Math.abs(amount)).split(".");
+	var integerPart = parts[0];
+	var decimalPart = parts.length > 1 ? parts[1] : "";
+	var result = "";
+
+	while (integerPart.length > 3) {
+		result = "," + integerPart.substr(integerPart.length - 3) + result;
+		integerPart = integerPart.substr(0, integerPart.length - 3);
+	}
+
+	result = integerPart + result;
+
+	if (decimalPart !== "" && Number(decimalPart) !== 0) {
+		result += "." + decimalPart;
+	}
+
+	return (isNegative ? "-" : "") + result;
+}
+
 function htktGetVendorInfo(vendorId) {
 	var safeVendorId = HTKT_COMMON.trim(vendorId);
-	var vendorFile = null;
-	var info = null;
-
 	if (!safeVendorId) {
 		return { id: "", name: "", tax_code: "" };
 	}
@@ -53,22 +80,50 @@ function htktGetVendorInfo(vendorId) {
 		return HTKT_VENDOR_INFO_CACHE[safeVendorId];
 	}
 
-	vendorFile = HTKT_COMMON.selectOne(
-			HTKT_TABLE.VENDOR,
-			["id"],
-			safeVendorId
-	);
-	info = {
+	var strippedId = safeVendorId.replace(/^0+/, "");
+	if (!strippedId) strippedId = "0";
+
+	var queries = [
+		'id="' + HTKT_COMMON.escapeQueryValue(safeVendorId) + '"',
+		'vendor.number="' + HTKT_COMMON.escapeQueryValue(safeVendorId) + '"'
+	];
+
+	if (strippedId !== safeVendorId) {
+		queries.push('id="' + HTKT_COMMON.escapeQueryValue(strippedId) + '"');
+		queries.push('vendor.number="' + HTKT_COMMON.escapeQueryValue(strippedId) + '"');
+		if (!isNaN(Number(strippedId))) {
+			queries.push('id=' + Number(strippedId));
+		}
+	}
+
+	var foundName = "";
+	var foundTaxCode = "";
+	var f = null;
+
+	try {
+		f = new SCFile("esdHTKTvendor", SCFILE_READONLY);
+		for (var q = 0; q < queries.length; q++) {
+			var rc = f.doSelect(queries[q]);
+			if (rc === RC_SUCCESS) {
+				foundName = HTKT_COMMON.readString(f, ["vendor.name", "name"]);
+				foundTaxCode = HTKT_COMMON.readString(f, ["vendor.number"]);
+				break;
+			}
+		}
+	} catch (eVendor) {
+		HTKT_COMMON.log("Không query được esdHTKTvendor cho vendorId " + safeVendorId + ". " + HTKT_COMMON.exceptionToString(eVendor));
+	} finally {
+		if (f) {
+			HTKT_COMMON.closeFile(f);
+		}
+	}
+
+	var info = {
 		id: safeVendorId,
-		name: vendorFile
-				? HTKT_COMMON.readString(vendorFile, ["vendor.name"])
-				: "",
-		tax_code: vendorFile
-				? HTKT_COMMON.readString(vendorFile, ["vendor.number"])
-				: ""
+		name: foundName,
+		tax_code: foundTaxCode
 	};
 
-	HTKT_COMMON.closeFile(vendorFile);
 	HTKT_VENDOR_INFO_CACHE[safeVendorId] = info;
 	return info;
 }
@@ -196,13 +251,17 @@ function htktGetPaymentVendorSourceRows(paymentId, defaultCurrency) {
 					vendorBankName
 			);
 			var amountRaw = HTKT_COMMON.readNumber(vendorFile, ["amount"]);
+			var beneficiaryName = HTKT_COMMON.readString(
+					vendorFile,
+					["beneficiary.name"]
+			);
+			var vendorDisplayName = vendorInfo.name ||
+					HTKT_COMMON.readString(vendorFile, ["vendor.name", "name", "vendor_name"]) ||
+					vendorId;
 
 			result.push({
 				vendor_id: vendorId,
-				vendor_name:  HTKT_COMMON.readString(
-						vendorFile,
-						["transaction.des"]
-				),
+				vendor_name: vendorDisplayName,
 				vendor_tax_code: vendorInfo.tax_code,
 				vendor_site_id: HTKT_COMMON.readString(
 						vendorFile,
@@ -213,10 +272,7 @@ function htktGetPaymentVendorSourceRows(paymentId, defaultCurrency) {
 						vendorFile,
 						["beneficiary.account"]
 				),
-				beneficiary_name: HTKT_COMMON.readString(
-						vendorFile,
-						["beneficiary.name"]
-				),
+				beneficiary_name: beneficiaryName,
 				beneficiary_bank: beneficiaryBank,
 				beneficiary_bank_name: resolvedBankName,
 				transaction_des: HTKT_COMMON.readString(
@@ -525,12 +581,14 @@ function htktBuildVendorTemplateRows(sourceRows, taxByVendor) {
 		var amountBeforeTaxRaw = Math.max(amountRaw - taxRaw, 0);
 		var lineTotalRaw = amountRaw;
 
+		var finalVendorName = source.vendor_name || source.vendor_id;
+
 		rows.push({
 			stt: i + 1,
-			vendor_name: source.vendor_name || source.vendor_id,
-			amount_before_tax: HTKT_COMMON.htktFormatMoney(amountBeforeTaxRaw),
-			tax_amount: HTKT_COMMON.htktFormatMoney(taxRaw),
-			line_total: HTKT_COMMON.htktFormatMoney(lineTotalRaw),
+			vendor_name: finalVendorName,
+			amount_before_tax: htktFormatMoney(amountBeforeTaxRaw),
+			tax_amount: htktFormatMoney(taxRaw),
+			line_total: htktFormatMoney(lineTotalRaw),
 			currency: source.currency || "",
 			note: ""
 		});
@@ -650,7 +708,7 @@ function htktBuildPaymentTemplateRows(sourceRows, paymentKind) {
 			issued_date: HTKT_COMMON.htktFormatDateShort(source.issued_date_raw),
 			issued_place: source.issued_place,
 			phone: source.phone,
-			amount: HTKT_COMMON.htktFormatMoney(amountRaw)
+			amount: htktFormatMoney(amountRaw)
 		});
 
 		totalRaw += amountRaw;
@@ -824,7 +882,7 @@ function htktBuildSupplementalEntryRows(paymentId, entryRows) {
 		result.push({
 			stt: groupIndex + 1,
 			description: groups[groupIndex].descriptions.join("\n"),
-			amount: HTKT_COMMON.htktFormatMoney(groups[groupIndex].totalDebitRaw),
+			amount: htktFormatMoney(groups[groupIndex].totalDebitRaw),
 			note: ""
 		});
 	}
@@ -973,10 +1031,10 @@ function htktBuildAccountingRows(entryRows, vendorSourceRows) {
 
 		if (accountSide === "debit") {
 			totalDebitRaw += amountRaw;
-			debitAmount = HTKT_COMMON.htktFormatMoney(amountRaw);
+			debitAmount = htktFormatMoney(amountRaw);
 		} else if (accountSide === "credit") {
 			totalCreditRaw += amountRaw;
-			creditAmount = HTKT_COMMON.htktFormatMoney(amountRaw);
+			creditAmount = htktFormatMoney(amountRaw);
 		}
 
 		rows.push({
@@ -1176,31 +1234,31 @@ function htktBuildTemplateData(paymentId) {
 		department_name: HTKT_COMMON.htktGetOrgUnitName(departmentId),
 		description: description,
 		amount_raw: amountRaw,
-		total_amount: HTKT_COMMON.htktFormatMoney(amountRaw),
+		total_amount: htktFormatMoney(amountRaw),
 		currency: currency,
 		calc_amount_words: amountWords,
 
 		vendor_rows: vendorData.rows,
-		calc_total_amount_before_tax: HTKT_COMMON.htktFormatMoney(
+		calc_total_amount_before_tax: htktFormatMoney(
 				vendorData.totalAmountBeforeTaxRaw
 		),
-		calc_total_tax_amount: HTKT_COMMON.htktFormatMoney(vendorData.totalTaxRaw),
-		calc_total_vendor_amount: HTKT_COMMON.htktFormatMoney(
+		calc_total_tax_amount: htktFormatMoney(vendorData.totalTaxRaw),
+		calc_total_vendor_amount: htktFormatMoney(
 				vendorData.totalAmountRaw
 		),
-		calc_total_amount_vendors: HTKT_COMMON.htktFormatMoney(
+		calc_total_amount_vendors: htktFormatMoney(
 				vendorData.totalLineTotalRaw || 0
 		),
 		total_line_total_raw: vendorData.totalLineTotalRaw || 0,
 
 		/* (20), (21), (24) - Tab thông tin công nợ / chi tiết NCC. */
-		calc_total_advance_amount: HTKT_COMMON.htktFormatMoney(
+		calc_total_advance_amount: htktFormatMoney(
 				prepaymentTotals.totalAdvanceRaw
 		),
-		calc_total_refund_amount: HTKT_COMMON.htktFormatMoney(
+		calc_total_refund_amount: htktFormatMoney(
 				prepaymentTotals.totalRefundRaw
 		),
-		calc_total_remaining_amount: HTKT_COMMON.htktFormatMoney(
+		calc_total_remaining_amount: htktFormatMoney(
 				prepaymentTotals.totalRemainingRaw
 		),
 
@@ -1211,7 +1269,7 @@ function htktBuildTemplateData(paymentId) {
 		 */
 		refund_checkbox: hasRefundAmount ? "☒" : "☐",
 		refund_amount_to_submit: hasRefundAmount
-				? HTKT_COMMON.htktFormatMoney(refundAmountRaw)
+				? htktFormatMoney(refundAmountRaw)
 				: "",
 		refund_amount_to_submit_words: hasRefundAmount
 				? HTKT_COMMON.htktAmountToVietnameseWords(refundAmountRaw, currency)
@@ -1285,19 +1343,19 @@ function htktBuildTemplateData(paymentId) {
 		payment_rows: paymentTemplate.kind === "transfer"
 				? paymentData.rows
 				: [],
-		calc_total_payment_amount: HTKT_COMMON.htktFormatMoney(paymentData.totalRaw),
+		calc_total_payment_amount: htktFormatMoney(paymentData.totalRaw),
 		calc_total_cash_amount: paymentTemplate.kind === "cash"
-				? HTKT_COMMON.htktFormatMoney(paymentData.totalRaw)
+				? htktFormatMoney(paymentData.totalRaw)
 				: "",
 		calc_total_transfer_amount: paymentTemplate.kind === "transfer"
-				? HTKT_COMMON.htktFormatMoney(paymentData.totalRaw)
+				? htktFormatMoney(paymentData.totalRaw)
 				: "",
 
 		accounting_rows: accountingData.rows,
-		calc_total_debit_amount: HTKT_COMMON.htktFormatMoney(
+		calc_total_debit_amount: htktFormatMoney(
 				accountingData.totalDebitRaw
 		),
-		calc_total_credit_amount: HTKT_COMMON.htktFormatMoney(
+		calc_total_credit_amount: htktFormatMoney(
 				accountingData.totalCreditRaw
 		),
 
