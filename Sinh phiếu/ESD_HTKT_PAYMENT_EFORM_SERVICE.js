@@ -504,10 +504,15 @@ function htktGetSupplierLedgerRows(paymentId, vendorId, contractId) {
 
 	for (var rowIndex = 0; rowIndex < rowKeys.length; rowIndex++) {
 		var row = rowsByKey[rowKeys[rowIndex]];
-		row.remaining_amount = Math.max(
-				row.advance_amount - row.refunded_amount - row.other_pending_amount,
-				0
-		);
+		var currentRefund = Number(row.current_refund_amount || 0);
+		var baseRemaining = row.advance_amount - row.refunded_amount - row.other_pending_amount;
+
+		// Nếu số tiền hoàn ứng lần này > 0 thì mới trừ vào số tiền còn lại
+		if (currentRefund > 0) {
+			row.remaining_amount = Math.max(baseRemaining - currentRefund, 0);
+		} else {
+			row.remaining_amount = Math.max(baseRemaining, 0);
+		}
 		result.push(row);
 	}
 
@@ -552,11 +557,13 @@ function htktBuildPrepaymentTemplateTotals(
 			var ledger = ledgerRows[ledgerIndex];
 
 			/*
-			 * (20), (24): Tính tổng toàn bộ các khoản tạm ứng và còn lại
-			 * của NCC / Hợp đồng trong danh sách công nợ.
+			 * (20), (24): Chỉ tính tổng các khoản tạm ứng CÓ PHÁT SINH HOÀN ỨNG
+			 * ở ĐNTT lần này (current_refund_amount > 0).
 			 */
-			totalAdvanceRaw += Number(ledger.advance_amount || 0);
-			totalRemainingRaw += Number(ledger.remaining_amount || 0);
+			if (Number(ledger.current_refund_amount || 0) > 0) {
+				totalAdvanceRaw += Number(ledger.advance_amount || 0);
+				totalRemainingRaw += Number(ledger.remaining_amount || 0);
+			}
 		}
 	}
 
