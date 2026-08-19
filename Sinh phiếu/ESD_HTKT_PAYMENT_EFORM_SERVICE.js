@@ -1560,9 +1560,9 @@ function htktGetPdfBase64Cached(templateId, templateData) {
  * 7. CONTEXT DÙNG CHO PREVIEW / NEXTJS
  * ============================================================================= */
 
-function htktBuildPreviewContext(input) {
+function generatePresentationPdf(input) {
 	input = input || {};
-	var paymentId = HTKT_COMMON.getCurrentPaymentId();
+	var paymentId = HTKT_COMMON.getCurrentPaymentId(input);
 
 	if (!paymentId) {
 		return {
@@ -1570,11 +1570,8 @@ function htktBuildPreviewContext(input) {
 			message: "Không xác định được ID phiếu hiện tại."
 		};
 	}
+
 	var mapped = htktBuildTemplateData(paymentId);
-
-
-
-
 	if (!mapped.success) {
 		return mapped;
 	}
@@ -1587,7 +1584,7 @@ function htktBuildPreviewContext(input) {
 		};
 	}
 
-	/* Đồng bộ hành vi cache với EFROMPrepayment.generatePresentationPdf. */
+	/* Đồng bộ hành vi cache với EFORMPrepayment.generatePresentationPdf. */
 	var useCache = HTKT_COMMON.readBoolean(
 			input,
 			["useCache", "use_cache"],
@@ -1605,15 +1602,40 @@ function htktBuildPreviewContext(input) {
 	return {
 		success: true,
 		message: "",
-		paymentId: paymentId,
-		templateId: templateId,
-		templateCode: mapped.templateCode,
-		templateData: mapped.data,
-		pdfBase64: generated.data,
-		mimeType: generated.mimeType || "application/pdf",
-		encoding: generated.encoding || "base64",
-		fileName: fileName,
-		fromCache: generated.fromCache === true
+		data: {
+			paymentId: paymentId,
+			templateId: templateId,
+			templateCode: mapped.templateCode,
+			templateData: HTKT_COMMON.readBoolean(input, ["includeTemplateData", "include_template_data"], true)
+					? mapped.data
+					: null,
+			pdfBase64: generated.data,
+			mimeType: generated.mimeType || "application/pdf",
+			encoding: generated.encoding || "base64",
+			fileName: fileName,
+			fromCache: generated.fromCache === true
+		}
+	};
+}
+
+function htktBuildPreviewContext(input) {
+	var genRes = generatePresentationPdf(input);
+	if (!genRes || !genRes.success) {
+		return genRes || { success: false, message: "Không sinh được PDF." };
+	}
+	var d = genRes.data || {};
+	return {
+		success: true,
+		message: "",
+		paymentId: d.paymentId,
+		templateId: d.templateId,
+		templateCode: d.templateCode,
+		templateData: d.templateData,
+		pdfBase64: d.pdfBase64,
+		mimeType: d.mimeType,
+		encoding: d.encoding,
+		fileName: d.fileName,
+		fromCache: d.fromCache === true
 	};
 }
 
