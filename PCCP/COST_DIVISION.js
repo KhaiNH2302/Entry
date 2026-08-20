@@ -187,13 +187,11 @@ function getTransactionOfficeOptions(unitId) {
 	});
 	optionMap["000000"] = true;
 
-	if (unitId) {
-		// Lấy mã chi nhánh từ unitId (ví dụ: '1010098' -> '0100')
-		var branchCode = getBranchCodeFromEntityCode(unitId);
-
-		// Lấy trực tiếp từ esdDMentity dựa theo ogl.branch.code
+	var prefix = getUnitPrefix5(unitId);
+	if (prefix) {
+		// Lấy trực tiếp từ esdDMentity dựa theo entity.code bắt đầu bằng 10xxx
 		var query = 'status="' + escapeQueryValue(ENTITY_STATUS_ACTIVE) + '"' +
-				' and ogl.branch.code="' + escapeQueryValue(branchCode) + '"';
+				' and entity.code like "' + escapeQueryValue(prefix) + '*"';
 
 		var f = new SCFile(TABLE_ENTITY, SCFILE_READONLY);
 		var rc = f.doSelect(query);
@@ -203,8 +201,8 @@ function getTransactionOfficeOptions(unitId) {
 			var name = getTransFromNamePrefix(readText(f, "branch.name"));
 			var psCode = safeString(f["ps.code"]).trim();
 
-			// LỌC: Bỏ qua nếu mã rỗng, trùng, hoặc kết thúc bằng đuôi "98"
-			if (code && !optionMap[code] && code.slice(-2) !== "98") {
+			// LỌC: Mã có 7 ký tự (10xxxyy), bắt đầu bằng prefix (10xxx), không trùng và loại trừ đuôi 98
+			if (code && code.length === 7 && code.substring(0, 5) === prefix && !optionMap[code] && code.slice(-2) !== "98") {
 				optionMap[code] = true;
 				options.push({
 					value: code,
@@ -415,7 +413,7 @@ function getGlCostCenterOptions(unitId) {
 	var query = 'status="ACTIVE"';
 
 	if (unitId) {
-		var xxx = safeString(unitId).substring(2, 5); // Tách xxx từ 10xxx98
+		var xxx = getUnitXxx(unitId);
 		if (xxx === "100") {
 			// xxx = 100 -> org.code KHÁC đầu 3 (không bắt đầu bằng 3)
 			query += ' and not org.code like "3*"';
@@ -489,8 +487,8 @@ function getGlDepartmentOptions(input) {
 				keyword = safeString(parsedObj.keyword).trim();
 			}
 
-			if (parsedObj.unitId) {
-				unitId = safeString(parsedObj.unitId).trim();
+			if (parsedObj.unitId || parsedObj.entityCode) {
+				unitId = safeString(parsedObj.unitId || parsedObj.entityCode).trim();
 			}
 		}
 	} catch (e) {}
@@ -506,7 +504,7 @@ function getGlDepartmentOptions(input) {
 	var query = 'status="ACTIVE"';
 
 	if (unitId) {
-		var xxx = safeString(unitId).substring(2, 5); // Tách xxx từ 10xxx98
+		var xxx = getUnitXxx(unitId);
 		if (xxx === "100") {
 			// xxx = 100 -> org.code KHÁC đầu 3 (không bắt đầu bằng 3)
 			query += ' and not org.code like "3*"';
@@ -599,73 +597,76 @@ function getGlTransactionOfficeOptions(input) {
 				keyword = safeString(parsedObj.keyword).trim();
 			}
 
-			if (parsedObj.unitId) {
-				unitId = safeString(parsedObj.unitId).trim();
+			if (parsedObj.unitId || parsedObj.entityCode) {
+				unitId = safeString(parsedObj.unitId || parsedObj.entityCode).trim();
 			}
 		}
 	} catch (e) {}
 
-	var query = 'status="' + escapeQueryValue(ENTITY_STATUS_ACTIVE) + '"';
+	// Luôn thêm mã mặc định "000000 - Không xác định" ở đầu
+	options.push({
+		value: "000000",
+		label: "000000 - Không xác định",
+		name: "Không xác định"
+	});
+	optionMap["000000"] = true;
 
-	if (unitId) {
-		query +=
-				' and ogl.branch.code="' +
-				escapeQueryValue(getBranchCodeFromEntityCode(unitId)) +
-				'"';
-	}
+	var prefix = getUnitPrefix5(unitId);
+	if (prefix) {
+		var query = 'status="' + escapeQueryValue(ENTITY_STATUS_ACTIVE) + '"' +
+				' and entity.code like "' + escapeQueryValue(prefix) + '*"';
 
-	if (keyword) {
-		query +=
-				' and org.transaction.code like "*' + escapeQueryValue(keyword) + '*"';
-	}
-
-	var f = new SCFile(TABLE_ENTITY, SCFILE_READONLY);
-	var rc = f.doSelect(query);
-
-	while (rc === RC_SUCCESS) {
-		var transactionCode = safeString(f["org.transaction.code"]).trim();
-		var branchCode = safeString(f["ogl.branch.code"]).trim();
-		var branchName = safeString(f["branch.name"]).trim();
-		var branchNameSeparatorIndex = branchName.indexOf("-");
-		var optionKey = branchCode + "|" + transactionCode;
-
-		if (branchNameSeparatorIndex >= 0) {
-			branchName = branchName.substring(branchNameSeparatorIndex + 1).trim();
+		if (keyword) {
+			query += ' and (entity.code like "*' + escapeQueryValue(keyword) + '*" or branch.name like "*' + escapeQueryValue(keyword) + '*")';
 		}
 
-		if (
-				transactionCode &&
-				transactionCode !== GL_UNIT_TRANSACTION_CODE &&
-				transactionCode.slice(-2) !== "98" && // Loại trừ đuôi 98
-				transactionCode !== "00" &&
-				branchCode &&
-				!optionMap[optionKey]
-		) {
-			optionMap[optionKey] = true;
-			var entityCode = safeString(f["entity.code"]).trim();
-			options.push({
-				value: entityCode,
-				label: entityCode + (branchName ? " - " + branchName : ""),
-				name: branchName,
-				branchCode: branchCode
-			});
+		var f = new SCFile(TABLE_ENTITY, SCFILE_READONLY);
+		var rc = f.doSelect(query);
+
+		while (rc === RC_SUCCESS) {
+			var code = safeString(f["entity.code"]).trim();
+			var branchName = safeString(f["branch.name"]).trim();
+			var branchNameSeparatorIndex = branchName.indexOf("-");
+
+			if (branchNameSeparatorIndex >= 0) {
+				branchName = branchName.substring(branchNameSeparatorIndex + 1).trim();
+			}
+
+			if (code && code.length === 7 && code.substring(0, 5) === prefix && !optionMap[code] && code.slice(-2) !== "98") {
+				optionMap[code] = true;
+				options.push({
+					value: code,
+					label: code + (branchName ? " - " + branchName : ""),
+					name: branchName
+				});
+			}
+			rc = f.getNext();
 		}
-		rc = f.getNext();
+
+		try {
+			f.doClose();
+		} catch (e) {}
 	}
 
-	try {
-		f.doClose();
-	} catch (e) {}
+	var firstOption = options[0];
+	var restOptions = options.slice(1);
+	restOptions.sort(function (left, right) {
+		var leftValue = safeString(left.value);
+		var rightValue = safeString(right.value);
+		if (leftValue < rightValue) return -1;
+		if (leftValue > rightValue) return 1;
+		return 0;
+	});
 
-	options.sort(compareTransactionOfficeOption);
+	var sortedOptions = [firstOption].concat(restOptions);
 
-	var totalRecords = options.length;
+	var totalRecords = sortedOptions.length;
 	var totalPages = Math.ceil(totalRecords / pageSize);
 	var startIndex = (page - 1) * pageSize;
 
 	return {
 		success: true,
-		data: options.slice(startIndex, startIndex + pageSize),
+		data: sortedOptions.slice(startIndex, startIndex + pageSize),
 		pagination: {
 			page: page,
 			pageSize: pageSize,
@@ -681,7 +682,8 @@ function getGlTransactionOfficeOptions(input) {
 function getGlAccounts(input) {
 	var list = [];
 	var page = 1;
-	var pageSize = 9999;
+	var pageSize = 10;
+	var keyword = "";
 
 	try {
 		var rawDetails = extractRawDetails(input);
@@ -691,6 +693,8 @@ function getGlAccounts(input) {
 				page = Number(parsedObj.page);
 			if (parsedObj.pageSize && Number(parsedObj.pageSize) > 0)
 				pageSize = Number(parsedObj.pageSize);
+			if (parsedObj.keyword)
+				keyword = safeString(parsedObj.keyword).trim();
 		}
 	} catch (ex) {}
 
@@ -701,17 +705,23 @@ function getGlAccounts(input) {
 		["account.type", "accountType", "S"]
 	];
 
+	var query = 'status="ACTIVE"';
+	if (keyword) {
+		query += ' and (account like "*' + escapeQueryValue(keyword) + '*" or name like "*' + escapeQueryValue(keyword) + '*")';
+	}
+
 	var f = new SCFile("esdDMglAccount", SCFILE_READONLY);
-	var rc = f.doSelect("true");
+	var rc = f.doSelect(query);
 
 	while (rc === RC_SUCCESS) {
 		var account = safeString(f["account"]).trim();
 		if (account) {
 			var rawType = safeString(f["type"]).trim();
-			var isCost = rawType === "Chi phí" || rawType === "COST";
+			var isCost = rawType === "Chi phí" || rawType === "COST" || rawType === "CHI PHÍ" || rawType === "Chi phi";
 
 			if (isCost) {
 				var item = mapRowToObject(f, fieldMappings);
+				item.accountCode = item.accountNumber;
 				item.label = item.accountNumber + " - " + item.accountName;
 				item.value = item.accountNumber;
 				item.type = rawType;
@@ -725,14 +735,18 @@ function getGlAccounts(input) {
 		if (f) f.doClose();
 	} catch (e) {}
 
+	var totalRecords = list.length;
+	var totalPages = Math.ceil(totalRecords / pageSize);
+	var startIndex = (page - 1) * pageSize;
+
 	return {
 		success: true,
-		data: list,
+		data: list.slice(startIndex, startIndex + pageSize),
 		pagination: {
 			page: page,
 			pageSize: pageSize,
-			totalRecords: list.length,
-			totalPages: 1
+			totalRecords: totalRecords,
+			totalPages: totalPages
 		}
 	};
 }
@@ -1339,19 +1353,21 @@ function validateUnit(unitId) {
 function validateTransactionOffice(transactionCode, unitId) {
 	if (!transactionCode) return { isValid: false, branchName: "" };
 
-	if (transactionCode === "000000") return { isValid: true, branchName: "000000 - Không xác định"}
+	if (transactionCode === "000000" || transactionCode === "0000000") return { isValid: true, branchName: "Không xác định" };
 
-	var branchCode = getBranchCodeFromEntityCode(unitId);
+	var prefix = getUnitPrefix5(unitId);
+	if (!prefix) return { isValid: false, branchName: "" };
+
+	if (transactionCode.length !== 7 || transactionCode.substring(0, 5) !== prefix || transactionCode.slice(-2) === "98") {
+		return { isValid: false, branchName: "" };
+	}
 
 	var fEntity = new SCFile("esdDMentity", SCFILE_READONLY);
-
 	var rc = fEntity.doSelect(
-			'entity.code="' + escapeQueryValue(transactionCode) + '"' +
-			' and ogl.branch.code="' + escapeQueryValue(branchCode) + '"' +
-			' and status="' + escapeQueryValue(ENTITY_STATUS_ACTIVE)  + '"'
+			'entity.code="' + escapeQueryValue(transactionCode) + '" and status="' + escapeQueryValue(ENTITY_STATUS_ACTIVE) + '"'
 	);
 	var isValid = rc === RC_SUCCESS;
-	var branchName = isValid ? fEntity["branch.name"] || "" : "";
+	var branchName = isValid ? getTransFromNamePrefix(readText(fEntity, "branch.name")) : "";
 
 	try {
 		if (fEntity) fEntity.doClose();
@@ -1957,8 +1973,38 @@ function hasOwn(value, key) {
 	return Object.prototype.hasOwnProperty.call(value, key);
 }
 
+function getUnitPrefix5(unitId) {
+	var code = safeString(unitId).trim();
+	if (!code) return "";
+	if (code.length >= 5 && code.substring(0, 2) === "10") {
+		return code.substring(0, 5);
+	}
+	if (code.length === 3) {
+		return "10" + code;
+	}
+	if (code.length === 4) {
+		return "10" + code.slice(-3);
+	}
+	return "";
+}
+
+function getUnitXxx(unitId) {
+	var prefix = getUnitPrefix5(unitId);
+	return prefix ? prefix.substring(2, 5) : "";
+}
+
 function getBranchCodeFromEntityCode(value) {
-	return safeString(value).slice(1, -2);
+	var code = safeString(value).trim();
+	if (code.length >= 5 && code.substring(0, 2) === "10") {
+		return code.slice(1, -2);
+	}
+	if (code.length === 3) {
+		return "0" + code;
+	}
+	if (code.length === 4) {
+		return code;
+	}
+	return code;
 }
 
 function getPaymentRequest(paymentId) {

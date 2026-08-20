@@ -3020,10 +3020,10 @@ function getGlUnitsApi(details) {
 		for (var i = 0; i < options.length; i++) {
 			var o = options[i];
 			if (
-				normalizeText(o.label).indexOf(kw) >= 0 ||
-				normalizeText(o.value).indexOf(kw) >= 0 ||
-				normalizeText(o.entityCode).indexOf(kw) >= 0 ||
-				normalizeText(o.branchCode).indexOf(kw) >= 0
+					normalizeText(o.label).indexOf(kw) >= 0 ||
+					normalizeText(o.value).indexOf(kw) >= 0 ||
+					normalizeText(o.entityCode).indexOf(kw) >= 0 ||
+					normalizeText(o.branchCode).indexOf(kw) >= 0
 			) {
 				filtered.push(o);
 			}
@@ -3083,9 +3083,9 @@ function getCostCenterOptions(details) {
 		for (var i = 0; i < options.length; i++) {
 			var o = options[i];
 			if (
-				normalizeText(o.label).indexOf(kw) >= 0 ||
-				normalizeText(o.value).indexOf(kw) >= 0 ||
-				normalizeText(o.name).indexOf(kw) >= 0
+					normalizeText(o.label).indexOf(kw) >= 0 ||
+					normalizeText(o.value).indexOf(kw) >= 0 ||
+					normalizeText(o.name).indexOf(kw) >= 0
 			) {
 				filtered.push(o);
 			}
@@ -3207,9 +3207,9 @@ function getTransactionOfficeOptionsApi(details) {
 		for (var i = 0; i < options.length; i++) {
 			var o = options[i];
 			if (
-				normalizeText(o.label).indexOf(kw) >= 0 ||
-				normalizeText(o.value).indexOf(kw) >= 0 ||
-				normalizeText(o.name).indexOf(kw) >= 0
+					normalizeText(o.label).indexOf(kw) >= 0 ||
+					normalizeText(o.value).indexOf(kw) >= 0 ||
+					normalizeText(o.name).indexOf(kw) >= 0
 			) {
 				filtered.push(o);
 			}
@@ -3237,6 +3237,26 @@ function getTransactionOfficeOptionsApi(details) {
 	};
 }
 
+function getUnitPrefix5(unitId) {
+	var code = safeString(unitId).trim();
+	if (!code) return "";
+	if (code.length >= 5 && code.substring(0, 2) === "10") {
+		return code.substring(0, 5);
+	}
+	if (code.length === 3) {
+		return "10" + code;
+	}
+	if (code.length === 4) {
+		return "10" + code.slice(-3);
+	}
+	return "";
+}
+
+function getUnitXxx(unitId) {
+	var prefix = getUnitPrefix5(unitId);
+	return prefix ? prefix.substring(2, 5) : "";
+}
+
 function getTransactionOfficeOptionsForUnit(entityCode) {
 	var options = [];
 
@@ -3247,20 +3267,12 @@ function getTransactionOfficeOptionsForUnit(entityCode) {
 		name: 'Không xác định'
 	});
 
-	var code = safeString(entityCode).trim();
-	if (!code) return options;
+	var prefix = getUnitPrefix5(entityCode);
+	if (!prefix) return options;
 
-	// Tìm ogl.branch.code từ esdDMentity dựa trên entity.code
-	var branchCode = selectOne(
-			'esdDMentity',
-			'entity.code="' + escapeQueryValue(code) + '"',
-			function (record) { return readText(record, 'ogl.branch.code'); }
-	);
-
-	if (!branchCode) return options;
-
-	var query = 'status="ACTIVE" and ogl.branch.code="' + escapeQueryValue(branchCode) + '"';
+	var query = 'status="ACTIVE" and entity.code like "' + escapeQueryValue(prefix) + '*"';
 	var list = [];
+	var optionMap = { '000000': true };
 	var f = new SCFile('esdDMentity', SCFILE_READONLY);
 	var rc;
 	try {
@@ -3276,7 +3288,8 @@ function getTransactionOfficeOptionsForUnit(entityCode) {
 
 		var isMainUnit = (entCode.length >= 2 && entCode.substring(entCode.length - 2) === '98');
 
-		if (entCode && entCode !== '0000000' && !isMainUnit) {
+		if (entCode && entCode.length === 7 && entCode.substring(0, 5) === prefix && !isMainUnit && !optionMap[entCode]) {
+			optionMap[entCode] = true;
 			var branchNameSeparatorIndex = branchName.indexOf('-');
 			if (branchNameSeparatorIndex >= 0) {
 				branchName = branchName.substring(branchNameSeparatorIndex + 1).trim();
@@ -3422,10 +3435,7 @@ function getGlCostCenterOptions(unitId) {
 		var unitCode = safeString(unitOptions[u].entityCode).trim();
 		if (!unitCode) continue;
 
-		var xxx = '';
-		if (unitCode.length >= 5 && unitCode.substring(0, 2) === '10') {
-			xxx = unitCode.substring(2, 5);
-		}
+		var xxx = getUnitXxx(unitCode);
 
 		// Thêm mã mặc định 000000 - Không xác định cho đơn vị này
 		options.push({
@@ -3545,10 +3555,7 @@ function getGlTransactionOfficeOptions(unitId) {
 		var unitCode = safeString(unitOptions[u].entityCode).trim();
 		if (!unitCode) continue;
 
-		var prefix = '';
-		if (unitCode.length >= 5 && unitCode.substring(0, 2) === '10') {
-			prefix = unitCode.substring(0, 5);
-		}
+		var prefix = getUnitPrefix5(unitCode);
 
 		// Thêm mã mặc định 0000000 - Không xác định cho đơn vị này
 		options.push({
