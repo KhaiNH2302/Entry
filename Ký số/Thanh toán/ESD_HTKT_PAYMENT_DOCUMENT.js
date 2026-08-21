@@ -258,7 +258,7 @@ function uploadDocument(input) {
 		else {
 			rawResponse = lib.ESD_ECM_SERVICE.uploadFileTaiLieu({
 				docCat: CONFIG.ECM_REQUEST.DOC_CATEGORY,
-				docName: input.documentName,
+				docName: input.documentName || ("Phieu-de-nghi-thanh-toan-" + paymentId),
 				cifNum: cifNum,
 				accNum: accNum,
 				docCreated: getCommon().getSystemDateTime(),
@@ -310,27 +310,39 @@ function downloadDocument(documentIdentity) {
 		var provider = getCommon().toUpper(environmentConfig.PROVIDER);
 		var rawResponse;
 
+		var docIdOrObjectId = getCommon().trim(documentIdentity.docId) || getCommon().trim(documentIdentity.objectId);
+		print("[HTKT_PAYMENT_DOC.downloadDocument] >> START: provider=" + provider + ", docIdOrObjectId=" + docIdOrObjectId + ", url=" + (environmentConfig.STORAGE_BASE_URL + "/CDM/service/document/download"));
+
 		if (provider === "MOCK") {
 			rawResponse = postDocumentJson(environmentConfig.STORAGE_BASE_URL + "/CDM/service/document/download", {
-				documentId: getCommon().trim(documentIdentity.docId) || getCommon().trim(documentIdentity.objectId)
+				documentId: docIdOrObjectId
 			});
 		}
 		/* REAL UAT:
 		else {
 			rawResponse = lib.ESD_ECM_SERVICE.downloadDocument([{
-				DOC_OBJECTID: documentIdentity.objectId,
+				DOC_OBJECTID: String(documentIdentity.objectId || documentIdentity.docId || ""),
 				APP_ID: CONFIG.ECM_REQUEST.APP_ID,
 				SESSION_ID: CONFIG.ECM_REQUEST.SESSION_ID
 			}]);
 		}
 		*/
 
+		print("[HTKT_PAYMENT_DOC.downloadDocument] >> rawResponse=" + (rawResponse ? String(rawResponse).substring(0, 300) : "EMPTY"));
+
 		var parsed = parseDocumentStorageResponse(rawResponse);
-		if (parsed.success !== true) return parsed;
+		if (parsed.success !== true) {
+			print("[HTKT_PAYMENT_DOC.downloadDocument] >> parseDocumentStorageResponse FAILED: " + JSON.stringify(parsed));
+			return parsed;
+		}
 
 		var responseData = parsed.data;
 		var dataObject = responseData.data;
+		if (getCommon().isArray(dataObject) && dataObject.length > 0) {
+			dataObject = dataObject[0];
+		}
 		if (responseData.code !== "OK" || !dataObject || typeof dataObject !== "object") {
+			print("[HTKT_PAYMENT_DOC.downloadDocument] >> responseData not OK: " + JSON.stringify(responseData));
 			return responseFail("DOCUMENT_DOWNLOAD_FAILED", responseData.message || "Tải bản trình ký thất bại.", "", responseData);
 		}
 
@@ -346,8 +358,11 @@ function downloadDocument(documentIdentity) {
 		}
 
 		if (!pdfBase64) {
+			print("[HTKT_PAYMENT_DOC.downloadDocument] >> DOCUMENT_PDF_NOT_FOUND in keys=" + Object.keys(dataObject).join(","));
 			return responseFail("DOCUMENT_PDF_NOT_FOUND", "Response không chứa PDF Base64 hợp lệ.", "", responseData);
 		}
+
+		print("[HTKT_PAYMENT_DOC.downloadDocument] >> SUCCESS: fileName=" + fileName + ", size=" + pdfBase64.length);
 
 		return responseOk({
 			docId: getCommon().trim(documentIdentity.docId),
@@ -359,6 +374,7 @@ function downloadDocument(documentIdentity) {
 			pdfBase64: pdfBase64
 		}, "Tải bản trình ký thành công.");
 	} catch (error) {
+		print("[HTKT_PAYMENT_DOC.downloadDocument] >> EXCEPTION: " + error);
 		return responseFailException("DOCUMENT_DOWNLOAD_EXCEPTION", "Có lỗi khi tải bản trình ký.", error, documentIdentity);
 	}
 }
@@ -380,17 +396,6 @@ function deleteStoredDocument(docId) {
 					{ documentId: safeDocId }
 			);
 		}
-		/* REAL UAT:
-		else {
-			rawResponse = lib.ESD_ECM_SERVICE.deleteDocument([{
-				DOC_ID: safeDocId,
-				APP_ID: CONFIG.ECM_REQUEST.APP_ID,
-				SESSION_ID: CONFIG.ECM_REQUEST.SESSION_ID
-			}]);
-		}
-		*/
-
-		var parsed = parseDocumentStorageResponse(rawResponse);
 		if (parsed.success !== true) return parsed;
 
 		var responseData = parsed.data;
@@ -451,6 +456,8 @@ function deleteStoredDocument(docId) {
 
 function mapAttachment(file) {
 	if (!file) return null;
+	var rawStatus = getCommon().toUpper(getCommon().readString(file, ["status"], ""));
+	var rawType = getCommon().readString(file, ["type"], "");
 	return {
 		id: getCommon().readString(file, ["id"], ""),
 		paymentId: getCommon().readString(file, ["payment.id"], ""),
@@ -462,19 +469,39 @@ function mapAttachment(file) {
 		size: getCommon().toNumber(getCommon().readValue(file, ["size"], 0), 0),
 		docCode: getCommon().readString(file, ["doc.code"], ""),
 		groupCode: getCommon().readString(file, ["group.code"], ""),
-		status: getCommon().toUpper(getCommon().readString(file, ["status"], "")),
-		type: getCommon().readString(file, ["type"], ""),
+		status: rawStatus || STATUS.CURRENT,
+		type: rawType || CONFIG.DOCUMENT_TYPE,
 		versionNo: 0
 	};
 }
 
 function generateAttachmentId() {
 	try {
+		var rc = new SCDatum();
+		var nextNumber = new SCDatum();
+		var rte = (typeof funcs !== "undefined" && funcs && funcs.rtecall) ? funcs.rtecall : system.functions.rtecall;
+		rte("getnumber", rc, nextNumber, CONFIG.ATTACHMENT_TABLE);
+		var idStr = String(nextNumber || "").trim();
+		if (idStr && idStr.indexOf("[C++ object SCDatum]") >= 0) {
+			idStr = idStr.replace(/.*\[C\+\+ object SCDatum\]\s*[-_]?\s*/i, "").trim();
+		}
+		if (idStr) return idStr;
+	} catch (ignore) { }
+
+	try {
 		if (lib.ESD_Utils && typeof lib.ESD_Utils.generateNextNumber === "function") {
-			return getCommon().trim(lib.ESD_Utils.generateNextNumber(CONFIG.ATTACHMENT_TABLE));
+			var genId = getCommon().trim(lib.ESD_Utils.generateNextNumber(CONFIG.ATTACHMENT_TABLE));
+			if (genId) {
+				if (genId.indexOf("[C++ object SCDatum]") >= 0) {
+					var numPart = genId.replace(/.*\[C\+\+ object SCDatum\]\s*[-_]?\s*/i, "").trim();
+					return numPart ? numPart : getCommon().generateRequestId("");
+				}
+				return genId;
+			}
 		}
 	} catch (ignore) { }
-	return getCommon().generateRequestId("HTKT_ATT");
+
+	return getCommon().generateRequestId("");
 }
 
 function selectAttachmentById(attachmentId, readOnly) {
@@ -493,6 +520,22 @@ function selectAttachmentById(attachmentId, readOnly) {
 	return null;
 }
 
+function isPresentationAttachment(mapped) {
+	if (!mapped) return false;
+	if (mapped.docCode === CONFIG.DOCUMENT_CODE || mapped.docCode === "TRINH_KY") return true;
+	if (mapped.type === CONFIG.DOCUMENT_TYPE || mapped.type === "TRINH_KY" || mapped.type === "Trinh ky" || mapped.type === "Trình ký") return true;
+	if (mapped.groupCode && mapped.groupCode.indexOf("HTKT_TK") === 0) return true;
+	if (mapped.name && (mapped.name.indexOf(CONFIG.NAME_PREFIX) === 0 || mapped.name.indexOf("Phieu-de-nghi-thanh-toan") === 0)) return true;
+	return false;
+}
+
+function isAttachmentActive(attachment) {
+	if (!attachment) return false;
+	if (attachment.status === STATUS.CURRENT || attachment.status === STATUS.COMPLETED) return true;
+	if (!attachment.status || attachment.status === "ACTIVE" || attachment.status === "DA KI" || attachment.status === "DA_KI") return true;
+	return false;
+}
+
 function listAttachmentsByQuery(queryStr, sortFn) {
 	var records = [];
 	var file = null;
@@ -504,7 +547,7 @@ function listAttachmentsByQuery(queryStr, sortFn) {
 
 		while (rc === RC_SUCCESS && count < CONFIG.MAX_SCAN_RECORDS) {
 			var mapped = mapAttachment(file);
-			if (mapped && mapped.docCode === CONFIG.DOCUMENT_CODE && mapped.type === CONFIG.DOCUMENT_TYPE) {
+			if (isPresentationAttachment(mapped)) {
 				records.push(mapped);
 			}
 			count++;
@@ -527,7 +570,7 @@ function listByPayment(paymentId) {
 	if (!safeId) return [];
 
 	var records = listAttachmentsByQuery(
-			'payment.id="' + getCommon().escapeQueryValue(safeId) + '" and type="' + CONFIG.DOCUMENT_TYPE + '"',
+			'payment.id="' + getCommon().escapeQueryValue(safeId) + '"',
 			function (a, b) {
 				if (a.groupCode !== b.groupCode) return a.groupCode < b.groupCode ? -1 : 1;
 				var aTime = getCommon().toString(a.uploadedAt);
@@ -551,7 +594,7 @@ function listByGroup(groupCode) {
 	if (!safeGroupCode) return [];
 
 	var records = listAttachmentsByQuery(
-			'group.code="' + getCommon().escapeQueryValue(safeGroupCode) + '" and type="' + CONFIG.DOCUMENT_TYPE + '"',
+			'group.code="' + getCommon().escapeQueryValue(safeGroupCode) + '"',
 			function (a, b) {
 				var aTime = getCommon().toString(a.uploadedAt);
 				var bTime = getCommon().toString(b.uploadedAt);
@@ -570,7 +613,7 @@ function findActiveAttachments(paymentId) {
 	var list = listByPayment(paymentId);
 	var active = [];
 	for (var i = 0; i < list.length; i++) {
-		if (list[i].status === STATUS.CURRENT || list[i].status === STATUS.COMPLETED) {
+		if (isAttachmentActive(list[i])) {
 			active.push(list[i]);
 		}
 	}
@@ -869,60 +912,52 @@ function get_file_ecm(file) {
 			input = getCommon().safeParseJson(queryString, input);
 		}
 
+		print("[HTKT_PAYMENT_DOC.get_file_ecm] START -> input=" + JSON.stringify(input));
+
 		var idRes = resolvePaymentId(input);
-		if (idRes.success !== true) return idRes;
-
-		var paymentId = idRes.data.paymentId;
-		var query =
-				'payment.id="' + getCommon().escapeQueryValue(paymentId) + '"' +
-				' and type="' + CONFIG.DOCUMENT_TYPE + '"';
-		var activeList = [];
-		var attachmentFile = null;
-		var count = 0;
-
-		try {
-			attachmentFile = getCommon().newReadOnlyFile(CONFIG.ATTACHMENT_TABLE);
-			var rc = attachmentFile.doSelect(query);
-
-			while (rc === RC_SUCCESS && count < CONFIG.MAX_SCAN_RECORDS) {
-				var attachment = mapAttachment(attachmentFile);
-				if (attachment && (attachment.status === STATUS.CURRENT || attachment.status === STATUS.COMPLETED)) {
-					activeList.push(attachment);
-				}
-				count++;
-				rc = attachmentFile.getNext();
-			}
-		} finally {
-			getCommon().closeFile(attachmentFile);
+		if (idRes.success !== true) {
+			print("[HTKT_PAYMENT_DOC.get_file_ecm] resolvePaymentId FAILED: " + JSON.stringify(idRes));
+			return idRes;
 		}
 
+		var paymentId = idRes.data.paymentId;
+		var activeList = findActiveAttachments(paymentId);
+		print("[HTKT_PAYMENT_DOC.get_file_ecm] paymentId=" + paymentId + ", activeList count=" + activeList.length);
+
 		if (!activeList.length) {
+			print("[HTKT_PAYMENT_DOC.get_file_ecm] NO ACTIVE ATTACHMENT FOUND for paymentId=" + paymentId);
 			return responseFail(
 					"DOCUMENT_NOT_FOUND",
 					"Không tìm thấy bản trình ký của phiếu " + paymentId + ".",
-					query
+					"paymentId=" + paymentId
 			);
 		}
 		if (activeList.length > 1) {
+			print("[HTKT_PAYMENT_DOC.get_file_ecm] CONFLICT: Multiple active attachments: " + JSON.stringify(activeList));
 			return responseFail(
 					"DOCUMENT_CURRENT_CONFLICT",
 					"Phiếu đang có nhiều hơn một bản trình ký hiện hành.",
-					query,
+					"paymentId=" + paymentId,
 					activeList
 			);
 		}
 
 		var currentDocument = activeList[0];
+		print("[HTKT_PAYMENT_DOC.get_file_ecm] currentDocument=" + JSON.stringify(currentDocument));
+
 		var downloadRes = downloadDocument({
 			docId: currentDocument.ecmDocId,
 			objectId: currentDocument.ecmObjectId
 		});
-		if (downloadRes.success !== true) return downloadRes;
+		if (downloadRes.success !== true) {
+			print("[HTKT_PAYMENT_DOC.get_file_ecm] downloadDocument FAILED: " + JSON.stringify(downloadRes));
+			return downloadRes;
+		}
 
 		var fileData = {};
 		fileData[currentDocument.name || downloadRes.data.fileName] = downloadRes.data.pdfBase64;
 
-		return {
+		var finalResult = {
 			success: true,
 			message: "Đã lấy bản trình ký hiện hành.",
 			data: {
@@ -938,7 +973,11 @@ function get_file_ecm(file) {
 			status: currentDocument.status === STATUS.COMPLETED,
 			attachment: currentDocument
 		};
+
+		print("[HTKT_PAYMENT_DOC.get_file_ecm] SUCCESS -> result keys=" + Object.keys(finalResult).join(","));
+		return finalResult;
 	} catch (error) {
+		print("[HTKT_PAYMENT_DOC.get_file_ecm] EXCEPTION: " + error);
 		return responseFailException("GET_FILE_ECM_EXCEPTION", "Có lỗi khi lấy bản trình ký từ ECM.", error);
 	}
 }
@@ -1107,7 +1146,7 @@ function addFileECM_HTKT(file) {
 
 		if (result && result.Data && result.Data[0]) {
 			var ecmFile = result.Data[0];
-			var nextId = lib.ESD_Utils ? lib.ESD_Utils.generateNextNumber(CONFIG.ATTACHMENT_TABLE) : getCommon().generateRequestId("HTKT_ATT");
+			var nextId = generateAttachmentId();
 
 			if (lib.ESD_Utils && typeof lib.ESD_Utils.CreateTicket === "function") {
 				lib.ESD_Utils.CreateTicket(CONFIG.ATTACHMENT_TABLE, {
@@ -1158,6 +1197,16 @@ function addFileECM_HTKT(file) {
 function deleteFileECM_HTKT(input) {
 	try {
 		input = input || {};
+		if (!input.oldAttachmentId) {
+			return responseOk({}, "Khong co ban ghi cu can xoa.");
+		}
+
+		if (input.oldAttachmentId === input.newAttachmentId) {
+			return responseOk({
+				deletedAttachmentId: "",
+				currentAttachmentId: input.newAttachmentId
+			}, "File da duoc cap nhat truc tiep tren ban ghi hien tai.");
+		}
 
 		var oldFile = selectAttachmentById(input.oldAttachmentId, true);
 		var newFile = selectAttachmentById(input.newAttachmentId, true);

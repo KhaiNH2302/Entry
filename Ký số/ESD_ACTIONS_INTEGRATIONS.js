@@ -141,10 +141,77 @@ function ky_so(file) {
 	if (!object_ids || object_ids.length == 0) return;
 	// ===== HSM: kis xong =====
 	if (sign_tech == "HSM") {
-		updateTable(id, object_ids, "Da ki");
-		lib.ESD_MS_DXMS_COMMON.returnKySo(id, userad, "HSM");
-	}else{
+		var idStr = String(id || "").trim();
+		if (idStr.indexOf("TT.") === 0) {
+			return returnKySoPayment(idStr, userad, sign_tech, object_ids);
+		} else if (idStr.indexOf("TU.") === 0) {
+			return returnKySoPrepayment(idStr, userad, sign_tech, object_ids);
+		} else {
+			updateTable(id, object_ids, "Da ki");
+			lib.ESD_MS_DXMS_COMMON.returnKySo(id, userad, "HSM");
+		}
+	} else {
 		sendSignRequest(file);
+	}
+}
+
+function returnKySoPayment(paymentId, userad, signTech, object_ids) {
+	try {
+		print("[returnKySoPayment] START: paymentId=" + paymentId + ", userad=" + userad);
+		var payment = new SCFile("esdHTKTpayment");
+		var rc = payment.doSelect('id="' + paymentId + '"');
+		if (rc === RC_SUCCESS) {
+			print("[returnKySoPayment] Found payment record, current.phase=" + payment["current.phase"] + ", status=" + payment["status"]);
+
+			if (lib.ESD_HTKT_PAYMENT_WF && typeof lib.ESD_HTKT_PAYMENT_WF.updateNextStatus === "function") {
+				lib.ESD_HTKT_PAYMENT_WF.updateNextStatus(payment);
+			} else if (lib.PAYMENT_WF && typeof lib.PAYMENT_WF.updateNextStatus === "function") {
+				lib.PAYMENT_WF.updateNextStatus(payment);
+			}
+
+			var updateRc = payment.doAction("save");
+			print("[returnKySoPayment] doAction('save') rc=" + updateRc + ", current.phase after save=" + payment["current.phase"] + ", status=" + payment["status"]);
+			if (updateRc !== RC_SUCCESS) {
+				payment.doUpdate();
+			}
+			return { statusCode: "00", message: "Ký số và chuyển trạng thái thành công." };
+		} else {
+			print("[returnKySoPayment] Payment record not found: " + paymentId);
+			return { statusCode: "01", message: "Không tìm thấy phiếu thanh toán " + paymentId };
+		}
+	} catch (e) {
+		print("[returnKySoPayment] Exception: " + e);
+		return { statusCode: "01", message: "Lỗi chuyển phase: " + e };
+	}
+}
+
+function returnKySoPrepayment(prepaymentId, userad, signTech, object_ids) {
+	try {
+		print("[returnKySoPrepayment] START: prepaymentId=" + prepaymentId + ", userad=" + userad);
+		var prepayment = new SCFile("esdHTKTprepayment");
+		var rc = prepayment.doSelect('id="' + prepaymentId + '"');
+		if (rc === RC_SUCCESS) {
+			print("[returnKySoPrepayment] Found prepayment record, current.phase=" + prepayment["current.phase"] + ", status=" + prepayment["status"]);
+
+			if (lib.ESD_HTKT_PREPAYMENT_WF && typeof lib.ESD_HTKT_PREPAYMENT_WF.updateNextStatus === "function") {
+				lib.ESD_HTKT_PREPAYMENT_WF.updateNextStatus(prepayment);
+			} else if (lib.PREPAYMENT_WF && typeof lib.PREPAYMENT_WF.updateNextStatus === "function") {
+				lib.PREPAYMENT_WF.updateNextStatus(prepayment);
+			}
+
+			var updateRc = prepayment.doAction("save");
+			print("[returnKySoPrepayment] doAction('save') rc=" + updateRc + ", current.phase after save=" + prepayment["current.phase"] + ", status=" + prepayment["status"]);
+			if (updateRc !== RC_SUCCESS) {
+				prepayment.doUpdate();
+			}
+			return { statusCode: "00", message: "Ký số và chuyển trạng thái thành công." };
+		} else {
+			print("[returnKySoPrepayment] Prepayment record not found: " + prepaymentId);
+			return { statusCode: "01", message: "Không tìm thấy phiếu tạm ứng " + prepaymentId };
+		}
+	} catch (e) {
+		print("[returnKySoPrepayment] Exception: " + e);
+		return { statusCode: "01", message: "Lỗi chuyển phase: " + e };
 	}
 }
 function updateTable(dxmsId, object_ids, status) {

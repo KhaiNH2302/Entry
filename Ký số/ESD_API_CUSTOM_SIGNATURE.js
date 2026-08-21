@@ -14,6 +14,8 @@ function run() {
 	var name = input["name"];
 	var parsed = {};
 
+	print("[ESD_API_CUSTOM_SIGNATURE] >>> INCOMING -> action=" + name + ", queryString=" + rawParams);
+
 	var startTime = system.functions.tod();
 	var TIMEOUT_MS = 636800;
 
@@ -27,7 +29,10 @@ function run() {
 		if (isReturned) return;
 		isReturned = true;
 
-		input["queryReturn"] = JSON.stringify(obj);
+		var logStr = JSON.stringify(obj);
+		print("[ESD_API_CUSTOM_SIGNATURE] <<< OUTGOING -> action=" + name + ", response=" + (logStr.length > 500 ? logStr.substring(0, 500) + "..." : logStr));
+
+		input["queryReturn"] = logStr;
 		vars.$L_exit = "normal";
 	}
 
@@ -114,11 +119,20 @@ function run() {
 			case "addFileECM":
 				result = lib.ESD_ACTIONS_INTEGRATIONS.addFileECM(parsed);
 				break;
+			case "getFileECM_HTKT_Payment":
+				result = lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm(parsed);
+				break;
 			case "deleteFileECM_HTKT":
 				result = lib.ESD_HTKT_PREPAYMENT_DOCUMENT.deleteFileECM_HTKT(parsed);
 				break;
 			case "addFileECM_HTKT":
 				result = lib.ESD_HTKT_PREPAYMENT_DOCUMENT.addFileECM_HTKT(parsed);
+				break;
+			case "deleteFileECM_HTKT_Payment":
+				result = lib.ESD_HTKT_PAYMENT_DOCUMENT.deleteFileECM_HTKT(parsed);
+				break;
+			case "addFileECM_HTKT_Payment":
+				result = lib.ESD_HTKT_PAYMENT_DOCUMENT.addFileECM_HTKT(parsed);
 				break;
 			case "getStatusPhieu":
 				result = lib.ESD_ACTIONS_INTEGRATIONS.getStatusSign(parsed);
