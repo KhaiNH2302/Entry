@@ -1,5 +1,5 @@
 // Script Library cho Quản lý Phân bổ chi phí (esdHTKTpaymentCostDivision)
-// Updated: Thêm getEntities, getDepartments, getTransactionOffices, getGlAccounts
+// Updated: Thêm getCreatorUnitInfo, getDepartments, getTransactionOffices, getGlAccounts
 // Combined fix: bỏ trailing comma (lỗi compile ES3) + fix logic ghi đè/import trùng + dùng Native SM Query (sửa lỗi SQL) + Lọc PGD và Phòng ban theo org.code & Loại trừ 98
 
 function run() {
@@ -44,37 +44,10 @@ function run() {
 				break;
 
 				// --- DANH MỤC ---
-			case "getCreatorAccountingInfo":
-				var rawDetails = extractRawDetails(input);
-				var paymentId = "";
-				var currentUser = "";
-
-				if (rawDetails) {
-					try {
-						var parsedObj = JSON.parse(rawDetails);
-						if (parsedObj.paymentId) {
-							paymentId = safeString(parsedObj.paymentId).trim();
-						}
-						if (parsedObj.currentUser) {
-							currentUser = safeString(parsedObj.currentUser).trim();
-						}
-					} catch (e) {}
-				}
-				var creatorUnit = getCreatorAccountingUnit(paymentId, currentUser);
-				// Lấy PGD thuộc Chi nhánh trực tiếp bằng entityCode (creatorUnit.value) thay vì lv1Id
-				var transactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.value);
-				// Lấy Phòng ban lọc theo đầu mã org.code dựa trên đơn vị (creatorUnit.value)
-				var deparments = getGlCostCenterOptions(creatorUnit.value);
-				result = {
-					success: true,
-					data: {
-						creatorUnit: creatorUnit,
-						transactionOptions: transactionOfficeOptions,
-						departmentOptions: deparments
-					}
-				};
+			case "getCreatorUnitInfo":
+				result = getCreatorAccountingInfo(input);
 				break;
-			case "getGlUnits":
+			case "getGlUnitsCostDivision":
 				result = getGlUnitOptions(input);
 				break;
 			case "getGlDepartments":
@@ -123,6 +96,40 @@ var ENTITY_STATUS_ACTIVE = "ACTIVE";
  * 1. CÁC HÀM TRUY VẤN DANH MỤC (Dropdown)
  * =========================================================================
  */
+
+/** Lấy đơn vị kế toán cùng danh mục phòng ban và phòng giao dịch mặc định. */
+function getCreatorAccountingInfo(input) {
+	var rawDetails = extractRawDetails(input);
+	var paymentId = "";
+	var currentUser = "";
+
+	if (rawDetails) {
+		try {
+			var parsedObj = JSON.parse(rawDetails);
+			if (parsedObj.paymentId) {
+				paymentId = safeString(parsedObj.paymentId).trim();
+			}
+			if (parsedObj.currentUser) {
+				currentUser = safeString(parsedObj.currentUser).trim();
+			}
+		} catch (e) {}
+	}
+
+	var creatorUnit = getCreatorAccountingUnit(paymentId, currentUser);
+	// Lấy PGD thuộc Chi nhánh trực tiếp bằng entityCode (creatorUnit.value) thay vì lv1Id
+	var transactionOfficeOptions = getTransactionOfficeOptions(creatorUnit.value);
+	// Lấy Phòng ban lọc theo đầu mã org.code dựa trên đơn vị (creatorUnit.value)
+	var departments = getGlCostCenterOptions(creatorUnit.value);
+
+	return {
+		success: true,
+		data: {
+			creatorUnit: creatorUnit,
+			transactionOptions: transactionOfficeOptions,
+			departmentOptions: departments
+		}
+	};
+}
 
 /** lấy unit theo người đăng nhập hoặc người tạo. */
 function getCreatorAccountingUnit(paymentId, currentUser) {
@@ -682,8 +689,7 @@ function getGlTransactionOfficeOptions(input) {
 function getGlAccounts(input) {
 	var list = [];
 	var page = 1;
-	var pageSize = 10;
-	var keyword = "";
+	var pageSize = 9999;
 
 	try {
 		var rawDetails = extractRawDetails(input);
@@ -693,8 +699,6 @@ function getGlAccounts(input) {
 				page = Number(parsedObj.page);
 			if (parsedObj.pageSize && Number(parsedObj.pageSize) > 0)
 				pageSize = Number(parsedObj.pageSize);
-			if (parsedObj.keyword)
-				keyword = safeString(parsedObj.keyword).trim();
 		}
 	} catch (ex) {}
 
@@ -705,23 +709,17 @@ function getGlAccounts(input) {
 		["account.type", "accountType", "S"]
 	];
 
-	var query = 'status="ACTIVE"';
-	if (keyword) {
-		query += ' and (account like "*' + escapeQueryValue(keyword) + '*" or name like "*' + escapeQueryValue(keyword) + '*")';
-	}
-
 	var f = new SCFile("esdDMglAccount", SCFILE_READONLY);
-	var rc = f.doSelect(query);
+	var rc = f.doSelect("true");
 
 	while (rc === RC_SUCCESS) {
 		var account = safeString(f["account"]).trim();
 		if (account) {
 			var rawType = safeString(f["type"]).trim();
-			var isCost = rawType === "Chi phí" || rawType === "COST" || rawType === "CHI PHÍ" || rawType === "Chi phi";
+			var isCost = rawType === "Chi phí" || rawType === "COST";
 
 			if (isCost) {
 				var item = mapRowToObject(f, fieldMappings);
-				item.accountCode = item.accountNumber;
 				item.label = item.accountNumber + " - " + item.accountName;
 				item.value = item.accountNumber;
 				item.type = rawType;
@@ -735,18 +733,14 @@ function getGlAccounts(input) {
 		if (f) f.doClose();
 	} catch (e) {}
 
-	var totalRecords = list.length;
-	var totalPages = Math.ceil(totalRecords / pageSize);
-	var startIndex = (page - 1) * pageSize;
-
 	return {
 		success: true,
-		data: list.slice(startIndex, startIndex + pageSize),
+		data: list,
 		pagination: {
 			page: page,
 			pageSize: pageSize,
-			totalRecords: totalRecords,
-			totalPages: totalPages
+			totalRecords: list.length,
+			totalPages: 1
 		}
 	};
 }
