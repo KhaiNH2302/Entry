@@ -762,8 +762,15 @@ function getCostDivision(input) {
 		var rawDetails = extractRawDetails(input);
 		var queryObj = {};
 		if (rawDetails) queryObj = JSON.parse(rawDetails);
-		paymentId = queryObj.paymentId || queryObj["payment.id"] || "";
-		vendorId = queryObj.vendorId || queryObj["vendor.id"] || "";
+		paymentId = queryObj.paymentId || queryObj["payment.id"] || queryObj.payment_id || "";
+		vendorId =
+				queryObj.vendorId ||
+				queryObj["vendor.id"] ||
+				queryObj.vendor_id ||
+				queryObj["vendor_id"] ||
+				queryObj.supplierId ||
+				queryObj["supplier.id"] ||
+				"";
 	} catch (ex) {
 		return list;
 	}
@@ -1059,12 +1066,35 @@ function deleteCostDivision(input) {
 		var results = [];
 
 		for (var i = 0; i < dataList.length; i++) {
-			var id = dataList[i].id || "";
+			var item = dataList[i];
+			var id = item.id || "";
 
 			if (!id) return { success: false, message: "Thiếu id bản ghi cần xóa" };
 
+			var itemVendorId =
+					item.vendorId ||
+					item["vendor.id"] ||
+					item.vendor_id ||
+					item["vendor_id"] ||
+					item.supplierId ||
+					item["supplier.id"] ||
+					"";
+			var itemPaymentId =
+					item.paymentId ||
+					item["payment.id"] ||
+					item.payment_id ||
+					"";
+
+			var queryDel = 'id="' + escapeQueryValue(id) + '"';
+			if (itemPaymentId) {
+				queryDel += ' and payment.id="' + escapeQueryValue(itemPaymentId) + '"';
+			}
+			if (itemVendorId) {
+				queryDel += ' and vendor.id="' + escapeQueryValue(itemVendorId) + '"';
+			}
+
 			var f = new SCFile("esdHTKTpaymentCostDivision");
-			var rcSelect = f.doSelect('id="' + escapeQueryValue(id) + '"');
+			var rcSelect = f.doSelect(queryDel);
 
 			if (rcSelect === RC_SUCCESS) {
 				var rcDelete = f.doDelete();
@@ -1093,7 +1123,10 @@ function deleteCostDivision(input) {
 				} catch (e) {}
 				return {
 					success: false,
-					message: "Không tìm thấy bản ghi cần xóa với id: " + id
+					message:
+							"Không tìm thấy bản ghi cần xóa hoặc bản ghi không thuộc NCC hiện tại (id: " +
+							id +
+							")"
 				};
 			}
 		}
@@ -1484,7 +1517,15 @@ function validateSingleCostDivision(data) {
 		};
 	}
 
-	var paymentId = data.paymentId || "";
+	var paymentId = data.paymentId || data["payment.id"] || data.payment_id || "";
+	var itemVendorId =
+			data.vendorId ||
+			data["vendor.id"] ||
+			data.vendor_id ||
+			data["vendor_id"] ||
+			data.supplierId ||
+			data["supplier.id"] ||
+			"";
 	var f = new SCFile("esdHTKTpaymentCostDivision", SCFILE_READONLY);
 	var existingId = "";
 
@@ -1508,8 +1549,8 @@ function validateSingleCostDivision(data) {
 				'" and account.number="' +
 				escapeQueryValue(accountNum) +
 				'"';
-		if (data.vendorId) {
-			query += ' and vendor.id="' + escapeQueryValue(data.vendorId) + '"';
+		if (itemVendorId) {
+			query += ' and vendor.id="' + escapeQueryValue(itemVendorId) + '"';
 		}
 		var rcSelect = f.doSelect(query);
 		if (rcSelect === RC_SUCCESS) {
@@ -1536,7 +1577,7 @@ function validateSingleCostDivision(data) {
 		department: deptCode,
 		transactionCode: transCode,
 		paymentId: paymentId,
-		vendorId: data.vendorId || "",
+		vendorId: itemVendorId,
 		entryType: data.entryType || "",
 		id: isDuplicate ? existingId : data.id || ""
 	};
@@ -1625,7 +1666,15 @@ function processSingleCostDivision(data) {
 		};
 	}
 
-	var paymentId = data.paymentId || "";
+	var paymentId = data.paymentId || data["payment.id"] || data.payment_id || "";
+	var itemVendorId =
+			data.vendorId ||
+			data["vendor.id"] ||
+			data.vendor_id ||
+			data["vendor_id"] ||
+			data.supplierId ||
+			data["supplier.id"] ||
+			"";
 	var originalId = data.id || "";
 
 	var originalExists = false;
@@ -1656,8 +1705,8 @@ function processSingleCostDivision(data) {
 				'" and account.number="' +
 				escapeQueryValue(accountNum) +
 				'"';
-		if (data.vendorId) {
-			queryDup += ' and vendor.id="' + escapeQueryValue(data.vendorId) + '"';
+		if (itemVendorId) {
+			queryDup += ' and vendor.id="' + escapeQueryValue(itemVendorId) + '"';
 		}
 		var rcDup = fCheck.doSelect(queryDup);
 		if (rcDup === RC_SUCCESS && (!originalId || fCheck.id != originalId)) {
@@ -1687,7 +1736,7 @@ function processSingleCostDivision(data) {
 		}
 
 		fUpdateB["payment.id"] = paymentId;
-		fUpdateB["vendor.id"] = data.vendorId || fUpdateB["vendor.id"] || "";
+		fUpdateB["vendor.id"] = itemVendorId || fUpdateB["vendor.id"] || "";
 		fUpdateB["entry.type"] = data.entryType || fUpdateB["entry.type"] || "";
 		fUpdateB["account.number"] = accountNum;
 		fUpdateB["account.name"] = data.accountName || accValidation.accountName;
@@ -1754,7 +1803,7 @@ function processSingleCostDivision(data) {
 
 	if (originalId) f["id"] = originalId;
 	f["payment.id"] = paymentId;
-	f["vendor.id"] = data.vendorId || f["vendor.id"] || "";
+	f["vendor.id"] = itemVendorId || f["vendor.id"] || "";
 	f["entry.type"] = data.entryType || f["entry.type"] || "";
 	f["account.number"] = accountNum;
 	f["account.name"] = data.accountName || accValidation.accountName;
