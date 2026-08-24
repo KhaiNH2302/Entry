@@ -80,7 +80,8 @@ function getListSupplierLedger(input) {
 
 			"LEFT JOIN esdHTKTpaymentEntry pe " +
 			"ON (ai.prepayment.id = pe.ref.id  " +
-			'AND pe.entry.type = "PREPAYMENT") ' +
+			'AND pe.entry.type = "PREPAYMENT" ' +
+			'AND pe.vendor.id = "' + escapeSmQueryValue(vendorId) + '") ' +
 
 			"LEFT JOIN esdHTKTaccountingInformation aip " +
 			"ON (pe.accounting.request.id = aip.request.id ) " +
@@ -260,7 +261,8 @@ function getListAccountsPayable(input) {
 			"ON (ai.prepayment.id = currentEntry.ref.id " +
 			'AND currentEntry.payment.id = "' + escapeSmQueryValue(currentPaymentId) + '" ' +
 			'AND currentEntry.entry.type = "PAYABLE" ' +
-			'AND currentEntry.account.type = "DEBIT") ' +
+			'AND currentEntry.account.type = "DEBIT" ' +
+			'AND currentEntry.vendor.id = "' + escapeSmQueryValue(vendorId) + '") ' +
 			'WHERE ai.sub.type = "THANH_TOAN" ' +
 			'AND ai.contract.id = "' + escapeSmQueryValue(contractId) + '" ' +
 			'AND ai.vendor.id = "' + escapeSmQueryValue(vendorId) + '" ' +
@@ -287,7 +289,7 @@ function getListAccountsPayable(input) {
 			var refundAmount = getNumberField(file, ["pv.refund.amount"]);
 			var paidAmount = getNumberField(file, ["pv.amount"]);
 			var payableAmount = getNumberField(file, ["pe.amount"]);
-			var totalPayableAmount = getTotalPayableAmount(prepaymentId, currentPaymentId);
+			var totalPayableAmount = getTotalPayableAmount(prepaymentId, currentPaymentId, vendorId);
 			var totalRemainingAmount = payableAmount - totalPayableAmount;
 
 			// Không xử lý thêm các khoản phải trả đã hết số dư.
@@ -296,8 +298,8 @@ function getListAccountsPayable(input) {
 				continue;
 			}
 
-			var totalPayableAmountAccounted = getTotalPayableAmountAccounted(prepaymentId);
-			var totalTax = getTotalTax(prepaymentId);
+			var totalPayableAmountAccounted = getTotalPayableAmountAccounted(prepaymentId, vendorId);
+			var totalTax = getTotalTax(prepaymentId, vendorId);
 
 
 			var item = {
@@ -348,7 +350,7 @@ function getListAccountsPayable(input) {
 
 
 
-function getTotalTax(prepaymentId) {
+function getTotalTax(prepaymentId, vendorId) {
 	var totalTax = 0;
 	var paymentEntryFile = null;
 
@@ -358,7 +360,8 @@ function getTotalTax(prepaymentId) {
 			"SELECT amount FROM esdHTKTpaymentEntry " +
 			'WHERE entry.type = "TAX" ' +
 			'AND type = "AP" ' +
-			'AND payment.id = "' + escapeSmQueryValue(prepaymentId) + '"';
+			'AND payment.id = "' + escapeSmQueryValue(prepaymentId) + '"' +
+			(vendorId ? ' AND vendor.id = "' + escapeSmQueryValue(vendorId) + '"' : '');
 
 	try {
 		paymentEntryFile = new SCFile("esdHTKTpaymentEntry", SCFILE_READONLY);
@@ -377,7 +380,7 @@ function getTotalTax(prepaymentId) {
 
 
 
-function getTotalPayableAmountAccounted(prepaymentId) {
+function getTotalPayableAmountAccounted(prepaymentId, vendorId) {
 	var totalAmount = 0;
 	var paymentEntryFile = null;
 
@@ -388,7 +391,8 @@ function getTotalPayableAmountAccounted(prepaymentId) {
 			'WHERE entry.type = "PAYABLE" ' +
 			'AND account.type = "DEBIT" ' +
 			'AND accounting.request.id ~= NULL ' +
-			'AND payment.id = "' + escapeSmQueryValue(prepaymentId) + '"';
+			'AND payment.id = "' + escapeSmQueryValue(prepaymentId) + '"' +
+			(vendorId ? ' AND vendor.id = "' + escapeSmQueryValue(vendorId) + '"' : '');
 
 	try {
 		paymentEntryFile = new SCFile("esdHTKTpaymentEntry", SCFILE_READONLY);
@@ -406,7 +410,7 @@ function getTotalPayableAmountAccounted(prepaymentId) {
 }
 
 
-function getTotalPayableAmount(prepaymentId, currentPaymentId) {
+function getTotalPayableAmount(prepaymentId, currentPaymentId, vendorId) {
 	var totalAmount = 0;
 	var paymentEntryFile = null;
 
@@ -417,7 +421,8 @@ function getTotalPayableAmount(prepaymentId, currentPaymentId) {
 			'WHERE entry.type = "PAYABLE" ' +
 			'AND account.type = "DEBIT" ' +
 			'AND ref.id = "' + escapeSmQueryValue(prepaymentId) + '" ' +
-			'AND payment.id ~= "' + escapeSmQueryValue(currentPaymentId) + '"';
+			'AND payment.id ~= "' + escapeSmQueryValue(currentPaymentId) + '"' +
+			(vendorId ? ' AND vendor.id = "' + escapeSmQueryValue(vendorId) + '"' : '');
 
 
 	try {
@@ -921,7 +926,7 @@ function getSupplierDebtSummary(input) {
 			"aip.status AS ogl_status " +
 			"FROM esdHTKTaccountingInformation ai " +
 			"LEFT JOIN esdHTKTpaymentEntry pe " +
-			"ON (ai.prepayment.id = pe.ref.id AND pe.entry.type = \"PREPAYMENT\") " +
+			"ON (ai.prepayment.id = pe.ref.id AND pe.entry.type = \"PREPAYMENT\" AND pe.vendor.id = \"" + escapeSmQueryValue(vendorId) + "\") " +
 			"LEFT JOIN esdHTKTaccountingInformation aip " +
 			"ON (pe.accounting.request.id = aip.request.id) " +
 			'WHERE ai.sub.type = "TAM_UNG" ' +
@@ -1014,7 +1019,7 @@ function getSupplierDebtSummary(input) {
 			"aip.status AS ogl_status " +
 			"FROM esdHTKTaccountingInformation ai " +
 			"LEFT JOIN esdHTKTpaymentEntry pe " +
-			"ON (ai.prepayment.id = pe.ref.id AND pe.entry.type = \"PAYABLE\" AND pe.account.type = \"ASSET\") " +
+			"ON (ai.prepayment.id = pe.ref.id AND pe.entry.type = \"PAYABLE\" AND pe.account.type = \"DEBIT\" AND pe.vendor.id = \"" + escapeSmQueryValue(vendorId) + "\") " +
 			"LEFT JOIN esdHTKTaccountingInformation aip " +
 			"ON (pe.accounting.request.id = aip.request.id) " +
 			'WHERE ai.sub.type = "THANH_TOAN" ' +

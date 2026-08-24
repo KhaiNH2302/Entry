@@ -751,17 +751,19 @@ function getGlAccounts(input) {
  */
 
 /**
- * Lấy danh sách Phân bổ chi phí theo paymentId
+ * Lấy danh sách Phân bổ chi phí theo paymentId và vendorId
  */
 function getCostDivision(input) {
 	var list = [];
 	var paymentId = "";
+	var vendorId = "";
 
 	try {
 		var rawDetails = extractRawDetails(input);
 		var queryObj = {};
 		if (rawDetails) queryObj = JSON.parse(rawDetails);
-		paymentId = queryObj.paymentId || "";
+		paymentId = queryObj.paymentId || queryObj["payment.id"] || "";
+		vendorId = queryObj.vendorId || queryObj["vendor.id"] || "";
 	} catch (ex) {
 		return list;
 	}
@@ -785,8 +787,13 @@ function getCostDivision(input) {
 		["amount", "amount", "N"]
 	];
 
+	var query = 'payment.id="' + escapeQueryValue(paymentId) + '"';
+	if (vendorId) {
+		query += ' and vendor.id="' + escapeQueryValue(vendorId) + '"';
+	}
+
 	var f = new SCFile("esdHTKTpaymentCostDivision", SCFILE_READONLY);
-	var rc = f.doSelect('payment.id="' + escapeQueryValue(paymentId) + '"');
+	var rc = f.doSelect(query);
 
 	while (rc === RC_SUCCESS) {
 		var item = mapRowToObject(f, fieldMappings);
@@ -931,6 +938,8 @@ function updateCostDivision(input) {
 				data.transactionCode !== undefined
 						? data.transactionCode
 						: f["transaction.code"];
+		var targetVendorId =
+				data.vendorId !== undefined ? data.vendorId : f["vendor.id"];
 		var paymentId = f["payment.id"];
 
 		if (targetDept && paymentId) {
@@ -945,6 +954,9 @@ function updateCostDivision(input) {
 					'" and id!="' +
 					escapeQueryValue(id) +
 					'"';
+			if (targetVendorId) {
+				dupQuery += ' and vendor.id="' + escapeQueryValue(targetVendorId) + '"';
+			}
 			var rcDup = fDup.doSelect(dupQuery);
 
 			if (rcDup === RC_SUCCESS) {
@@ -1167,6 +1179,7 @@ function importCostDivision(input) {
 
 			var key =
 					item.paymentId + "|" +
+					(item.vendorId || "") + "|" +
 					item.department + "|" +
 					item.transactionCode + "|" +
 					item.unitId + "|" +
@@ -1495,6 +1508,9 @@ function validateSingleCostDivision(data) {
 				'" and account.number="' +
 				escapeQueryValue(accountNum) +
 				'"';
+		if (data.vendorId) {
+			query += ' and vendor.id="' + escapeQueryValue(data.vendorId) + '"';
+		}
 		var rcSelect = f.doSelect(query);
 		if (rcSelect === RC_SUCCESS) {
 			existingId = f["id"];
@@ -1520,6 +1536,8 @@ function validateSingleCostDivision(data) {
 		department: deptCode,
 		transactionCode: transCode,
 		paymentId: paymentId,
+		vendorId: data.vendorId || "",
+		entryType: data.entryType || "",
 		id: isDuplicate ? existingId : data.id || ""
 	};
 
@@ -1638,6 +1656,9 @@ function processSingleCostDivision(data) {
 				'" and account.number="' +
 				escapeQueryValue(accountNum) +
 				'"';
+		if (data.vendorId) {
+			queryDup += ' and vendor.id="' + escapeQueryValue(data.vendorId) + '"';
+		}
 		var rcDup = fCheck.doSelect(queryDup);
 		if (rcDup === RC_SUCCESS && (!originalId || fCheck.id != originalId)) {
 			isDuplicate = true;
