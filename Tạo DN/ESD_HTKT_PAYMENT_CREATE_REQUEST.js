@@ -44,6 +44,62 @@ function createPaymentRequest(input) {
 		var contractList = JSON.parse(rawData);
 		var contractData = contractList[0];
 
+		// =========================================================================
+		// BỔ SUNG: Tính toán động số tiền còn lại của hợp đồng trước khi tạo phiếu
+		// =========================================================================
+		var contractId = contractData['id'];
+
+		if (contractId) {
+			try {
+				// 1. TỔNG GIÁ TRỊ ĐÃ TẠM ỨNG
+				var totalPrepayment = "0";
+				var prepaymentFile = new SCFile("esdHTKTprepayment", SCFILE_READONLY);
+				var sqlPrepayment = 'contract.id="' + contractId + '" and (status="approved" or status="accounted")';
+
+				if (prepaymentFile.doSelect(sqlPrepayment) === RC_SUCCESS) {
+					do {
+						var prepaymentVendorFile = new SCFile("esdHTKTprepaymentVendor", SCFILE_READONLY);
+						if (prepaymentVendorFile.doSelect('prepayment.id="' + prepaymentFile.id + '"') === RC_SUCCESS) {
+							do {
+								// Đảm bảo amount không bị rỗng/null để thư viện cộng chuỗi không báo lỗi
+								var vendorAmt = prepaymentVendorFile.amount ? String(prepaymentVendorFile.amount) : "0";
+								totalPrepayment = lib.ESD_HTKT_Utils.addStringsManual(totalPrepayment, vendorAmt);
+
+							} while (prepaymentVendorFile.getNext() === RC_SUCCESS);
+						}
+						prepaymentVendorFile.doClose();
+
+					} while (prepaymentFile.getNext() === RC_SUCCESS);
+				}
+				prepaymentFile.doClose();
+
+				// 2. TỔNG GIÁ TRỊ ĐÃ THANH TOÁN
+				var totalPayment = "0";
+
+				// 3. GIÁ TRỊ HĐ/KMS CÒN LẠI
+				var currentContractAmount = String(contractData['totalValue'] || contractData['contract.amount'] || "0");
+
+				var remainingContractValue = lib.ESD_HTKT_Utils.subtractStringsManual(currentContractAmount, totalPrepayment);
+				remainingContractValue = lib.ESD_HTKT_Utils.subtractStringsManual(remainingContractValue, totalPayment);
+
+				// 4. KIỂM TRA CHẶN
+				// Ép kiểu về số để kiểm tra <= 0
+				if (Number(remainingContractValue) <= 0) {
+					return {
+						success: false,
+						message: "Tổng giá trị HĐ/KMS còn lại của hợp đồng đã về 0. Không thể tạo thêm phiếu thanh toán mới."
+					};
+				}
+
+			} catch (eCalc) {
+				return {
+					success: false,
+					message: "Lỗi hệ thống khi tính toán số dư hợp đồng: " + eCalc.toString()
+				};
+			}
+		}
+		// =========================================================================
+
 		/*
 		 * HTKT PAYMENT CURRENT USER
 		 */
