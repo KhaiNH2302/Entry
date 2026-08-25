@@ -1499,3 +1499,5 @@ function runSignedUploadIntegration() {
 		});
 	}
 }
+
+var get_file_ecm_HTKT = get_file_ecm;

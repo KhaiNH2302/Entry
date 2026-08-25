@@ -7,11 +7,15 @@ var HTKT_DOC_GENERATE_PDF_BASE64_PATH = "/api/generate/pdf/base64";
 var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
+//var HTKT_CASH_TEMPLATE_ID = "1058881c-d3b9-4032-b7d4-e9db38bc56a1";
+//var HTKT_CASH_TEMPLATE_CODE = "01-TUTM";
+//var HTKT_TRANSFER_TEMPLATE_ID = "f4fd98b7-10b4-4084-8876-0b81f6049f22";
+//var HTKT_TRANSFER_TEMPLATE_CODE = "03-TUCK";
 
-var HTKT_CASH_TEMPLATE_ID = "73bd75fb-d5cd-4a71-829f-ad92fce398d0";
-var HTKT_CASH_TEMPLATE_CODE = "01-TUTM_Format_Chuan_v4";
-var HTKT_TRANSFER_TEMPLATE_ID = "d242767f-28bd-4d71-84a4-9c2af21d319c";
-var HTKT_TRANSFER_TEMPLATE_CODE = "03-TUCK_Chuan_Fixed";
+var HTKT_CASH_TEMPLATE_ID = "db2e5842-c020-4cbd-a16e-d00de5632653";
+var HTKT_CASH_TEMPLATE_CODE = "01-TUTM";
+var HTKT_TRANSFER_TEMPLATE_ID = "e705a15c-3910-4aeb-b935-c7efb84874fd";
+var HTKT_TRANSFER_TEMPLATE_CODE = "03-TUCK";
 var HTKT_PREPAYMENT_RECIPIENT = "Lãnh đạo đơn vị";
 
 
@@ -33,7 +37,7 @@ function htktFormatMoney(value) {
 	var result = "";
 
 	while (integerPart.length > 3) {
-		result = "," + integerPart.substr(integerPart.length - 3) + result;
+		result = "." + integerPart.substr(integerPart.length - 3) + result;
 		integerPart = integerPart.substr(0, integerPart.length - 3);
 	}
 
@@ -41,7 +45,7 @@ function htktFormatMoney(value) {
 	if (amount < 0) result = "-" + result;
 
 	if (decimalPart !== "" && Number(decimalPart) !== 0) {
-		result += "." + decimalPart;
+		result += "," + decimalPart;
 	}
 
 	return result;
@@ -552,7 +556,7 @@ function htktGetDeductibleTaxByVendor(prepaymentId, sourceRows) {
 	return taxByVendor;
 }
 
-function htktBuildVendorTemplateRows(sourceRows, taxByVendor) {
+function htktBuildVendorTemplateRows(sourceRows, taxByVendor, description) {
 	var rows = [];
 	var totalAmountBeforeTaxRaw = 0;
 	var totalTaxRaw = 0;
@@ -565,9 +569,12 @@ function htktBuildVendorTemplateRows(sourceRows, taxByVendor) {
 		var amountBeforeTaxRaw = Math.max(amountRaw - taxRaw, 0);
 		var lineTotalRaw = amountRaw;
 
+		// Noi dung chi tiet lay tu description cua esdHTKTprepayment (template dung placeholder {vendor_name}).
+		var detailContent = HTKT_COMMON.trim(description) || source.vendor_name || source.vendor_id;
+
 		rows.push({
 			stt: i + 1,
-			vendor_name: source.vendor_name || source.vendor_id,
+			vendor_name: detailContent,
 			amount_before_tax: htktFormatMoney(amountBeforeTaxRaw),
 			tax_amount: htktFormatMoney(taxRaw),
 			line_total: htktFormatMoney(lineTotalRaw),
@@ -722,6 +729,11 @@ function htktGetPrepaymentEntrySourceRows(prepaymentId) {
 						["account.number"]
 				),
 				account_name: HTKT_COMMON.readString(entryFile, ["account.name"]),
+				branch: HTKT_COMMON.readString(entryFile, ["branch"]),
+				branch_entity_code: HTKT_COMMON.readString(entryFile, ["branch.entity.code"]),
+				department: HTKT_COMMON.readString(entryFile, ["department"]),
+				transaction_office: HTKT_COMMON.readString(entryFile, ["transaction.code"]),
+				currency: HTKT_COMMON.readString(entryFile, ["currency"]),
 				description: HTKT_COMMON.readString(entryFile, ["description"]),
 				amount_raw: HTKT_COMMON.readNumber(entryFile, ["amount"]),
 				vendor_id: HTKT_COMMON.readString(entryFile, ["vendor.id"]),
@@ -807,7 +819,7 @@ function htktGetGlGroupInfo(prepaymentId, entry) {
 	};
 }
 
-function htktBuildSupplementalEntryRows(prepaymentId, entryRows) {
+function htktBuildSupplementalEntryRows(prepaymentId, entryRows, defaultCurrency) {
 	var groupsByKey = {};
 	var groups = [];
 
@@ -828,7 +840,8 @@ function htktBuildSupplementalEntryRows(prepaymentId, entryRows) {
 				order: groupInfo.order,
 				descriptions: [],
 				descriptionSet: {},
-				totalDebitRaw: 0
+				totalDebitRaw: 0,
+				rows: []
 			};
 			groupsByKey[groupInfo.key] = group;
 			groups.push(group);
@@ -851,17 +864,232 @@ function htktBuildSupplementalEntryRows(prepaymentId, entryRows) {
 		return left.order - right.order;
 	});
 
-	var result = [];
-	for (var groupIndex = 0; groupIndex < groups.length; groupIndex++) {
-		result.push({
-			stt: groupIndex + 1,
-			description: groups[groupIndex].descriptions.join("\n"),
-			amount: htktFormatMoney(groups[groupIndex].totalDebitRaw),
-			note: ""
+	// Thu chi tiet tung dong theo nhom (Bút toán 1, Bút toán 2...)
+	for (var j = 0; j < entryRows.length; j++) {
+		var rowEntry = entryRows[j];
+		var rowType = htktNormalizePaymentMethod(rowEntry.type);
+
+		if (rowType !== HTKT_ENTRY_TYPE_GL) {
+			continue;
+		}
+
+		var rowGroupInfo = htktGetGlGroupInfo(prepaymentId, rowEntry);
+		var rowGroup = groupsByKey[rowGroupInfo.key];
+		if (!rowGroup) continue;
+
+		var amountRaw = Number(rowEntry.amount_raw || 0);
+		var accountSide = htktGetAccountSide(rowEntry.account_type);
+		var debitAmount = "";
+		var creditAmount = "";
+
+		if (accountSide === "debit") {
+			debitAmount = htktFormatMoney(amountRaw);
+		} else if (accountSide === "credit") {
+			creditAmount = htktFormatMoney(amountRaw);
+		}
+
+		rowGroup.rows.push({
+			stt: rowGroup.rows.length + 1,
+			account_number: rowEntry.account_number,
+			account_name: rowEntry.account_name,
+			unit_code: htktGetEntityUnitDisplay(
+					HTKT_COMMON.trim(rowEntry.branch) || rowEntry.branch_entity_code
+			),
+			department_code: htktGetCostCenterDisplay(rowEntry.department),
+			transaction_office: htktGetTransactionOfficeDisplay(rowEntry.transaction_office),
+			description: rowEntry.description,
+			currency: rowEntry.currency || defaultCurrency || "",
+			debit_amount: debitAmount,
+			credit_amount: creditAmount
 		});
 	}
 
-	return result;
+	var summaryRows = [];
+	var groupsResult = [];
+
+	for (var groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+		var group = groups[groupIndex];
+		summaryRows.push({
+			stt: groupIndex + 1,
+			description: group.descriptions.join("\n"),
+			amount: htktFormatMoney(group.totalDebitRaw),
+			note: ""
+		});
+		groupsResult.push({
+			stt: groupIndex + 1,
+			description: group.descriptions.join("\n"),
+			amount: htktFormatMoney(group.totalDebitRaw),
+			note: "",
+			rows: group.rows
+		});
+	}
+
+	return {
+		summary: summaryRows,
+		groups: groupsResult
+	};
+}
+
+var HTKT_TABLE_ENTITY = "esdDMentity";
+var HTKT_TABLE_COST_CENTER = "esdDMcostCenter";
+
+function htktIsAllZeroCode(value) {
+	var code = HTKT_COMMON.trim(value);
+	return code !== "" && /^0+$/.test(code);
+}
+
+function htktUnknownCodeDisplay(code) {
+	return HTKT_COMMON.trim(code) + " - Không xác định";
+}
+
+function htktGetEntityUnitDisplay(branchCode) {
+	var code = HTKT_COMMON.trim(branchCode);
+	if (!code) return "";
+	if (htktIsAllZeroCode(code)) return htktUnknownCodeDisplay(code);
+
+	// Thu cac dang ma branch (106, 0106, 00106) vi dbdict co the luu kem so 0 dau.
+	var candidates = [code, "0" + code, "00" + code];
+	var matchedEntityCode = "";
+	var matchedName = "";
+	var fallbackEntityCode = "";
+	var fallbackName = "";
+
+	for (var candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+		var candidate = candidates[candidateIndex];
+		var entityFile = HTKT_COMMON.newReadOnlyFile(HTKT_TABLE_ENTITY);
+		if (!entityFile) continue;
+
+		var rc = entityFile.doSelect(
+				'ogl.branch.code="' + HTKT_COMMON.escapeQueryValue(candidate) + '"'
+		);
+
+		while (rc === RC_SUCCESS) {
+			var entityCode = HTKT_COMMON.readString(entityFile, ["entity.code"]);
+			var branchName = HTKT_COMMON.readString(entityFile, ["branch.name"]);
+			var transactionCode = HTKT_COMMON.readString(entityFile, ["org.transaction.code"]);
+
+			if (!fallbackEntityCode && entityCode) {
+				fallbackEntityCode = entityCode;
+				fallbackName = branchName;
+			}
+
+			// Uu tien dong Don vi (org.transaction.code = 98) giong dropdown UI.
+			if (transactionCode === "98" && entityCode && !matchedEntityCode) {
+				matchedEntityCode = entityCode;
+				matchedName = branchName;
+			}
+
+			rc = entityFile.getNext();
+		}
+
+		HTKT_COMMON.closeFile(entityFile);
+
+		if (matchedEntityCode) break;
+	}
+
+	var displayCode = matchedEntityCode || fallbackEntityCode || code;
+	var branchName = matchedName || fallbackName || "";
+	var separatorIndex = branchName.indexOf("-");
+	var namePrefix = (separatorIndex >= 0 ? branchName.substring(0, separatorIndex) : branchName).trim();
+
+	return namePrefix ? displayCode + " - " + namePrefix : displayCode;
+}
+
+function htktGetCostCenterDisplay(costCenter) {
+	var code = HTKT_COMMON.trim(costCenter);
+	if (!code) return "";
+	if (htktIsAllZeroCode(code)) return htktUnknownCodeDisplay(code);
+
+	var costCenterFile = HTKT_COMMON.selectOne(
+			HTKT_TABLE_COST_CENTER,
+			["cost.center"],
+			code
+	);
+	var name = costCenterFile
+			? HTKT_COMMON.readString(costCenterFile, ["name"])
+			: "";
+
+	HTKT_COMMON.closeFile(costCenterFile);
+	return name ? code + " - " + name : code;
+}
+
+function htktGetTransactionOfficeDisplay(transactionOffice) {
+	var code = HTKT_COMMON.trim(transactionOffice);
+	if (!code) return "";
+	if (htktIsAllZeroCode(code)) return htktUnknownCodeDisplay(code);
+
+	var entityFile = HTKT_COMMON.newReadOnlyFile(HTKT_TABLE_ENTITY);
+	if (!entityFile) return code;
+
+	var matchedEntityCode = "";
+	var matchedName = "";
+	var rc = entityFile.doSelect(
+			'org.transaction.code="' + HTKT_COMMON.escapeQueryValue(code) + '" and status="ACTIVE"'
+	);
+
+	while (rc === RC_SUCCESS) {
+		if (!matchedEntityCode) {
+			matchedEntityCode = HTKT_COMMON.readString(entityFile, ["entity.code"]);
+			matchedName = HTKT_COMMON.readString(entityFile, ["branch.name"]);
+		}
+		rc = entityFile.getNext();
+	}
+
+	HTKT_COMMON.closeFile(entityFile);
+
+	var separatorIndex = matchedName.indexOf("-");
+	var namePart = (separatorIndex >= 0 ? matchedName.substring(separatorIndex + 1) : matchedName).trim();
+	var displayCode = matchedEntityCode || code;
+
+	return namePart ? displayCode + " - " + namePart : displayCode;
+}
+function htktBuildDetailAccountingRows(entryRows, defaultCurrency) {
+	var rows = [];
+	var totalDebitRaw = 0;
+	var totalCreditRaw = 0;
+
+	for (var i = 0; i < entryRows.length; i++) {
+		var entry = entryRows[i];
+		var normalizedType = htktNormalizePaymentMethod(entry.type);
+
+		if (normalizedType !== HTKT_ENTRY_TYPE_GL) {
+			continue;
+		}
+
+		var amountRaw = Number(entry.amount_raw || 0);
+		var accountSide = htktGetAccountSide(entry.account_type);
+		var debitAmount = "";
+		var creditAmount = "";
+
+		if (accountSide === "debit") {
+			totalDebitRaw += amountRaw;
+			debitAmount = htktFormatMoney(amountRaw);
+		} else if (accountSide === "credit") {
+			totalCreditRaw += amountRaw;
+			creditAmount = htktFormatMoney(amountRaw);
+		}
+
+		rows.push({
+			stt: rows.length + 1,
+			account_number: entry.account_number,
+			account_name: entry.account_name,
+			unit_code: htktGetEntityUnitDisplay(
+					HTKT_COMMON.trim(entry.branch) || entry.branch_entity_code
+			),
+			department_code: htktGetCostCenterDisplay(entry.department),
+			transaction_office: htktGetTransactionOfficeDisplay(entry.transaction_office),
+			description: entry.description,
+			currency: entry.currency || defaultCurrency || "",
+			debit_amount: debitAmount,
+			credit_amount: creditAmount
+		});
+	}
+
+	return {
+		rows: rows,
+		totalDebitRaw: totalDebitRaw,
+		totalCreditRaw: totalCreditRaw
+	};
 }
 
 function htktGetAccountingBankName(entry, vendorById) {
@@ -887,7 +1115,7 @@ function htktGetAccountingBankName(entry, vendorById) {
 	return "";
 }
 
-function htktBuildAccountingRows(entryRows, vendorSourceRows) {
+function htktBuildAccountingRows(entryRows, vendorSourceRows, defaultCurrency) {
 	var vendorById = {};
 	var rows = [];
 	var totalDebitRaw = 0;
@@ -928,6 +1156,7 @@ function htktBuildAccountingRows(entryRows, vendorSourceRows) {
 			account_name: entry.account_name,
 			bank_name: htktGetAccountingBankName(entry, vendorById),
 			description: entry.description,
+			currency: entry.currency || defaultCurrency || "",
 			debit_amount: debitAmount,
 			credit_amount: creditAmount
 		});
@@ -970,11 +1199,13 @@ function htktBuildTemplateData(prepaymentId) {
 	);
 	var taxByVendor = htktGetDeductibleTaxByVendor(
 			prepaymentId,
-			vendorSourceRows
+			vendorSourceRows,
+			currency
 	);
 	var vendorData = htktBuildVendorTemplateRows(
 			vendorSourceRows,
-			taxByVendor
+			taxByVendor,
+			description
 	);
 	var paymentTemplate = htktResolvePaymentTemplate(vendorSourceRows);
 
@@ -988,14 +1219,17 @@ function htktBuildTemplateData(prepaymentId) {
 			paymentTemplate.kind
 	);
 	var entryRows = htktGetPrepaymentEntrySourceRows(prepaymentId);
-	var supplementalEntryRows = htktBuildSupplementalEntryRows(
+	var supplementalData = htktBuildSupplementalEntryRows(
 			prepaymentId,
-			entryRows
+			entryRows,
+			currency
 	);
 	var accountingData = htktBuildAccountingRows(
 			entryRows,
-			vendorSourceRows
+			vendorSourceRows,
+			currency
 	);
+	var detailAccountingData = htktBuildDetailAccountingRows(entryRows, currency);
 	var amountRaw = vendorData.totalAmountRaw;
 	var amountWords = htktAmountToVietnameseWords(amountRaw, currency);
 	var data = {
@@ -1019,8 +1253,12 @@ function htktBuildTemplateData(prepaymentId) {
 		calc_total_vendor_amount: htktFormatMoney(
 				vendorData.totalAmountRaw
 		),
+		calc_total_line_total: htktFormatMoney(
+				vendorData.totalAmountRaw
+		),
 
-		supplemental_entry_rows: supplementalEntryRows,
+		supplemental_entry_rows: supplementalData.summary,
+		supplemental_entry_groups: supplementalData.groups,
 
 		payment_method: paymentTemplate.payment_method,
 		cash_checkbox: paymentData.cashCheckbox,
@@ -1045,6 +1283,14 @@ function htktBuildTemplateData(prepaymentId) {
 		),
 		calc_total_credit_amount: htktFormatMoney(
 				accountingData.totalCreditRaw
+		),
+
+		detail_accounting_rows: detailAccountingData.rows,
+		calc_total_detail_debit: htktFormatMoney(
+				detailAccountingData.totalDebitRaw
+		),
+		calc_total_detail_credit: htktFormatMoney(
+				detailAccountingData.totalCreditRaw
 		),
 
 		/* Giữ nguyên vị trí chữ ký, chưa nhúng ảnh vào template. */
@@ -1298,18 +1544,39 @@ function generatePresentationPdf(input) {
  * ============================================================================= */
 
 function RENDER() {
-	var generated = generatePresentationPdf({
-		useCache: true,
-		includeTemplateData: false
-	});
+	var base64PDF = "";
 
-	if (!generated.success) {
-		return htktBuildErrorHtml("PDF Preview", generated.message);
+	// Lay ban trinh ky hien hanh tu attachment/ECM (CURRENT hoac COMPLETED)
+	try {
+		var prepaymentId = HTKT_COMMON.getCurrentPrepaymentId({});
+		var fetched = prepaymentId
+				? lib.ESD_HTKT_PREPAYMENT_DOCUMENT.get_file_ecm_HTKT({ id: prepaymentId })
+				: null;
+
+		if (fetched && fetched.success === true && fetched.data && fetched.data.Data) {
+			var fileData = fetched.data.Data;
+			for (var key in fileData) {
+				base64PDF = htktEscapeForJavaScript(fileData[key]);
+				break;
+			}
+		}
+	} catch (e) {
+		// bo qua
 	}
 
-	var context = generated.data;
-	var base64PDF = htktEscapeForJavaScript(context.pdfBase64);
+	// Khong co ban luu -> gen moi
+	if (!base64PDF) {
+		var generated = generatePresentationPdf({
+			useCache: true,
+			includeTemplateData: false
+		});
 
+		if (!generated.success) {
+			return htktBuildErrorHtml("PDF Preview", generated.message);
+		}
+
+		base64PDF = htktEscapeForJavaScript(generated.data.pdfBase64);
+	}
 	return (
 			"<!DOCTYPE html>" +
 			"<html><head><meta charset='utf-8'>" +
@@ -1341,8 +1608,75 @@ function RENDER() {
 			"</body></html>"
 	);
 }
+/* =============================================================================
+ * 9. RENDER IN PHIẾU (HTML VIEWER) - tự động mở hộp thoại in PDF
+ * ============================================================================= */
+function RENDER_PRINT() {
+	var base64PDF = "";
 
+	// Lay ban trinh ky hien hanh tu attachment/ECM (CURRENT hoac COMPLETED)
+	try {
+		var prepaymentId = HTKT_COMMON.getCurrentPrepaymentId({});
+		var fetched = prepaymentId
+				? lib.ESD_HTKT_PREPAYMENT_DOCUMENT.get_file_ecm_HTKT({ id: prepaymentId })
+				: null;
 
+		if (fetched && fetched.success === true && fetched.data && fetched.data.Data) {
+			var fileData = fetched.data.Data;
+			for (var key in fileData) {
+				base64PDF = htktEscapeForJavaScript(fileData[key]);
+				break;
+			}
+		}
+	} catch (e) {
+		// bo qua
+	}
+
+	// Khong co ban luu -> gen moi
+	if (!base64PDF) {
+		var generated = generatePresentationPdf({
+			useCache: true,
+			includeTemplateData: false
+		});
+
+		if (!generated.success) {
+			return htktBuildErrorHtml("In phieu", generated.message);
+		}
+
+		base64PDF = htktEscapeForJavaScript(generated.data.pdfBase64);
+	}
+
+	// Chi hien thi mot giao dien PDF; nguoi dung bam nut Print tren toolbar.
+	return (
+			"<!DOCTYPE html>" +
+			"<html><head><meta charset='utf-8'>" +
+			"<style>" +
+			"html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#525659;}" +
+			"#htktPrintFrame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:block;}" +
+			"</style></head><body>" +
+			"<iframe id='htktPrintFrame'></iframe>" +
+			"<script>" +
+			"(function(){" +
+			"var base64='" + base64PDF + "';" +
+			"function toBytes(value){" +
+			"var binary=atob(value);" +
+			"var bytes=new Uint8Array(binary.length);" +
+			"for(var i=0;i<binary.length;i++){bytes[i]=binary.charCodeAt(i);}" +
+			"return bytes;" +
+			"}" +
+			"try{" +
+			"var blob=new Blob([toBytes(base64)],{type:'application/pdf'});" +
+			"var url=URL.createObjectURL(blob);" +
+			"document.getElementById('htktPrintFrame').src=url+'#toolbar=1&navpanes=0&view=FitH';" +
+			"window.addEventListener('beforeunload',function(){URL.revokeObjectURL(url);});" +
+			"}catch(e){" +
+			"document.body.innerHTML='<div style=\"padding:16px;color:red;font-family:Arial;\">Loi hien thi PDF: '+e+'</div>';" +
+			"}" +
+			"})();" +
+			"</script>" +
+			"</body></html>"
+	);
+}
 
 
 

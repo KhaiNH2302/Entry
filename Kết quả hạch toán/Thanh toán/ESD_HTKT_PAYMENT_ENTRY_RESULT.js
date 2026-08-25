@@ -33,7 +33,6 @@ function renderTabAccountingResults() {
 	var currentRecord = vars['$L.file'];
 	var paymentId = textValue(vars['$G.payment.id']).trim() ||
 			textValue(vars['$G.prepayment.id']).trim();
-
 	if (!paymentId && currentRecord) {
 		paymentId = textValue(currentRecord['id']).trim();
 	}
@@ -551,11 +550,11 @@ function buildAccountingResultsHtml(rows, error) {
 		'.status-processing{background:#fef3c7;color:#d97706}',
 		'.status-default{background:#eef2f7;color:#475569}',
 		'.empty{text-align:center;color:#64748b}',
-		'.c-index{width:4%}.c-type{width:9%}.c-content{width:13%}.c-amount{width:8%}.c-currency{width:7%}',
-		'.c-batch{width:10%}.c-invoice{width:10%}.c-payment{width:10%}.c-status{width:10%}.c-message{width:10%}.c-time{width:9%}',
-		'#transfer-results-table{min-width:960px}',
-		'.c-transfer-index{width:4%}.c-transfer-content{width:18%}.c-transfer-amount{width:10%}.c-transfer-currency{width:8%}',
-		'.c-beneficiary-account{width:17%}.c-transfer-status{width:15%}.c-transfer-message{width:15%}.c-transfer-time{width:13%}',
+		'.c-index{width:4%}.c-type{width:9%}.c-content{width:14%}.c-amount{width:9%}.c-currency{width:7%}',
+		'.c-batch{width:11%}.c-invoice{width:11%}.c-payment{width:10%}.c-status{width:13%}.c-time{width:12%}',
+		'#transfer-results-table{min-width:900px}',
+		'.c-transfer-index{width:5%}.c-transfer-content{width:19.33%}.c-transfer-amount{width:12%}.c-transfer-currency{width:10%}',
+		'.c-beneficiary-account{width:20%}.c-transfer-status{width:18%}.c-transfer-time{width:15.67%}',
 		'@media(max-width:768px){.result{padding:12px}.result-head{align-items:flex-start;flex-direction:column}}',
 		'</style></head><body>',
 		'<main class="result">',
@@ -613,7 +612,7 @@ function buildAccountingResultSection(
 
 	if (!bodyRows.length) {
 		bodyRows.push(
-				'<tr><td class="empty" colspan="11">' +
+				'<tr><td class="empty" colspan="10">' +
 				(error || 'Kh&#244;ng c&#243; d&#7919; li&#7879;u') +
 				'</td></tr>'
 		);
@@ -629,7 +628,7 @@ function buildAccountingResultSection(
 		'<div class="table-wrap"><table id="', attributeValue(tableId), '">',
 		'<colgroup>',
 		'<col class="c-index"><col class="c-type"><col class="c-content"><col class="c-amount"><col class="c-currency">',
-		'<col class="c-batch"><col class="c-invoice"><col class="c-payment"><col class="c-status"><col class="c-message"><col class="c-time">',
+		'<col class="c-batch"><col class="c-invoice"><col class="c-payment"><col class="c-status"><col class="c-time">',
 		'</colgroup>',
 		'<thead><tr>',
 		buildHeader('c-index', 'STT', 0, 'number'),
@@ -641,8 +640,7 @@ function buildAccountingResultSection(
 		buildHeader('c-invoice', 'S&#7889; Invoice (OGL)', 6, 'text'),
 		buildHeader('c-payment', 'S&#7889; Payment (OGL)', 7, 'text'),
 		buildHeader('c-status', 'Tr&#7841;ng th&#225;i x&#7917; l&#253; OGL', 8, 'text'),
-		buildHeader('c-message', 'M&#244; t&#7843;', 9, 'text'),
-		buildHeader('c-time', 'Th&#7901;i gian c&#7853;p nh&#7853;t', 10, 'number'),
+		buildHeader('c-time', 'Th&#7901;i gian c&#7853;p nh&#7853;t', 9, 'number'),
 		'</tr></thead><tbody>',
 		bodyRows.join(''),
 		'</tbody></table></div>',
@@ -663,7 +661,7 @@ function buildTransferResultSection(title, counterLabel, rows, error, tableId) {
 
 	if (!bodyRows.length) {
 		bodyRows.push(
-				'<tr><td class="empty" colspan="8">' +
+				'<tr><td class="empty" colspan="7">' +
 				(error || 'Kh&#244;ng c&#243; d&#7919; li&#7879;u') +
 				'</td></tr>'
 		);
@@ -680,7 +678,7 @@ function buildTransferResultSection(title, counterLabel, rows, error, tableId) {
 		'<colgroup>',
 		'<col class="c-transfer-index"><col class="c-transfer-content"><col class="c-transfer-amount">',
 		'<col class="c-transfer-currency"><col class="c-beneficiary-account">',
-		'<col class="c-transfer-status"><col class="c-transfer-message"><col class="c-transfer-time">',
+		'<col class="c-transfer-status"><col class="c-transfer-time">',
 		'</colgroup>',
 		'<thead><tr>',
 		buildHeader('c-transfer-index', 'STT', 0, 'number'),
@@ -689,8 +687,7 @@ function buildTransferResultSection(title, counterLabel, rows, error, tableId) {
 		buildHeader('c-transfer-currency', 'Lo&#7841;i ti&#7873;n', 3, 'text'),
 		buildHeader('c-beneficiary-account', 'T&#224;i kho&#7843;n th&#7909; h&#432;&#7903;ng', 4, 'text'),
 		buildHeader('c-transfer-status', 'Tr&#7841;ng th&#225;i x&#7917; l&#253;', 5, 'text'),
-		buildHeader('c-transfer-message', 'M&#244; t&#7843;', 6, 'text'),
-		buildHeader('c-transfer-time', 'Th&#7901;i gian c&#7853;p nh&#7853;t', 7, 'number'),
+		buildHeader('c-transfer-time', 'Th&#7901;i gian c&#7853;p nh&#7853;t', 6, 'number'),
 		'</tr></thead><tbody>',
 		bodyRows.join(''),
 		'</tbody></table></div>',
@@ -711,8 +708,7 @@ function buildAccountingResultRow(row, status, displayIndex, accountingTypeLabel
 	var typeLabel = textValue(accountingTypeLabel).trim();
 	var amountLabel = formatAmount(row.amount);
 	var checkedTimeLabel = formatCheckedTime(row.checkedTime);
-	var messageLabel = textValue(row.message).trim();
-	var statusTooltip = messageLabel || status.tooltip;
+	var statusTooltip = textValue(row.message).trim() || status.tooltip;
 
 	return [
 		'<tr data-result-row="true" data-original-index="', rowIndex, '">',
@@ -725,7 +721,6 @@ function buildAccountingResultRow(row, status, displayIndex, accountingTypeLabel
 		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.invoiceNumber), '"', buildTooltipAttributes(row.invoiceNumber), '>', htmlValue(row.invoiceNumber), '</td>',
 		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.paymentNumber), '"', buildTooltipAttributes(row.paymentNumber), '>', htmlValue(row.paymentNumber), '</td>',
 		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.status), '"', buildTooltipAttributes(statusTooltip), '><span class="status status-', status.code, '">', status.label, '</span></td>',
-		'<td class="accounting-tooltip-target" data-sort="', attributeValue(messageLabel), '"', buildTooltipAttributes(messageLabel), '>', htmlValue(messageLabel), '</td>',
 		'<td class="accounting-tooltip-target" data-sort="', getDateSortValue(row.checkedTime), '"', buildTooltipAttributes(checkedTimeLabel), '>', htmlValue(checkedTimeLabel), '</td>',
 		'</tr>'
 	].join('');
@@ -738,8 +733,7 @@ function buildTransferResultRow(row, status, displayIndex) {
 	var rowIndex = Number(displayIndex) || 1;
 	var amountLabel = formatAmount(row.amount);
 	var checkedTimeLabel = formatCheckedTime(row.checkedTime);
-	var messageLabel = textValue(row.message).trim();
-	var statusTooltip = messageLabel || status.tooltip;
+	var statusTooltip = textValue(row.message).trim() || status.tooltip;
 
 	return [
 		'<tr data-result-row="true" data-original-index="', rowIndex, '">',
@@ -749,7 +743,6 @@ function buildTransferResultRow(row, status, displayIndex) {
 		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.currency), '"', buildTooltipAttributes(row.currency), '>', htmlValue(row.currency), '</td>',
 		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.beneficiaryAccount), '"', buildTooltipAttributes(row.beneficiaryAccount), '>', htmlValue(row.beneficiaryAccount), '</td>',
 		'<td class="accounting-tooltip-target" data-sort="', attributeValue(row.status), '"', buildTooltipAttributes(statusTooltip), '><span class="status status-', status.code, '">', status.label, '</span></td>',
-		'<td class="accounting-tooltip-target" data-sort="', attributeValue(messageLabel), '"', buildTooltipAttributes(messageLabel), '>', htmlValue(messageLabel), '</td>',
 		'<td class="accounting-tooltip-target" data-sort="', getDateSortValue(row.checkedTime), '"', buildTooltipAttributes(checkedTimeLabel), '>', htmlValue(checkedTimeLabel), '</td>',
 		'</tr>'
 	].join('');

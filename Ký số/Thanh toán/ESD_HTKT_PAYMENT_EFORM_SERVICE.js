@@ -21,6 +21,254 @@ var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
 // var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK__3_";
 var HTKT_PAYMENT_RECIPIENT = "Lãnh đạo đơn vị";
 
+function htktEscapeForJavaScript(value) {
+	return HTKT_COMMON.toString(value)
+			.replace(/\\/g, "\\\\")
+			.replace(/'/g, "\\'")
+			.replace(/\r/g, "")
+			.replace(/\n/g, "");
+}
+
+function htktNormalizePaymentMethod(value) {
+	return HTKT_COMMON.normalizeCode(value).replace(/_/g, "");
+}
+
+function htktIsCashPaymentMethod(value) {
+	var normalized = htktNormalizePaymentMethod(value);
+	return normalized === "TIENMAT" || normalized === "CASH";
+}
+
+function htktIsTransferPaymentMethod(value) {
+	var normalized = htktNormalizePaymentMethod(value);
+	return normalized === "CHUYENKHOAN" ||
+			normalized === "BANKTRANSFER" ||
+			normalized === "TRANSFER";
+}
+
+function htktFormatDateLong(value) {
+	var dateValue = HTKT_COMMON.toDate(value);
+	if (!dateValue) {
+		return "";
+	}
+
+	return "Ngày " + dateValue.getDate() +
+			" tháng " + (dateValue.getMonth() + 1) +
+			" năm " + dateValue.getFullYear();
+}
+
+function htktPadDatePart(value) {
+	var numberValue = Number(value || 0);
+	return numberValue < 10 ? "0" + numberValue : String(numberValue);
+}
+
+function htktFormatDateShort(value) {
+	var dateValue = HTKT_COMMON.toDate(value);
+	if (!dateValue) {
+		return "";
+	}
+
+	return htktPadDatePart(dateValue.getDate()) + "/" +
+			htktPadDatePart(dateValue.getMonth() + 1) + "/" +
+			dateValue.getFullYear();
+}
+
+function htktBuildErrorHtml(title, message) {
+	return (
+			"<div style='padding:20px;font-family:Arial,sans-serif;color:#b91c1c;'>" +
+			"<div style='font-size:16px;font-weight:bold;margin-bottom:8px;'>" +
+			HTKT_COMMON.escapeHtml(title || "Có lỗi xảy ra") +
+			"</div>" +
+			"<div>" +
+			HTKT_COMMON.escapeHtml(message || "") +
+			"</div>" +
+			"</div>"
+	);
+}
+
+function htktGetContactDisplayName(contactName) {
+	var safeContactName = HTKT_COMMON.trim(contactName);
+
+	if (!safeContactName) {
+		return "";
+	}
+
+	var contactFile = HTKT_COMMON.selectOne(
+			HTKT_TABLE.CONTACT,
+			["contact.name"],
+			safeContactName
+	);
+	if (!contactFile) {
+		return safeContactName;
+	}
+
+	var displayName = HTKT_COMMON.readString(
+			contactFile,
+			["full.name", "contact.full.name", "contact.name"]
+	);
+
+	HTKT_COMMON.closeFile(contactFile);
+	return displayName || safeContactName;
+}
+
+function htktGetOrgUnitName(unitId) {
+	var safeUnitId = HTKT_COMMON.trim(unitId);
+	var unitFile = null;
+	var unitName = "";
+
+	if (!safeUnitId) {
+		return "";
+	}
+
+	unitFile = HTKT_COMMON.selectOne(
+			HTKT_TABLE.ORG_UNIT,
+			["unit.id"],
+			safeUnitId
+	);
+	if (unitFile) {
+		unitName = HTKT_COMMON.readString(unitFile, ["unit.name"]);
+	}
+
+	HTKT_COMMON.closeFile(unitFile);
+	return unitName;
+}
+
+function htktGetCreatorUnitName(contactName) {
+	var safeContactName = HTKT_COMMON.trim(contactName);
+	var contactFile = null;
+	var unitLv1Id = "";
+
+	if (!safeContactName) {
+		return "";
+	}
+
+	contactFile = HTKT_COMMON.selectOne(
+			HTKT_TABLE.CONTACT,
+			["contact.name"],
+			safeContactName
+	);
+
+	if (contactFile) {
+		unitLv1Id = HTKT_COMMON.readString(contactFile, ["lv1.id"]);
+	}
+
+	HTKT_COMMON.closeFile(contactFile);
+	return htktGetOrgUnitName(unitLv1Id);
+}
+
+function htktReadThreeDigits(numberValue, readFull) {
+	var digits = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+
+	var hundreds = Math.floor(numberValue / 100);
+	var tens = Math.floor((numberValue % 100) / 10);
+	var units = numberValue % 10;
+	var result = [];
+
+	if (hundreds > 0 || readFull) {
+		result.push(digits[hundreds] + " trăm");
+	}
+
+	if (tens > 1) {
+		result.push(digits[tens] + " mươi");
+
+		if (units === 1) {
+			result.push("mốt");
+		} else if (units === 4) {
+			result.push("tư");
+		} else if (units === 5) {
+			result.push("lăm");
+		} else if (units > 0) {
+			result.push(digits[units]);
+		}
+	} else if (tens === 1) {
+		result.push("mười");
+
+		if (units === 5) {
+			result.push("lăm");
+		} else if (units > 0) {
+			result.push(digits[units]);
+		}
+	} else if (units > 0) {
+		if (hundreds > 0 || readFull) {
+			result.push("lẻ");
+		}
+		result.push(digits[units]);
+	}
+
+	return result.join(" ");
+}
+
+function htktIntegerToVietnameseWords(numberValue) {
+	var scales = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
+	var number = Math.floor(Math.abs(Number(numberValue || 0)));
+
+	if (number === 0) {
+		return "không";
+	}
+
+	var groups = [];
+	while (number > 0) {
+		groups.push(number % 1000);
+		number = Math.floor(number / 1000);
+	}
+
+	var result = [];
+	for (var i = groups.length - 1; i >= 0; i--) {
+		var groupValue = groups[i];
+		if (groupValue === 0) {
+			continue;
+		}
+
+		var readFull = i < groups.length - 1 && groupValue < 100;
+		var groupText = htktReadThreeDigits(groupValue, readFull);
+
+		if (groupText) {
+			result.push(groupText + (scales[i] ? " " + scales[i] : ""));
+		}
+	}
+
+	return result.join(" ").replace(/\s+/g, " ");
+}
+
+function htktAmountToVietnameseWords(value, currency) {
+	var amount = Number(value || 0);
+	var signText = amount < 0 ? "âm " : "";
+	var absolute = Math.abs(amount);
+	var integerPart = Math.floor(absolute);
+	var decimalText = HTKT_COMMON.toString(absolute).split(".")[1] || "";
+	var result = signText + htktIntegerToVietnameseWords(integerPart);
+
+	decimalText = decimalText.replace(/0+$/, "");
+
+	if (decimalText) {
+		var digitWords = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+		var decimalWords = [];
+
+		for (var i = 0; i < decimalText.length; i++) {
+			decimalWords.push(digitWords[Number(decimalText.charAt(i))]);
+		}
+
+		result += " phẩy " + decimalWords.join(" ");
+	}
+
+	var safeCurrency = HTKT_COMMON.trim(currency).toUpperCase();
+
+	if (safeCurrency === "VND") {
+		result += " đồng";
+	} else if (safeCurrency === "USD") {
+		result += " đô la Mỹ";
+	} else if (safeCurrency) {
+		result += " " + safeCurrency;
+	}
+
+	result = result.replace(/\s+/g, " ");
+
+	if (result) {
+		result = result.charAt(0).toUpperCase() + result.substr(1);
+	}
+
+	return result;
+}
+
 
 
 /* =============================================================================
@@ -313,12 +561,12 @@ function htktGetPaymentVendorSourceRows(paymentId, defaultCurrency) {
 }
 
 function htktFindInvoiceVendorId(sourceRows, sellerTaxCode) {
-	var normalizedSellerTaxCode = HTKT_COMMON.htktNormalizePaymentMethod(sellerTaxCode);
+	var normalizedSellerTaxCode = htktNormalizePaymentMethod(sellerTaxCode);
 
 	if (normalizedSellerTaxCode) {
 		for (var i = 0; i < sourceRows.length; i++) {
 			if (
-					HTKT_COMMON.htktNormalizePaymentMethod(sourceRows[i].vendor_tax_code) ===
+					htktNormalizePaymentMethod(sourceRows[i].vendor_tax_code) ===
 					normalizedSellerTaxCode
 			) {
 				return sourceRows[i].vendor_id;
@@ -625,9 +873,9 @@ function htktResolvePaymentTemplate(sourceRows) {
 		var source = sourceRows[i];
 		var rawMethod = HTKT_COMMON.trim(source.payment_method);
 
-		if (HTKT_COMMON.htktIsCashPaymentMethod(rawMethod)) {
+		if (htktIsCashPaymentMethod(rawMethod)) {
 			hasCash = true;
-		} else if (HTKT_COMMON.htktIsTransferPaymentMethod(rawMethod)) {
+		} else if (htktIsTransferPaymentMethod(rawMethod)) {
 			hasTransfer = true;
 		} else {
 			var invalidKey = rawMethod || "(trong)";
@@ -688,8 +936,8 @@ function htktBuildPaymentTemplateRows(sourceRows, paymentKind) {
 
 	for (var i = 0; i < sourceRows.length; i++) {
 		var source = sourceRows[i];
-		var isCash = HTKT_COMMON.htktIsCashPaymentMethod(source.payment_method);
-		var isTransfer = HTKT_COMMON.htktIsTransferPaymentMethod(source.payment_method);
+		var isCash = htktIsCashPaymentMethod(source.payment_method);
+		var isTransfer = htktIsTransferPaymentMethod(source.payment_method);
 
 		if (
 				(paymentKind === "cash" && !isCash) ||
@@ -712,7 +960,7 @@ function htktBuildPaymentTemplateRows(sourceRows, paymentKind) {
 			ngan_hang: source.beneficiary_bank_name,
 			transaction_des: source.transaction_des,
 			identity_number: source.identity_number,
-			issued_date: HTKT_COMMON.htktFormatDateShort(source.issued_date_raw),
+			issued_date: htktFormatDateShort(source.issued_date_raw),
 			issued_place: source.issued_place,
 			phone: source.phone,
 			amount: htktFormatMoney(amountRaw)
@@ -790,7 +1038,7 @@ function htktGetPaymentEntrySourceRows(paymentId) {
 }
 
 function htktGetAccountSide(accountType) {
-	var normalized = HTKT_COMMON.htktNormalizePaymentMethod(accountType);
+	var normalized = htktNormalizePaymentMethod(accountType);
 
 	if (normalized === "NO" || normalized === "DEBIT") {
 		return "debit";
@@ -846,7 +1094,7 @@ function htktBuildSupplementalEntryRows(paymentId, entryRows) {
 
 	for (var i = 0; i < entryRows.length; i++) {
 		var entry = entryRows[i];
-		var normalizedType = HTKT_COMMON.htktNormalizePaymentMethod(entry.type);
+		var normalizedType = htktNormalizePaymentMethod(entry.type);
 
 		if (normalizedType !== HTKT_ENTRY_TYPE_GL) {
 			continue;
@@ -910,7 +1158,7 @@ function htktGetAccountingBankName(entry, vendorById) {
 	}
 
 	if (entryType === HTKT_ACCOUNTING_ENTRY_CUSTOMER && vendor) {
-		if (HTKT_COMMON.htktIsCashPaymentMethod(vendor.payment_method)) {
+		if (htktIsCashPaymentMethod(vendor.payment_method)) {
 			return "VietinBank";
 		}
 
@@ -1221,7 +1469,7 @@ function htktBuildTemplateData(paymentId) {
 	var hasRefundAmount = refundAmountRaw > 0;
 	var amountRaw = vendorData.totalAmountRaw;
 	var lineTotalRaw = vendorData.totalLineTotalRaw || 0;
-	var amountWords = HTKT_COMMON.htktAmountToVietnameseWords(amountRaw, currency);
+	var amountWords = htktAmountToVietnameseWords(amountRaw, currency);
 	var prepaymentCreditAccountNumbers = htktGetPrepaymentCreditAccountNumbers(
 			entryRows
 	);
@@ -1233,12 +1481,12 @@ function htktBuildTemplateData(paymentId) {
 			vendorSourceRows
 	);
 	var data = {
-		unit_name: HTKT_COMMON.htktGetCreatorUnitName(createdByUsername),
-		created_at: HTKT_COMMON.htktFormatDateLong(createdAtValue),
+		unit_name: htktGetCreatorUnitName(createdByUsername),
+		created_at: htktFormatDateLong(createdAtValue),
 		id: paymentId,
 		recipient: HTKT_PAYMENT_RECIPIENT,
-		created_by: HTKT_COMMON.htktGetContactDisplayName(createdByUsername),
-		department_name: HTKT_COMMON.htktGetOrgUnitName(departmentId),
+		created_by: htktGetContactDisplayName(createdByUsername),
+		department_name: htktGetOrgUnitName(departmentId),
 		description: description,
 		amount_raw: amountRaw,
 		total_amount: htktFormatMoney(amountRaw),
@@ -1279,7 +1527,7 @@ function htktBuildTemplateData(paymentId) {
 				? htktFormatMoney(refundAmountRaw)
 				: "",
 		refund_amount_to_submit_words: hasRefundAmount
-				? HTKT_COMMON.htktAmountToVietnameseWords(refundAmountRaw, currency)
+				? htktAmountToVietnameseWords(refundAmountRaw, currency)
 				: "",
 
 		/*
@@ -1560,9 +1808,52 @@ function htktGetPdfBase64Cached(templateId, templateData) {
  * 7. CONTEXT DÙNG CHO PREVIEW / NEXTJS
  * ============================================================================= */
 
+function htktGetCurrentPaymentId(input) {
+	var paymentId = "";
+	if (input) {
+		if (typeof input === "string") {
+			paymentId = HTKT_COMMON.trim(input);
+		} else {
+			paymentId = HTKT_COMMON.readString(input, ["paymentId", "payment_id", "payment.id", "id"], "");
+		}
+	}
+	if (!paymentId) {
+		paymentId = HTKT_COMMON.getCurrentPaymentId(input);
+	}
+	if (!paymentId) {
+		try {
+			if (vars.$L_file) {
+				paymentId = HTKT_COMMON.readString(vars.$L_file, ["id", "payment.id", "payment_id"], "");
+			}
+		} catch (e1) {}
+	}
+	if (!paymentId) {
+		try {
+			if (vars["$L.file"]) {
+				paymentId = HTKT_COMMON.readString(vars["$L.file"], ["id", "payment.id", "payment_id"], "");
+			}
+		} catch (e2) {}
+	}
+	if (!paymentId) {
+		try {
+			if (vars["$L.parent"]) {
+				paymentId = HTKT_COMMON.readString(vars["$L.parent"], ["id", "payment.id", "payment_id"], "");
+			}
+		} catch (e3) {}
+	}
+	if (!paymentId) {
+		try {
+			if (vars["$L.filed"]) {
+				paymentId = HTKT_COMMON.readString(vars["$L.filed"], ["id", "payment.id", "payment_id"], "");
+			}
+		} catch (e4) {}
+	}
+	return HTKT_COMMON.trim(paymentId);
+}
+
 function generatePresentationPdf(input) {
 	input = input || {};
-	var paymentId = HTKT_COMMON.getCurrentPaymentId(input);
+	var paymentId = htktGetCurrentPaymentId(input);
 
 	if (!paymentId) {
 		return {
@@ -1647,17 +1938,49 @@ function htktBuildPreviewContext(input) {
  * ============================================================================= */
 
 function RENDER() {
-	var context = htktBuildPreviewContext({ useCache: true });
-	if (!context.success) {
-		return HTKT_COMMON.htktBuildErrorHtml("PDF Preview", context.message);
+	var base64PDF = "";
+
+	// Lay ban trinh ky hien hanh tu attachment/ECM (CURRENT hoac COMPLETED)
+	try {
+		var paymentId = HTKT_COMMON.getCurrentPaymentId({});
+		var fetched = paymentId
+				? (lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT
+						? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({ id: paymentId })
+						: lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm({ id: paymentId }))
+				: null;
+
+		if (fetched && fetched.success === true && fetched.data && fetched.data.Data) {
+			var fileData = fetched.data.Data;
+			for (var key in fileData) {
+				base64PDF = htktEscapeForJavaScript(fileData[key]);
+				break;
+			}
+		}
+	} catch (e) {
+		// bo qua
 	}
 
-	var base64PDF = HTKT_COMMON.htktEscapeForJavaScript(context.pdfBase64);
+	// Khong co ban luu -> gen moi
+	if (!base64PDF) {
+		var generated = generatePresentationPdf({
+			useCache: true,
+			includeTemplateData: false
+		});
 
+		if (!generated.success) {
+			return htktBuildErrorHtml("PDF Preview", generated.message);
+		}
 
+		base64PDF = htktEscapeForJavaScript(generated.data.pdfBase64);
+	}
 	return (
-			"<div style='margin:0;padding:0;width:100%;height:100%;font-family:Arial,sans-serif;'>" +
-			"<iframe id='htktPdfFrame' width='100%' height='100%' style='min-height:700px;border:none;background:#e5e7eb;'></iframe>" +
+			"<!DOCTYPE html>" +
+			"<html><head><meta charset='utf-8'>" +
+			"<style>" +
+			"html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#525659;}" +
+			"#htktPdfFrame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:block;}" +
+			"</style></head><body>" +
+			"<iframe id='htktPdfFrame'></iframe>" +
 			"<script>" +
 			"(function(){" +
 			"var base64='" + base64PDF + "';" +
@@ -1678,6 +2001,82 @@ function RENDER() {
 			"}" +
 			"})();" +
 			"</script>" +
-			"</div>"
+			"</body></html>"
 	);
 }
+
+/* =============================================================================
+ * 9. RENDER IN PHIẾU (HTML VIEWER) - tự động mở hộp thoại in PDF
+ * ============================================================================= */
+function RENDER_PRINT() {
+	var base64PDF = "";
+
+	// Lay ban trinh ky hien hanh tu attachment/ECM (CURRENT hoac COMPLETED)
+	try {
+		var paymentId = HTKT_COMMON.getCurrentPaymentId({});
+		var fetched = paymentId
+				? (lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT
+						? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({ id: paymentId })
+						: lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm({ id: paymentId }))
+				: null;
+
+		if (fetched && fetched.success === true && fetched.data && fetched.data.Data) {
+			var fileData = fetched.data.Data;
+			for (var key in fileData) {
+				base64PDF = htktEscapeForJavaScript(fileData[key]);
+				break;
+			}
+		}
+	} catch (e) {
+		// bo qua
+	}
+
+	// Khong co ban luu -> gen moi
+	if (!base64PDF) {
+		var generated = generatePresentationPdf({
+			useCache: true,
+			includeTemplateData: false
+		});
+
+		if (!generated.success) {
+			return htktBuildErrorHtml("In phieu", generated.message);
+		}
+
+		base64PDF = htktEscapeForJavaScript(generated.data.pdfBase64);
+	}
+
+	// Chi hien thi mot giao dien PDF; nguoi dung bam nut Print tren toolbar.
+	return (
+			"<!DOCTYPE html>" +
+			"<html><head><meta charset='utf-8'>" +
+			"<style>" +
+			"html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#525659;}" +
+			"#htktPrintFrame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:block;}" +
+			"</style></head><body>" +
+			"<iframe id='htktPrintFrame'></iframe>" +
+			"<script>" +
+			"(function(){" +
+			"var base64='" + base64PDF + "';" +
+			"function toBytes(value){" +
+			"var binary=atob(value);" +
+			"var bytes=new Uint8Array(binary.length);" +
+			"for(var i=0;i<binary.length;i++){bytes[i]=binary.charCodeAt(i);}" +
+			"return bytes;" +
+			"}" +
+			"try{" +
+			"var blob=new Blob([toBytes(base64)],{type:'application/pdf'});" +
+			"var url=URL.createObjectURL(blob);" +
+			"document.getElementById('htktPrintFrame').src=url+'#toolbar=1&navpanes=0&view=FitH';" +
+			"window.addEventListener('beforeunload',function(){URL.revokeObjectURL(url);});" +
+			"}catch(e){" +
+			"document.body.innerHTML='<div style=\"padding:16px;color:red;font-family:Arial;\">Loi hien thi PDF: '+e+'</div>';" +
+			"}" +
+			"})();" +
+			"</script>" +
+			"</body></html>"
+	);
+}
+
+
+
+
