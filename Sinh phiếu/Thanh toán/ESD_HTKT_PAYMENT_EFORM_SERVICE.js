@@ -7,11 +7,10 @@ var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
 
-var HTKT_CASH_TEMPLATE_ID = "966d486d-7513-4713-a043-9ba12805fe8b";
+var HTKT_CASH_TEMPLATE_ID = "d4b154cc-b44d-43bf-b607-7d2c6044d892";
 var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "eb1f5f72-466a-475a-9f19-1f4fd875b342";
+var HTKT_TRANSFER_TEMPLATE_ID = "6cb1d25b-1d8d-46bb-bdb2-5fc95b955e41";
 var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
-
 /**
  * Mở comment khi  lên UAT
  **/
@@ -839,13 +838,18 @@ function htktBuildVendorTemplateRows(sourceRows, taxByVendor) {
 		var finalVendorName = source.vendor_name || source.vendor_id;
 
 		rows.push({
-			stt: i + 1,
-			vendor_name: finalVendorName,
-			amount_before_tax: htktFormatMoney(amountBeforeTaxRaw),
-			tax_amount: htktFormatMoney(taxRaw),
-			line_total: htktFormatMoney(lineTotalRaw),
+			stt: i + 1,                                        // {stt}    : STT dòng NCC
+			vendor: finalVendorName,                             // {vendor} : Tên Nhà cung cấp (rút gọn từ vendor_name)
+			vendor_name: finalVendorName,                        // Alias cũ tương thích
+			pretax: htktFormatMoney(amountBeforeTaxRaw),         // {pretax} : Tiền chưa gồm VAT (rút gọn từ amount_before_tax)
+			pre_tax: htktFormatMoney(amountBeforeTaxRaw),        // Alias tương thích
+			amount_before_tax: htktFormatMoney(amountBeforeTaxRaw), // Alias cũ tương thích
+			vat: htktFormatMoney(taxRaw),                        // {vat}    : Tiền thuế VAT (rút gọn từ tax_amount)
+			tax_amount: htktFormatMoney(taxRaw),                 // Alias cũ tương thích
+			total: htktFormatMoney(lineTotalRaw),                // {total}  : Tổng tiền theo NCC gồm VAT (rút gọn từ line_total)
+			line_total: htktFormatMoney(lineTotalRaw),           // Alias cũ tương thích
 			currency: source.currency || "",
-			note: ""
+			note: ""                                             // {note}   : Ghi chú
 		});
 
 		totalAmountBeforeTaxRaw += amountBeforeTaxRaw;
@@ -949,21 +953,28 @@ function htktBuildPaymentTemplateRows(sourceRows, paymentKind) {
 		var amountRaw = Number(source.amount_raw || 0);
 
 		rows.push({
-			stt: rows.length + 1,
-			beneficiary_name: source.beneficiary_name,
-			beneficiary_account: source.beneficiary_account,
-			beneficiary_bank_name: source.beneficiary_bank_name,
+			stt: rows.length + 1,                                        // {stt}      : STT dòng chi tiết
+			name: source.beneficiary_name,                               // {name}     : Người / Đơn vị thụ hưởng (rút gọn từ beneficiary_name)
+			beneficiary_name: source.beneficiary_name,                   // Alias cũ tương thích
+			acc: source.beneficiary_account,                             // {acc}      : Số tài khoản thụ hưởng (rút gọn từ beneficiary_account)
+			account_no: source.beneficiary_account,                      // Alias tương thích
+			beneficiary_account: source.beneficiary_account,              // Alias cũ tương thích
+			bank: source.beneficiary_bank_name,                          // {bank}     : Ngân hàng thụ hưởng (rút gọn từ beneficiary_bank_name)
+			bank_name: source.beneficiary_bank_name,                     // Alias tương thích
 			beneficiary_bank: source.beneficiary_bank_name || source.beneficiary_bank,
-			bank_name: source.beneficiary_bank_name,
-			bank: source.beneficiary_bank_name,
-			ten_ngan_hang: source.beneficiary_bank_name,
-			ngan_hang: source.beneficiary_bank_name,
-			transaction_des: source.transaction_des,
-			identity_number: source.identity_number,
-			issued_date: htktFormatDateShort(source.issued_date_raw),
-			issued_place: source.issued_place,
-			phone: source.phone,
-			amount: htktFormatMoney(amountRaw)
+			beneficiary_bank_name: source.beneficiary_bank_name,         // Alias cũ tương thích
+			des: source.transaction_des,                                 // {des}      : Nội dung chuyển khoản (rút gọn từ transaction_des)
+			trans_des: source.transaction_des,                            // Alias tương thích
+			transaction_des: source.transaction_des,                      // Alias cũ tương thích
+			id_no: source.identity_number,                               // {id_no}    : Số CCCD/CMND/Hộ chiếu (rút gọn từ identity_number)
+			id_card: source.identity_number,                             // Alias tương thích
+			identity_number: source.identity_number,                      // Alias cũ tương thích
+			id_date: htktFormatDateShort(source.issued_date_raw),         // {id_date}  : Ngày cấp giấy tờ (rút gọn từ issued_date)
+			issued_date: htktFormatDateShort(source.issued_date_raw),     // Alias cũ tương thích
+			id_place: source.issued_place,                               // {id_place} : Nơi cấp giấy tờ (rút gọn từ issued_place)
+			issued_place: source.issued_place,                           // Alias cũ tương thích
+			phone: source.phone,                                         // {phone}    : Số điện thoại người nhận
+			amount: htktFormatMoney(amountRaw)                           // {amount}   : Số tiền chi tiết
 		});
 
 		totalRaw += amountRaw;
@@ -1135,10 +1146,11 @@ function htktBuildSupplementalEntryRows(paymentId, entryRows) {
 	var result = [];
 	for (var groupIndex = 0; groupIndex < groups.length; groupIndex++) {
 		result.push({
-			stt: groupIndex + 1,
-			description: groups[groupIndex].descriptions.join("\n"),
-			amount: htktFormatMoney(groups[groupIndex].totalDebitRaw),
-			note: ""
+			stt: groupIndex + 1,                                        // {stt}    : STT nghĩa vụ thanh toán khác
+			des: groups[groupIndex].descriptions.join("\n"),             // {des}    : Nội dung chi tiết nghĩa vụ (rút gọn từ description)
+			description: groups[groupIndex].descriptions.join("\n"),     // Alias cũ tương thích
+			amount: htktFormatMoney(groups[groupIndex].totalDebitRaw),   // {amount} : Số tiền nghĩa vụ
+			note: ""                                                     // {note}   : Ghi chú nghĩa vụ
 		});
 	}
 
@@ -1296,14 +1308,20 @@ function htktBuildAccountingRows(entryRows, vendorSourceRows) {
 			/* Dòng CUSTOMER là dòng chuyển tiền, không đánh STT trong mẫu. */
 			stt: sourceEntryType === HTKT_ACCOUNTING_ENTRY_CUSTOMER
 					? ""
-					: rows.length + 1,
+					: rows.length + 1,                                       // {stt}      : STT bút toán hạch toán
 			entry_type: sourceEntryType,
-			account_number: sourceEntry.account_number,
-			account_name: sourceEntry.account_name,
-			bank_name: htktGetAccountingBankName(sourceEntry, vendorById),
-			description: sourceEntry.description,
-			debit_amount: debitAmount,
-			credit_amount: creditAmount
+			acc_no: sourceEntry.account_number,                            // {acc_no}   : Số tài khoản hạch toán (rút gọn từ account_number)
+			account_number: sourceEntry.account_number,                    // Alias cũ tương thích
+			acc_name: sourceEntry.account_name,                            // {acc_name} : Tên tài khoản hạch toán (rút gọn từ account_name)
+			account_name: sourceEntry.account_name,                        // Alias cũ tương thích
+			bank: htktGetAccountingBankName(sourceEntry, vendorById),      // {bank}     : Ngân hàng hạch toán (rút gọn từ bank_name)
+			bank_name: htktGetAccountingBankName(sourceEntry, vendorById), // Alias tương thích
+			des: sourceEntry.description,                                  // {des}      : Nội dung hạch toán (rút gọn từ description)
+			description: sourceEntry.description,                          // Alias cũ tương thích
+			debit: debitAmount,                                            // {debit}    : Số tiền ghi Nợ (rút gọn từ debit_amount)
+			debit_amount: debitAmount,                                     // Alias cũ tương thích
+			credit: creditAmount,                                          // {credit}   : Số tiền ghi Có (rút gọn từ credit_amount)
+			credit_amount: creditAmount                                    // Alias cũ tương thích
 		});
 	}
 
@@ -1481,144 +1499,147 @@ function htktBuildTemplateData(paymentId) {
 			vendorSourceRows
 	);
 	var data = {
-		unit_name: htktGetCreatorUnitName(createdByUsername),
-		created_at: htktFormatDateLong(createdAtValue),
-		id: paymentId,
-		recipient: HTKT_PAYMENT_RECIPIENT,
-		created_by: htktGetContactDisplayName(createdByUsername),
-		department_name: htktGetOrgUnitName(departmentId),
-		description: description,
-		amount_raw: amountRaw,
-		total_amount: htktFormatMoney(amountRaw),
-		currency: currency,
-		calc_amount_words: amountWords,
+		/* =========================================================================
+		 * 1. THÔNG TIN CHUNG PHIẾU ĐỀ NGHỊ (Header & Master Data)
+		 * ========================================================================= */
+		unit: htktGetCreatorUnitName(createdByUsername),                        // {unit}     : Tên đơn vị người tạo (VD: TRUNG TÂM CNTT)
+		unit_name: htktGetCreatorUnitName(createdByUsername),                   // Alias cũ tương thích
+		date: htktFormatDateLong(createdAtValue),                                // {date}     : Ngày lập phiếu (Ngày... tháng... năm...)
+		created_at: htktFormatDateLong(createdAtValue),                          // Alias cũ tương thích
+		id: paymentId,                                                          // {id}       : Mã giao dịch / Mã phiếu ĐNTT
+		recipient: HTKT_PAYMENT_RECIPIENT,                                     // {recipient}: Kính gửi (Lãnh đạo đơn vị)
+		user: htktGetContactDisplayName(createdByUsername),                     // {user}     : Họ tên người đề nghị (rút gọn từ created_by)
+		created_by: htktGetContactDisplayName(createdByUsername),                // Alias cũ tương thích
+		dept: htktGetOrgUnitName(departmentId),                                 // {dept}     : Tên Phòng/ban người đề nghị (rút gọn từ department_name)
+		dept_name: htktGetOrgUnitName(departmentId),                           // Alias tương thích
+		department_name: htktGetOrgUnitName(departmentId),                     // Alias cũ tương thích
+		des: description,                                                       // {des}      : Nội dung thanh toán (rút gọn từ description)
+		description: description,                                               // Alias cũ tương thích
+		amount_raw: amountRaw,                                                  // Số tiền gốc chưa format
+		amount: htktFormatMoney(amountRaw),                                     // {amount}   : Tổng số tiền đề nghị thanh toán (rút gọn từ total_amount)
+		total_amount: htktFormatMoney(amountRaw),                              // Alias cũ tương thích
+		cur: currency,                                                          // {cur}      : Loại tiền tệ (VND, USD, ...)
+		currency: currency,                                                     // Alias cũ tương thích
+		words: amountWords,                                                     // {words}    : Tổng số tiền đề nghị thanh toán bằng chữ (rút gọn từ calc_amount_words)
+		amount_words: amountWords,                                             // Alias tương thích
+		calc_amount_words: amountWords,                                         // Alias cũ tương thích
 
-		vendor_rows: vendorData.rows,
-		calc_total_amount_before_tax: htktFormatMoney(
-				vendorData.totalAmountBeforeTaxRaw
-		),
-		calc_total_tax_amount: htktFormatMoney(vendorData.totalTaxRaw),
-		calc_total_vendor_amount: htktFormatMoney(
-				vendorData.totalAmountRaw
-		),
-		calc_total_amount_vendors: htktFormatMoney(
-				vendorData.totalLineTotalRaw || 0
-		),
+		/* =========================================================================
+		 * 2. BẢNG CHI TIẾT THEO NHÀ CUNG CẤP (Vòng lặp: {#vendors})
+		 * Các trường trong mỗi dòng: {stt}, {vendor}, {pretax}, {vat}, {total}, {note}
+		 * ========================================================================= */
+		vendors: vendorData.rows,                                               // {#vendors} : Danh sách chi tiết NCC (rút gọn từ vendor_rows)
+		vendor_rows: vendorData.rows,                                           // Alias cũ tương thích
+		sum_pretax: htktFormatMoney(vendorData.totalAmountBeforeTaxRaw),        // {sum_pretax} : Tổng tiền chưa gồm VAT
+		total_pretax: htktFormatMoney(vendorData.totalAmountBeforeTaxRaw),     // Alias tương thích
+		total_before_tax: htktFormatMoney(vendorData.totalAmountBeforeTaxRaw), // Alias tương thích
+		calc_total_amount_before_tax: htktFormatMoney(vendorData.totalAmountBeforeTaxRaw),
+		sum_vat: htktFormatMoney(vendorData.totalTaxRaw),                       // {sum_vat}    : Tổng tiền thuế VAT (rút gọn từ calc_total_tax_amount)
+		total_tax: htktFormatMoney(vendorData.totalTaxRaw),                    // Alias tương thích
+		calc_total_tax_amount: htktFormatMoney(vendorData.totalTaxRaw),        // Alias cũ tương thích
+		sum_vendor: htktFormatMoney(vendorData.totalLineTotalRaw || 0),         // {sum_vendor} : Tổng cộng tiền thanh toán NCC (cột Tổng)
+		total_vendor: htktFormatMoney(vendorData.totalLineTotalRaw || 0),      // Alias tương thích
+		calc_total_amount_vendors: htktFormatMoney(vendorData.totalLineTotalRaw || 0), // Alias cũ tương thích
+		calc_total_vendor_amount: htktFormatMoney(vendorData.totalAmountRaw),
 		total_line_total_raw: vendorData.totalLineTotalRaw || 0,
 
-		/* (20), (21), (24) - Tab thông tin công nợ / chi tiết NCC. */
-		calc_total_advance_amount: htktFormatMoney(
-				prepaymentTotals.totalAdvanceRaw
-		),
-		calc_total_refund_amount: htktFormatMoney(
-				prepaymentTotals.totalRefundRaw
-		),
-		calc_total_remaining_amount: htktFormatMoney(
-				prepaymentTotals.totalRemainingRaw
-		),
+		/* =========================================================================
+		 * 3. THÔNG TIN CÔNG NỢ TẠM ỨNG & HOÀN ỨNG (Tab Công nợ theo Hợp đồng / NCC)
+		 * ========================================================================= */
+		advance: htktFormatMoney(prepaymentTotals.totalAdvanceRaw),             // {advance}   : Số tiền đã tạm ứng (rút gọn từ calc_total_advance_amount)
+		total_advance: htktFormatMoney(prepaymentTotals.totalAdvanceRaw),        // Alias tương thích
+		calc_total_advance_amount: htktFormatMoney(prepaymentTotals.totalAdvanceRaw), // Alias cũ tương thích
+		refund: htktFormatMoney(prepaymentTotals.totalRefundRaw),               // {refund}    : Số tiền đề nghị hoàn tạm ứng (rút gọn từ calc_total_refund_amount)
+		total_refund: htktFormatMoney(prepaymentTotals.totalRefundRaw),          // Alias tương thích
+		calc_total_refund_amount: htktFormatMoney(prepaymentTotals.totalRefundRaw),   // Alias cũ tương thích
+		remain: htktFormatMoney(prepaymentTotals.totalRemainingRaw),            // {remain}    : Số tiền tạm ứng còn lại sau hoàn ứng (rút gọn từ calc_total_remaining_amount)
+		total_remain: htktFormatMoney(prepaymentTotals.totalRemainingRaw),       // Alias tương thích
+		total_remaining: htktFormatMoney(prepaymentTotals.totalRemainingRaw),   // Alias tương thích
+		calc_total_remaining_amount: htktFormatMoney(prepaymentTotals.totalRemainingRaw), // Alias cũ tương thích
 
-		/*
-		 * (59): số hoàn ứng lần này; để trống nếu không phát sinh hoàn ứng.
-		 * (60): số tiền (59) bằng chữ.
-		 * (62): các TK ghi Có có entry.type = PREPAYMENT.
-		 */
-		refund_checkbox: hasRefundAmount ? "☒" : "☐",
-		refund_amount_to_submit: hasRefundAmount
-				? htktFormatMoney(refundAmountRaw)
-				: "",
-		refund_amount_to_submit_words: hasRefundAmount
-				? htktAmountToVietnameseWords(refundAmountRaw, currency)
-				: "",
+		/* =========================================================================
+		 * 4. THÔNG TIN HOÀN TẠM ỨNG PHẢI NỘP VÀ TÀI KHOẢN GHI CÓ HOÀN ỨNG
+		 * ========================================================================= */
+		refund_checkbox: hasRefundAmount ? "☒" : "☐",                           // Checkbox có phát sinh hoàn ứng hay không
+		ref_amt: hasRefundAmount ? htktFormatMoney(refundAmountRaw) : "",       // {ref_amt}   : Số tiền hoàn tạm ứng phải nộp (số)
+		refund_submit: hasRefundAmount ? htktFormatMoney(refundAmountRaw) : "", // Alias tương thích
+		refund_amount_to_submit: hasRefundAmount ? htktFormatMoney(refundAmountRaw) : "", // Alias cũ tương thích
+		ref_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "", // {ref_words} : Tiền hoàn tạm ứng bằng chữ
+		refund_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "", // Alias tương thích
+		refund_submit_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "",
+		refund_amount_to_submit_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "",
 
-		/*
-		 * Mapping 3 trường hoàn tạm ứng khớp vị trí placeholder trên template Doc Service:
-		 * 1. Số TK ghi Có: accountNumber (ví dụ 126150610)
-		 * 2. Tên TK: accountName (ví dụ Tạm ứng cho nhà cung cấp hàng hóa, dịch vụ)
-		 * 3. Tại Ngân hàng: bankName (ví dụ VietinBank)
-		 */
+		// Thông tin tài khoản Có hoàn tạm ứng (siêu ngắn gọn):
+		ref_acc: prepaymentCreditAccountNumbers,                               // {ref_acc}   : Số TK ghi Có (TK tạm ứng, VD: 126150610)
+		prepay_no: prepaymentCreditAccountNumbers,                             // Alias tương thích
+		ref_name: prepaymentCreditAccountNames,                                // {ref_name}  : Tên TK ghi Có (VD: Tạm ứng cho NCC...)
+		prepay_name: prepaymentCreditAccountNames,                             // Alias tương thích
+		ref_bank: prepaymentCreditBankNames,                                   // {ref_bank}  : Tại Ngân hàng (VD: VietinBank)
+		prepay_bank: prepaymentCreditBankNames,                                 // Alias tương thích
+
+		// Các alias tương thích ngược cũ
 		prepayment_credit_account_numbers: prepaymentCreditAccountNumbers,
 		prepayment_credit_account_number: prepaymentCreditAccountNumbers,
 		prepayment_credit_account_names: prepaymentCreditAccountNumbers,
 		prepayment_credit_account_name: prepaymentCreditAccountNumbers,
-
 		prepayment_credit_bank_accounts: prepaymentCreditAccountNames,
 		prepayment_credit_bank_account: prepaymentCreditAccountNames,
-
 		prepayment_credit_bank_names: prepaymentCreditBankNames,
 		prepayment_credit_bank_name: prepaymentCreditBankNames,
-		prepayment_credit_banks: prepaymentCreditBankNames,
-		prepayment_credit_bank: prepaymentCreditBankNames,
-		prepayment_bank_names: prepaymentCreditBankNames,
-		prepayment_bank_name: prepaymentCreditBankNames,
-		prepayment_bank: prepaymentCreditBankNames,
-		prepayment_banks: prepaymentCreditBankNames,
-		refund_bank_name: prepaymentCreditBankNames,
-		refund_bank_names: prepaymentCreditBankNames,
-		refund_bank: prepaymentCreditBankNames,
-		refund_banks: prepaymentCreditBankNames,
-		credit_bank_name: prepaymentCreditBankNames,
-		credit_bank_names: prepaymentCreditBankNames,
-		credit_bank: prepaymentCreditBankNames,
-		credit_banks: prepaymentCreditBankNames,
-		credit_bank_account: prepaymentCreditBankNames,
-		credit_bank_accounts: prepaymentCreditBankNames,
 		bank_name: prepaymentCreditBankNames,
-		bank_names: prepaymentCreditBankNames,
-		bank: prepaymentCreditBankNames,
-		banks: prepaymentCreditBankNames,
-		tai_ngan_hang: prepaymentCreditBankNames,
-		ngan_hang: prepaymentCreditBankNames,
-		ten_ngan_hang: prepaymentCreditBankNames,
-		at_bank: prepaymentCreditBankNames,
-		at_bank_name: prepaymentCreditBankNames,
-		prepayment_credit_at_bank: prepaymentCreditBankNames,
-		prepayment_credit_at_bank_name: prepaymentCreditBankNames,
-		prepayment_credit_account_bank: prepaymentCreditBankNames,
-		prepayment_credit_account_bank_name: prepaymentCreditBankNames,
-		prepayment_credit_account_bank_names: prepaymentCreditBankNames,
-		prepayment_credit_account_banks: prepaymentCreditBankNames,
-		prepayment_credit_account_bank_account: prepaymentCreditBankNames,
-		prepayment_credit_account_bank_accounts: prepaymentCreditBankNames,
-		refund_at_bank: prepaymentCreditBankNames,
-		refund_at_bank_name: prepaymentCreditBankNames,
-		prepayment_at_bank: prepaymentCreditBankNames,
-		prepayment_at_bank_name: prepaymentCreditBankNames,
-		prepayment_credit_bank_branch: prepaymentCreditBankNames,
-		credit_account_bank: prepaymentCreditBankNames,
-		credit_account_bank_name: prepaymentCreditBankNames,
 
-		supplemental_entry_rows: supplementalEntryRows,
+		/* =========================================================================
+		 * 5. BẢNG CÁC NGHĨA VỤ THANH TOÁN KHÁC (Vòng lặp: {#supp})
+		 * Các trường trong mỗi dòng: {stt}, {des}, {amount}, {note}
+		 * ========================================================================= */
+		supp: supplementalEntryRows,                                           // {#supp}     : Danh sách nghĩa vụ thanh toán khác (rút gọn từ supplemental_entry_rows)
+		supp_rows: supplementalEntryRows,                                      // Alias tương thích
+		supplemental_entry_rows: supplementalEntryRows,                         // Alias cũ tương thích
 
-		payment_method: paymentTemplate.payment_method,
-		cash_checkbox: paymentData.cashCheckbox,
-		transfer_checkbox: paymentData.transferCheckbox,
-		cash_payment_rows: paymentTemplate.kind === "cash"
-				? paymentData.rows
-				: [],
-		payment_rows: paymentTemplate.kind === "transfer"
-				? paymentData.rows
-				: [],
-		calc_total_payment_amount: htktFormatMoney(paymentData.totalRaw),
-		calc_total_cash_amount: paymentTemplate.kind === "cash"
-				? htktFormatMoney(paymentData.totalRaw)
-				: "",
-		calc_total_transfer_amount: paymentTemplate.kind === "transfer"
-				? htktFormatMoney(paymentData.totalRaw)
-				: "",
+		/* =========================================================================
+		 * 6. BẢNG CHI TIẾT THANH TOÁN (Tiền mặt: {#cash} / Chuyển khoản: {#trans})
+		 * - Tiền mặt (02-TTTM): {stt}, {name}, {id_no}, {id_date}, {id_place}, {phone}, {amount}
+		 * - Chuyển khoản (04-TTCK): {stt}, {name}, {acc}, {bank}, {des}, {amount}
+		 * ========================================================================= */
+		payment_method: paymentTemplate.payment_method,                         // Hình thức thanh toán: TIENMAT hoặc CHUYENKHOAN
+		cash_checkbox: paymentData.cashCheckbox,                               // Checkbox Tiền mặt ☒/☐
+		transfer_checkbox: paymentData.transferCheckbox,                       // Checkbox Chuyển khoản ☒/☐
+		cash: paymentTemplate.kind === "cash" ? paymentData.rows : [],         // {#cash}     : Danh sách người nhận tiền mặt (02-TTTM)
+		cash_rows: paymentTemplate.kind === "cash" ? paymentData.rows : [],    // Alias tương thích
+		cash_payment_rows: paymentTemplate.kind === "cash" ? paymentData.rows : [], // Alias cũ tương thích
+		trans: paymentTemplate.kind === "transfer" ? paymentData.rows : [],     // {#trans}    : Danh sách nhận chuyển khoản (04-TTCK)
+		payment_rows: paymentTemplate.kind === "transfer" ? paymentData.rows : [],  // Alias tương thích
+		transfer_rows: paymentTemplate.kind === "transfer" ? paymentData.rows : [], // Alias tương thích
+		sum_trans: htktFormatMoney(paymentData.totalRaw),                      // {sum_trans} : Tổng tiền chuyển khoản (rút gọn từ calc_total_payment_amount)
+		total_payment: htktFormatMoney(paymentData.totalRaw),                  // Alias tương thích
+		calc_total_payment_amount: htktFormatMoney(paymentData.totalRaw),      // Alias cũ tương thích
+		sum_cash: paymentTemplate.kind === "cash" ? htktFormatMoney(paymentData.totalRaw) : "", // {sum_cash}  : Tổng tiền mặt (rút gọn từ calc_total_cash_amount)
+		total_cash: paymentTemplate.kind === "cash" ? htktFormatMoney(paymentData.totalRaw) : "", // Alias tương thích
+		calc_total_cash_amount: paymentTemplate.kind === "cash" ? htktFormatMoney(paymentData.totalRaw) : "", // Alias cũ tương thích
+		total_transfer: paymentTemplate.kind === "transfer" ? htktFormatMoney(paymentData.totalRaw) : "",
+		calc_total_transfer_amount: paymentTemplate.kind === "transfer" ? htktFormatMoney(paymentData.totalRaw) : "",
 
-		accounting_rows: accountingData.rows,
-		calc_total_debit_amount: htktFormatMoney(
-				accountingData.totalDebitRaw
-		),
-		calc_total_credit_amount: htktFormatMoney(
-				accountingData.totalCreditRaw
-		),
+		/* =========================================================================
+		 * 7. BẢNG HẠCH TOÁN KẾ TOÁN (Vòng lặp: {#acc})
+		 * Các trường trong mỗi dòng: {stt}, {acc_no}, {acc_name}, {bank}, {des}, {debit}, {credit}
+		 * ========================================================================= */
+		acc: accountingData.rows,                                              // {#acc}      : Danh sách các dòng bút toán hạch toán (rút gọn từ accounting_rows)
+		acc_rows: accountingData.rows,                                         // Alias tương thích
+		accounting_rows: accountingData.rows,                                   // Alias cũ tương thích
+		sum_debit: htktFormatMoney(accountingData.totalDebitRaw),              // {sum_debit} : Tổng số tiền ghi Nợ (rút gọn từ calc_total_debit_amount)
+		total_debit: htktFormatMoney(accountingData.totalDebitRaw),            // Alias tương thích
+		calc_total_debit_amount: htktFormatMoney(accountingData.totalDebitRaw), // Alias cũ tương thích
+		sum_credit: htktFormatMoney(accountingData.totalCreditRaw),            // {sum_credit}: Tổng số tiền ghi Có (rút gọn từ calc_total_credit_amount)
+		total_credit: htktFormatMoney(accountingData.totalCreditRaw),          // Alias tương thích
+		calc_total_credit_amount: htktFormatMoney(accountingData.totalCreditRaw), // Alias cũ tương thích
 
-		/* Giữ nguyên vị trí chữ ký, chưa nhúng ảnh vào template. */
-		user_approver_dmms: "",
-		user_approver_kttc: "",
-		blank_signature: "",
-		user_approver_final: "",
+		/* =========================================================================
+		 * 8. THÔNG TIN CHỮ KÝ VÀ METADATA XUẤT FILE PDF
+		 * ========================================================================= */
+		user_approver_dmms: "",                                                // Vị trí chữ ký Lãnh đạo phòng/ban đề nghị
+		user_approver_kttc: "",                                                // Vị trí chữ ký Lãnh đạo phòng Kế toán
+		blank_signature: "",                                                   // Vị trí chữ ký Chủ đầu tư dự án
+		user_approver_final: "",                                               // Vị trí chữ ký Lãnh đạo Đơn vị
 
 		payment_id: paymentId,
 		created_by_username: createdByUsername,
@@ -2079,4 +2100,4 @@ function RENDER_PRINT() {
 
 
 
-
+
