@@ -875,7 +875,7 @@ function downloadPresentation(input) {
 }
 
 // trưởng thêm: Public action getFileECM cho màn ký, lấy đúng bản trình ký hiện hành từ attachment.
-function get_file_ecm(file) {
+function get_file_ecm_HTKT(file) {
 	try {
 		var input = file || {};
 		var queryString = getCommon().readString(input, ["queryString"], "");
@@ -1094,32 +1094,21 @@ function addFileECM_HTKT(file) {
 		var signedFile = downloadDocument({ objectId: file.newObjectId });
 		if (signedFile.success !== true) return signedFile;
 
-		var environmentConfig = assertDependencies(false);
-		var result;
-		if (environmentConfig.PROVIDER === "MOCK") {
-			result = postDocumentJson(environmentConfig.STORAGE_BASE_URL + "/CDM/service/document/upload", {
-				fileName: oldDocument.name,
-				content: signedFile.data.pdfBase64
-			});
-		}
-		/* REAL UAT:
-		else {
-			result = lib.ESD_ECM_SERVICE.uploadFileTaiLieu({
-				"docCat": CONFIG.ECM_REQUEST.DOC_CATEGORY,
-				"docName": file.documentName || "Phieu de nghi tam ung - " + prepaymentId,
-				"cifNum": file.cifNum || prepaymentId,
-				"accNum": file.accNum || prepaymentId,
-				"docCreated": system.functions.tod(),
-				"sourceId": CONFIG.ECM_REQUEST.SOURCE_ID,
-				"sessionId": CONFIG.ECM_REQUEST.SESSION_ID,
-				"appId": CONFIG.ECM_REQUEST.APP_ID,
-				"fileBytes": signedFile.data.pdfBase64,
-				"fileName": oldDocument.name,
-				"seq": CONFIG.ECM_REQUEST.SEQUENCE,
-				"userId": currentUser
-			});
-		}
-		*/
+		assertDependencies(false);
+		var result = lib.ESD_ECM_SERVICE.uploadFileTaiLieu({
+			"docCat": CONFIG.ECM_REQUEST.DOC_CATEGORY,
+			"docName": file.documentName || "Phieu de nghi tam ung - " + prepaymentId,
+			"cifNum": file.cifNum || prepaymentId,
+			"accNum": file.accNum || prepaymentId,
+			"docCreated": system.functions.tod(),
+			"sourceId": CONFIG.ECM_REQUEST.SOURCE_ID,
+			"sessionId": CONFIG.ECM_REQUEST.SESSION_ID,
+			"appId": CONFIG.ECM_REQUEST.APP_ID,
+			"fileBytes": signedFile.data.pdfBase64,
+			"fileName": oldDocument.name,
+			"seq": CONFIG.ECM_REQUEST.SEQUENCE,
+			"userId": currentUser
+		});
 		result = JSON.parse(result);
 
 		if (result && result.Data && result.Data[0]) {

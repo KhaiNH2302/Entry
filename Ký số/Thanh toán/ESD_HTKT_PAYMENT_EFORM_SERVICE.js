@@ -2,7 +2,7 @@ var HTKT_COMMON = lib.ESD_HTKT_PAYMENT_COMMON;
 var HTKT_TABLE = HTKT_COMMON.getTables();
 
 var HTKT_DOC_SERVICE_BASE_URL = HTKT_COMMON.trim(lib.ESD_ENV_CONFIG.gendocUrl()).replace(/\/$/, "");
-var HTKT_DOC_GENERATE_PDF_BASE64_PATH = "/api/generate/pdf/base64"
+var HTKT_DOC_GENERATE_PDF_BASE64_PATH = "/api/generate/pdf/base64";
 var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
@@ -270,7 +270,6 @@ function htktAmountToVietnameseWords(value, currency) {
 }
 
 
-
 /* =============================================================================
  * 5. MAP DỮ LIỆU TEMPLATE 01/TTTM VÀ 04/TTCK
  * ============================================================================= */
@@ -321,7 +320,7 @@ function htktFormatMoney(value) {
 function htktGetVendorInfo(vendorId) {
 	var safeVendorId = HTKT_COMMON.trim(vendorId);
 	if (!safeVendorId) {
-		return { id: "", name: "", tax_code: "" };
+		return {id: "", name: "", tax_code: ""};
 	}
 
 	if (HTKT_VENDOR_INFO_CACHE[safeVendorId]) {
@@ -332,15 +331,15 @@ function htktGetVendorInfo(vendorId) {
 	if (!strippedId) strippedId = "0";
 
 	var queries = [
-		'id="' + HTKT_COMMON.escapeQueryValue(safeVendorId) + '"',
-		'vendor.number="' + HTKT_COMMON.escapeQueryValue(safeVendorId) + '"'
+		"id=\"" + HTKT_COMMON.escapeQueryValue(safeVendorId) + "\"",
+		"vendor.number=\"" + HTKT_COMMON.escapeQueryValue(safeVendorId) + "\""
 	];
 
 	if (strippedId !== safeVendorId) {
-		queries.push('id="' + HTKT_COMMON.escapeQueryValue(strippedId) + '"');
-		queries.push('vendor.number="' + HTKT_COMMON.escapeQueryValue(strippedId) + '"');
+		queries.push("id=\"" + HTKT_COMMON.escapeQueryValue(strippedId) + "\"");
+		queries.push("vendor.number=\"" + HTKT_COMMON.escapeQueryValue(strippedId) + "\"");
 		if (!isNaN(Number(strippedId))) {
-			queries.push('id=' + Number(strippedId));
+			queries.push("id=" + Number(strippedId));
 		}
 	}
 
@@ -474,9 +473,9 @@ function htktGetPaymentVendorSourceRows(paymentId, defaultCurrency) {
 				HTKT_TABLE.PAYMENT_VENDOR
 		);
 		rc = vendorFile.doSelect(
-				'payment.id="' +
+				"payment.id=\"" +
 				HTKT_COMMON.escapeQueryValue(paymentId) +
-				'"'
+				"\""
 		);
 
 		while (rc === RC_SUCCESS) {
@@ -587,9 +586,9 @@ function htktGetDeductibleTaxByVendor(paymentId, sourceRows) {
 				HTKT_TABLE.PAYMENT_INVOICE
 		);
 		rc = invoiceLinkFile.doSelect(
-				'payment.id="' +
+				"payment.id=\"" +
 				HTKT_COMMON.escapeQueryValue(paymentId) +
-				'"'
+				"\""
 		);
 
 		while (rc === RC_SUCCESS) {
@@ -669,16 +668,16 @@ function htktGetSupplierLedgerRows(paymentId, vendorId, contractId) {
 			"FROM esdHTKTaccountingInformation ai " +
 			"LEFT JOIN esdHTKTpaymentEntry pe " +
 			"ON (ai.prepayment.id = pe.ref.id " +
-			'AND pe.entry.type = "PREPAYMENT") ' +
+			"AND pe.entry.type = \"PREPAYMENT\") " +
 			"LEFT JOIN esdHTKTaccountingInformation aip " +
 			"ON (pe.accounting.request.id = aip.request.id) " +
-			'WHERE ai.sub.type = "TAM_UNG" ' +
-			'AND ai.contract.id = "' +
-			HTKT_COMMON.escapeQueryValue(safeContractId) + '" ' +
-			'AND ai.vendor.id = "' +
-			HTKT_COMMON.escapeQueryValue(safeVendorId) + '" ' +
-			'AND ai.status = "COMPLETED" ' +
-			'AND ai.type = "AP" ' +
+			"WHERE ai.sub.type = \"TAM_UNG\" " +
+			"AND ai.contract.id = \"" +
+			HTKT_COMMON.escapeQueryValue(safeContractId) + "\" " +
+			"AND ai.vendor.id = \"" +
+			HTKT_COMMON.escapeQueryValue(safeVendorId) + "\" " +
+			"AND ai.status = \"COMPLETED\" " +
+			"AND ai.type = \"AP\" " +
 			"ORDER BY ai.checked.time DESC";
 
 	try {
@@ -999,9 +998,9 @@ function htktGetPaymentEntrySourceRows(paymentId) {
 				HTKT_TABLE.PAYMENT_ENTRY
 		);
 		rc = entryFile.doSelect(
-				'payment.id="' +
+				"payment.id=\"" +
 				HTKT_COMMON.escapeQueryValue(paymentId) +
-				'"'
+				"\""
 		);
 
 		while (rc === RC_SUCCESS) {
@@ -1084,7 +1083,7 @@ function htktGetGlGroupInfo(paymentId, entry) {
 	}
 
 	if (parts.length === 1 && /^\d+$/.test(parts[0])) {
-		return { key: "ID:1", order: 1 };
+		return {key: "ID:1", order: 1};
 	}
 
 	if (entry.accounting_request_id) {
@@ -1727,7 +1726,6 @@ function htktGeneratePdfBase64Response(templateId, templateData) {
 	var result = HTKT_COMMON.safeParseJson(response.body, null);
 
 
-
 	if (!result) {
 		return {
 			success: false,
@@ -1847,28 +1845,32 @@ function htktGetCurrentPaymentId(input) {
 			if (vars.$L_file) {
 				paymentId = HTKT_COMMON.readString(vars.$L_file, ["id", "payment.id", "payment_id"], "");
 			}
-		} catch (e1) {}
+		} catch (e1) {
+		}
 	}
 	if (!paymentId) {
 		try {
 			if (vars["$L.file"]) {
 				paymentId = HTKT_COMMON.readString(vars["$L.file"], ["id", "payment.id", "payment_id"], "");
 			}
-		} catch (e2) {}
+		} catch (e2) {
+		}
 	}
 	if (!paymentId) {
 		try {
 			if (vars["$L.parent"]) {
 				paymentId = HTKT_COMMON.readString(vars["$L.parent"], ["id", "payment.id", "payment_id"], "");
 			}
-		} catch (e3) {}
+		} catch (e3) {
+		}
 	}
 	if (!paymentId) {
 		try {
 			if (vars["$L.filed"]) {
 				paymentId = HTKT_COMMON.readString(vars["$L.filed"], ["id", "payment.id", "payment_id"], "");
 			}
-		} catch (e4) {}
+		} catch (e4) {
+		}
 	}
 	return HTKT_COMMON.trim(paymentId);
 }
@@ -1934,7 +1936,7 @@ function generatePresentationPdf(input) {
 function htktBuildPreviewContext(input) {
 	var genRes = generatePresentationPdf(input);
 	if (!genRes || !genRes.success) {
-		return genRes || { success: false, message: "Không sinh được PDF." };
+		return genRes || {success: false, message: "Không sinh được PDF."};
 	}
 	var d = genRes.data || {};
 	return {
@@ -1953,8 +1955,6 @@ function htktBuildPreviewContext(input) {
 }
 
 
-
-
 /* =============================================================================
  * 8. RENDER TRỰC TIẾP TRONG HTML VIEWER
  * ============================================================================= */
@@ -1967,8 +1967,8 @@ function RENDER() {
 		var paymentId = HTKT_COMMON.getCurrentPaymentId({});
 		var fetched = paymentId
 				? (lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT
-						? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({ id: paymentId })
-						: lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm({ id: paymentId }))
+						? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({id: paymentId})
+						: lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm({id: paymentId}))
 				: null;
 
 		if (fetched && fetched.success === true && fetched.data && fetched.data.Data) {
@@ -2038,8 +2038,8 @@ function RENDER_PRINT() {
 		var paymentId = HTKT_COMMON.getCurrentPaymentId({});
 		var fetched = paymentId
 				? (lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT
-						? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({ id: paymentId })
-						: lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm({ id: paymentId }))
+						? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({id: paymentId})
+						: lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm({id: paymentId}))
 				: null;
 
 		if (fetched && fetched.success === true && fetched.data && fetched.data.Data) {

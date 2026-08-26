@@ -396,6 +396,8 @@ function deleteStoredDocument(docId) {
 					{ documentId: safeDocId }
 			);
 		}
+
+		var parsed = parseDocumentStorageResponse(rawResponse);
 		if (parsed.success !== true) return parsed;
 
 		var responseData = parsed.data;
@@ -1499,5 +1501,3 @@ function runSignedUploadIntegration() {
 		});
 	}
 }
-
-var get_file_ecm_HTKT = get_file_ecm;
