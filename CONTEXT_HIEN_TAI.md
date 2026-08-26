@@ -1,6 +1,6 @@
 # Context hiện tại - Sinh bút toán thanh toán
 
-Cập nhật ngày: 06/08/2026
+Cập nhật ngày: 26/08/2026
 
 ## 1. Nguồn quy tắc ưu tiên
 
@@ -261,3 +261,27 @@ payment.created.by
 - TT-17: đã kiểm tra payload `/ap/create-payment` và bắt buộc `ref.id`.
 - CORE: `INHOUSE` và `CITAD` đều đạt.
 - Preview read-only: không gọi insert/update/delete.
+
+## 14. Hệ thống Gửi Email & Kế hoạch Phân hệ Thanh toán
+
+### Hiện trạng các phân hệ đã có
+- **YCBG / HSYC** (`ESD_MS_YCBG_ACTION_WF.js`, `ESD_MS_YCBG_ACTION_WF_SendEmail.js`):
+  - RuleSet: `ESD_MS_YCBG_SENDEMAIL`
+  - Template: `TEM014` (Yêu cầu xác nhận), `TEM015` (Yêu cầu duyệt), `TEM016` (Xác nhận), `TEM017` (Yêu cầu chỉnh sửa), `TEM018` (Phê duyệt).
+- **Hợp đồng / Triển khai / Nghiệm thu** (`ESD_HD_ACTION_WF_SEND_EMAIL.js`, `ESD_HD_CONTRACT_SENDEMAIL.js`):
+  - Quy tắc gửi RuleSet: `ESD_HD_CONTRACT_SENDEMAIL_TEMPxx`.
+  - Quản lý hơn 20 mẫu email cảnh báo (TEMP01-04, TEMP29), nghiệm thu (TEMP09, TEMP12-16), kho/tài sản (TEMP05-08, TEMP10-11), triển khai (TEMP17-20, TEMP27-28, TEMP31).
+  - Sử dụng các hàm tính hạn: `getDaysUntil`, `getDaysBetween`, `isReminderDue`.
+
+### Khởi tạo cho Phân hệ Thanh toán (Payment)
+- **Thư mục tài liệu**: `Gửi Email/README.md`
+- **Thư viện script mới**: `Gửi Email/ESD_HTKT_PAYMENT_ACTION_WF_SendEmail.js`
+- **RuleSet dự kiến**: `ESD_HTKT_PAYMENT_SENDEMAIL`
+- **Template dự kiến**:
+  - `TEM_TT01`: Yêu cầu phê duyệt hồ sơ thanh toán.
+  - `TEM_TT02`: Yêu cầu chỉnh sửa / từ chối hồ sơ thanh toán.
+  - `TEM_TT03`: Thông báo hồ sơ thanh toán đã phê duyệt / ký số.
+  - `TEM_TT04`: Thông báo hoàn thành hạch toán / chi tiền.
+  - `TEM_TT05`: Cảnh báo sắp đến hạn thanh toán.
+- **Nguyên tắc kỹ thuật**: Mọi hàm gửi mail phải bọc trong `try/finally` và gọi `cleanGlobalVariable()` để giải phóng `$G.mail.receiver`, `$G.mail.receiver.name`, `$G.mail.tem`.
+
