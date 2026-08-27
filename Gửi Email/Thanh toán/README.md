@@ -1,125 +1,217 @@
-# TÀI LIỆU HỆ THỐNG GỬI EMAIL TỰ ĐỘNG (SERVICE MANAGER JS)
+# KẾ HOẠCH TRIỂN KHAI HỆ THỐNG GỬI EMAIL - PHÂN HỆ THANH TOÁN (PAYMENT)
 
-Tài liệu này tổng hợp chi tiết toàn bộ cơ chế, danh mục kịch bản, bảng mã Template email hiện có trong hệ thống và kế hoạch thiết kế cho phân hệ **Thanh toán (Payment)**.
+Tài liệu này đặc tả riêng **Kế hoạch & Thiết kế luồng Gửi Email tự động cho Phân hệ Thanh toán**, tích hợp trực tiếp với Workflow chính **`ESD_HTKT_PAYMENT_WF`** (`WF/PAYMENT_WF.js`) trên OpenText Service Manager.
 
 ---
 
-## 1. CƠ CHẾ VẬN HÀNH CHUNG (CORE ARCHITECTURE)
+## 1. MỤC TIÊU & PHẠM VI (SCOPE & OBJECTIVES)
 
-Hệ thống gửi email trong Service Manager sử dụng cơ chế kích hoạt **RuleSet Engine**:
+* **Mục tiêu**: Tự động gửi thông báo qua email cho từng vai trò tham gia chu trình thanh toán (Cán bộ ĐMMS, Cán bộ KTTC, Người rà soát, Người phê duyệt các cấp, Kế toán thực chi, Người theo dõi HĐ) tại từng điểm chuyển Phase trong workflow.
+* **Phạm vi áp dụng**: 
+  - Phiếu Đề nghị thanh toán (`esdHTKTpayment`).
+  - Toàn bộ chu trình chuyển Phase trong **`ESD_HTKT_PAYMENT_WF`**:
+    - `initial_dmms` $\rightarrow$ `initial_kttc` $\rightarrow$ `check_dmms` $\rightarrow$ `approval_dmms` $\rightarrow$ `approval_kttc` $\rightarrow$ `check_final` $\rightarrow$ `approval_final`.
+    - Trả về chỉnh sửa (`returnToUpdate`) và Hủy phiếu (`cancelRequest`).
+    - Hạch toán OGL thành công / Thực chi thành công và Cảnh báo hạn thanh toán.
+
+---
+
+## 2. KIẾN TRÚC KỸ THUẬT (SM TECHNICAL ARCHITECTURE)
+
+Hệ thống kết nối trực tiếp giữa **Workflow Controller (`ESD_HTKT_PAYMENT_WF`)** và **Thư viện gửi Email (`ESD_HTKT_PAYMENT_WF_SendEmail.js`)**:
 
 ```mermaid
-flowchart LR
-    A[Sự kiện / Workflow Action] --> B[Tra cứu Contact / Phân quyền]
-    B --> C["Thiết lập Biến toàn cục ($G.mail.*)"]
-    C --> D["callRuleSet(record, ruleSetName)"]
-    D --> E[cleanGlobalVariable]
-    D --> F[(SM Mail Queue / Event)]
+flowchart TD
+    subgraph Workflow["Workflow Thanh Toán (ESD_HTKT_PAYMENT_WF)"]
+        A["updateNextStatus(record, previousRecord)"]
+        B["returnToUpdate(record)"]
+        C["Hạch toán / Chi tiền OGL"]
+    end
+
+    subgraph ScriptLib["Thư viện Gửi Mail (ESD_HTKT_PAYMENT_WF_SendEmail.js)"]
+        D[Xác định người nhận theo Phase & Role]
+        E["Gán biến toàn cục ($G.mail.*)"]
+        F["Gọi lib.ESD_Utils.callRuleSet"]
+        G["cleanGlobalVariable (Giải phóng biến)"]
+    end
+
+    subgraph Backend["Hệ thống Service Manager"]
+        H[(RuleSet: ESD_HTKT_PAYMENT_SENDEMAIL)]
+        I[(Bảng Mail / Event Engine)]
+        K[Hộp thư Email Người nhận]
+    end
+
+    A --> D
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    F --> H
+    H --> I
+    I --> K
+    F --> G
 ```
 
-### Các biến toàn cục (Global Variables) sử dụng:
-* **`$G.mail.receiver`**: Mảng danh sách địa chỉ email người nhận (ví dụ: `["user@example.com"]`).
-* **`$G.mail.receiver.name`**: Tên đầy đủ của người nhận (Full name).
-* **`$G.mail.tem`**: Mã Template email (dùng cho các RuleSet dùng chung nhiều template).
+### Các biến toàn cục (Global Variables):
+* **`$G.mail.receiver`**: Mảng chứa email người nhận (`[contact.email]`).
+* **`$G.mail.receiver.name`**: Họ và tên đầy đủ của người nhận (`contact.full.name`).
+* **`$G.mail.tem`**: Mã template email tương ứng (`TEM_TT01` đến `TEM_TT05`).
 
 ---
 
-## 2. CHI TIẾT CÁC PHÂN HỆ ĐÃ TRIỂN KHAI
+## 3. MA TRẬN TEMPLATE EMAIL THEO PHASE WORKFLOW THỰC TẾ
 
-### 2.1. Phân hệ Yêu cầu báo giá / Hồ sơ yêu cầu (YCBG/HSYC)
-* **File kịch bản**:
-  - `ESD_MS_YCBG_ACTION_WF.js`: Điều phối workflow action.
-  - `ESD_MS_YCBG_ACTION_WF_SendEmail.js`: Xử lý gửi email.
-* **RuleSet**: `ESD_MS_YCBG_SENDEMAIL`
+Dựa trên cấu trúc phân quyền và các trường người duyệt trong `ESD_HTKT_PAYMENT_WF`:
 
-#### Danh mục Template:
-| Mã Template | Hằng số | Nghiệp vụ | Người nhận |
+| Mã Template | Tên nghiệp vụ | Phase / Sự kiện kích hoạt | Người nhận (Field trên record `esdHTKTpayment`) |
 | :--- | :--- | :--- | :--- |
-| **`TEM014`** | `YeuCauXacNhan` | Yêu cầu Tổ chuyên gia mua sắm xác nhận | Tổ chuyên gia MS (bảng `esdMSkmsApproval`) |
-| **`TEM015`** | `YeuCauPheDuyet` | Yêu cầu Đại diện Chủ đầu tư phê duyệt | Đại diện Chủ đầu tư (`esdMSkmsApproval`) |
-| **`TEM016`** | `XacNhan` | Thông báo hồ sơ YCBG/HSYC đã được xác nhận | Người tạo hồ sơ (`created.by`) |
-| **`TEM017`** | `YeuCauChinhSua` | Thông báo yêu cầu chỉnh sửa hồ sơ | Người tạo hồ sơ (`created.by`) |
-| **`TEM018`** | `PheDuyet` | Thông báo hồ sơ YCBG/HSYC đã được phê duyệt | Người tạo hồ sơ (`created.by`) |
+| **`TEM_TT01`** | **Yêu cầu xử lý / Rà soát / Phê duyệt** | - Rời `initial_dmms`: Chuyển sang KTTC xử lý<br>- Rời `initial_kttc`: Chuyển Rà soát / Duyệt ĐMMS<br>- Rời `check_dmms`: Chuyển Duyệt ĐMMS<br>- Rời `approval_dmms`: Chuyển Duyệt KTTC<br>- Rời `approval_kttc`: Chuyển Rà soát / Duyệt Cấp thẩm quyền<br>- Rời `check_final`: Chuyển Duyệt Cấp thẩm quyền | - `user.checker.kttc`<br>- `user.checker.dmms` (nếu `require.check.level1`)<br>- `user.approver.dmms`<br>- `user.approver.kttc`<br>- `user.checker.final` (nếu `require.check.level2`)<br>- `user.approver.final` |
+| **`TEM_TT02`** | **Yêu cầu chỉnh sửa (Trả về)** | Khi gọi `returnToUpdate` | Người tạo phiếu (`created.by`) + Cán bộ KTTC xử lý (`user.checker.kttc`). Đính kèm `return.reason`. |
+| **`TEM_TT03`** | **Phê duyệt thành công / Ký số hoàn tất** | Khi `approval_final` thành công (Status: `approved`) | Người tạo phiếu (`created.by`) + Cán bộ KTTC (`user.checker.kttc`) |
+| **`TEM_TT04`** | **Hoàn tất hạch toán / Chi tiền** | Khi trạng thái chuyển sang `accounted` (Đã hạch toán OGL / Chi tiền) | Người tạo phiếu (`created.by`) + Người theo dõi HĐ (`executor.id` từ `esdHDcontract`) |
+| **`TEM_TT05`** | **Cảnh báo hạn thanh toán** | Batch Job quét định kỳ các đợt thanh toán đến hạn | Người theo dõi HĐ + Cán bộ đầu mối thanh toán |
 
 ---
 
-### 2.2. Phân hệ Quản lý Hợp đồng & Triển khai / Nghiệm thu / Nhập kho
-* **File kịch bản**:
-  - `ESD_HD_ACTION_WF_SEND_EMAIL.js`
-  - `ESD_HD_CONTRACT_SENDEMAIL.js`
+## 4. SƠ ĐỒ CHUYỂN PHASE & TRIGGER GỬI EMAIL TRONG `ESD_HTKT_PAYMENT_WF`
 
-#### Danh mục Template:
-| Mã Template | Tên hàm | Nội dung gửi | Người nhận |
-| :--- | :--- | :--- | :--- |
-| **`TEMP01`** | `sendEmailAlertExpireHD` | Cảnh báo sắp hết hạn HĐ/Khoản mua sắm trực tiếp | Người theo dõi thực hiện (`executor_id`) |
-| **`TEMP02`** | `sendEmailAlertExpireGuarantee` | Cảnh báo sắp hết hạn Bảo lãnh/Bảo hành/Bảo đảm | Người tạo hợp đồng (`created_by`) |
-| **`TEMP03`** | `sendEmailAlertNDTH` | Cảnh báo thời gian thực hiện NDTH | Người thực hiện & Người tạo |
-| **`TEMP04`** | `sendEmailAlertExpireNHTH` | Cảnh báo sắp đến hạn thực hiện nội dung | Người thực hiện & Người tạo |
-| **`TEMP05`** | `sendEmailYCNhapKho` | Yêu cầu nhập kho | Cán bộ quyền kho cấp 1 (`unit_lv1`) |
-| **`TEMP06`** | `sendEmailYCNhapTS` | Yêu cầu nhập tài sản | Cán bộ quyền tài sản cấp 1 (`unit_lv1`) |
-| **`TEMP07`** | `sendEmailXNNhapKho` | Xác nhận nhập kho | Người thực hiện phiếu & Người theo dõi HĐ |
-| **`TEMP08`** | `sendEmailXNNhapTS` | Xác nhận nhập tài sản | Người thực hiện phiếu & Người theo dõi HĐ |
-| **`TEMP09`** | `sendMailSendRequestBBNTCLKT` | Gửi yêu cầu xác nhận BBNT CLKT | Cán bộ quyền nghiệm thu cấp 2 (`unit_lv2`) |
-| **`TEMP10`** | `sendEmailTuChoiNhapTaiSan` | Từ chối nhập tài sản | Người thực hiện phiếu |
-| **`TEMP11`** | `sendEmailTuChoiNhapKho` | Từ chối nhập kho | Người thực hiện phiếu |
-| **`TEMP12`** | `sendEmailBBNTCLKT_XN` | Lãnh đạo xác nhận BBNT CLKT | Người thực hiện lập biên bản |
-| **`TEMP13`** | `sendEmailBBNTCLKT_YCCS` | Yêu cầu chỉnh sửa BBNT CLKT | Người thực hiện lập biên bản |
-| **`TEMP14`** | `sendEmailBBNTBanGiao_YCXN` | Yêu cầu xác nhận BBNT bàn giao | Cán bộ quyền nghiệm thu cấp 2 (`unit_lv2`) |
-| **`TEMP15`** | `sendEmailBBNTBanGiao_XN` | Lãnh đạo xác nhận BBNT bàn giao | Người thực hiện |
-| **`TEMP16`** | `sendEmailBBNTBanGiao_YCCS` | Yêu cầu chỉnh sửa BBNT bàn giao | Người thực hiện |
-| **`TEMP17`** | `sendEmailTrienKhai_HoanThanh` | Thông báo hoàn thành triển khai | Người tạo yêu cầu |
-| **`TEMP18`** | `sendEmailTrienKhai_PheDuyetDieuChinh` | Yêu cầu phê duyệt điều chỉnh | Người thực hiện |
-| **`TEMP19`** | `sendEmailTrienKhai_YeuCauChinhSua` | Yêu cầu chỉnh sửa yêu cầu triển khai | Người tạo phiếu yêu cầu triển khai cha |
-| **`TEMP20`** | `sendEmailTrienKhai_YeuCauCNDV` | Yêu cầu triển khai chi nhánh/đơn vị | Danh sách `userIds` |
-| **`TEMP27`** | `sendEmailChinhSuaTHTK` | Yêu cầu chỉnh sửa phiếu THTK | Người thực hiện |
-| **`TEMP28`** | `sendEmailTscXacNhanTrienKhai` | TSC xác nhận triển khai | Người thực hiện |
-| **`TEMP29`** | `sendEmailAlertTHTK` | Cảnh báo thời gian thực hiện THTK | Danh sách `userIds` |
-| **`TEMP31`** | `sendEmailEditTHTKTSC` | Yêu cầu chỉnh sửa THTK TSC | Người thực hiện |
+```mermaid
+stateDiagram-v2
+    [*] --> initial_dmms: ĐMMS tạo phiếu
+    [*] --> initial_kttc: KTTC tạo phiếu
+
+    initial_dmms --> initial_kttc: Trình KTTC (Gửi TEM_TT01 cho user.checker.kttc)
+    
+    initial_kttc --> check_dmms: Trình Rà soát 1 (Gửi TEM_TT01 cho user.checker.dmms)
+    initial_kttc --> approval_dmms: Trình Duyệt ĐMMS (Gửi TEM_TT01 cho user.approver.dmms)
+
+    check_dmms --> approval_dmms: Hoàn thành RS1 (Gửi TEM_TT01 cho user.approver.dmms)
+    approval_dmms --> approval_kttc: Duyệt ĐMMS xong (Gửi TEM_TT01 cho user.approver.kttc)
+
+    approval_kttc --> check_final: Trình RS2 (Gửi TEM_TT01 cho user.checker.final)
+    approval_kttc --> approval_final: Trình Duyệt Thẩm quyền (Gửi TEM_TT01 cho user.approver.final)
+
+    check_final --> approval_final: Hoàn thành RS2 (Gửi TEM_TT01 cho user.approver.final)
+
+    approval_final --> approved: Phê duyệt & Ký số xong (Gửi TEM_TT03 cho created.by)
+
+    approved --> accounted: Hạch toán OGL / Chi tiền (Gửi TEM_TT04 cho created.by + Quản lý HĐ)
+
+    state "Yêu cầu chỉnh sửa (returnToUpdate)" as Ret
+    check_dmms --> Ret: Trả về
+    approval_dmms --> Ret: Trả về
+    approval_kttc --> Ret: Trả về
+    check_final --> Ret: Trả về
+    approval_final --> Ret: Trả về
+    note right of Ret: Kích hoạt TEM_TT02 (kèm lý do return.reason) gửi created.by
+```
 
 ---
 
-## 3. THIẾT KẾ & KẾ HOẠCH CHO PHÂN HỆ THANH TOÁN (PAYMENT)
+## 5. THIẾT KẾ MÃ NGUỒN (SOURCE CODE SCAFFOLD)
 
-### 3.1. File kịch bản khởi tạo
-* **`ESD_HTKT_PAYMENT_ACTION_WF_SendEmail.js`**
-* **RuleSet dự kiến**: `ESD_HTKT_PAYMENT_SENDEMAIL`
-
-### 3.2. Bảng mã Template dự kiến
-| Mã Template | Hằng số | Nghiệp vụ | Người nhận |
-| :--- | :--- | :--- | :--- |
-| **`TEM_TT01`** | `YeuCauPheDuyet` | Yêu cầu xác nhận / phê duyệt hồ sơ thanh toán | Người duyệt kế tiếp / Cấp duyệt theo ma trận |
-| **`TEM_TT02`** | `YeuCauChinhSua` | Thông báo hồ sơ thanh toán bị từ chối / cần sửa | Người lập hồ sơ (`created.by`) |
-| **`TEM_TT03`** | `PheDuyet` | Thông báo hồ sơ thanh toán đã duyệt / ký số xong | Người lập hồ sơ (`created.by`) |
-| **`TEM_TT04`** | `HoanThanhChi` | Thông báo đã hạch toán / chi tiền thành công | Người lập hồ sơ + Người theo dõi HĐ |
-| **`TEM_TT05`** | `CanhBaoHanTT` | Cảnh báo sắp đến hạn thanh toán đợt tiếp theo | Người theo dõi thực hiện HĐ / Kế toán |
-
-### 3.3. Hướng dẫn tích hợp vào Workflow Thanh toán
-Khi hoàn thiện FSD/BRD, tại file điều phối workflow thanh toán (ví dụ `ESD_HTKT_PAYMENT_ACTION_WF.js`), chỉ cần gọi các hàm từ thư viện `ESD_HTKT_PAYMENT_ACTION_WF_SendEmail`:
+### 5.1. Thư viện gửi email: `ESD_HTKT_PAYMENT_WF_SendEmail.js`
 
 ```javascript
-var sendMailPaymentLib = lib.ESD_HTKT_PAYMENT_ACTION_WF_SendEmail;
+var callRuleSet = lib.ESD_Utils.callRuleSet;
+var getCommonName = lib.ESD_Utils.getCommonName;
 
-function executePaymentWorkflowAction(record, actionCode, oldrecord) {
-    switch (actionCode) {
-        case "SUBMIT_APPROVE":
-            // Gửi email yêu cầu phê duyệt
-            sendMailPaymentLib.sendMailToApprover(record);
-            break;
+var emailList = {
+    "YeuCauPheDuyet": "TEM_TT01",
+    "YeuCauChinhSua": "TEM_TT02",
+    "PheDuyet":       "TEM_TT03",
+    "HoanThanhChi":   "TEM_TT04",
+    "CanhBaoHanTT":   "TEM_TT05"
+};
 
-        case "REJECT_EDIT":
-            // Gửi email yêu cầu chỉnh sửa kèm lý do
-            sendMailPaymentLib.sendMailYeuCauChinhSua(record);
-            break;
+function getEmailList() {
+    return emailList;
+}
 
-        case "APPROVE_SUCCESS":
-            // Gửi email thông báo đã phê duyệt
-            sendMailPaymentLib.sendMailPheDuyet(record);
-            break;
+function cleanGlobalVariable() {
+    vars["$G.mail.receiver"] = null;
+    vars["$G.mail.receiver.name"] = null;
+    vars["$G.mail.tem"] = null;
+}
 
-        case "POST_SUCCESS":
-            // Gửi email thông báo hoàn thành chi tiền
-            sendMailPaymentLib.sendMailHoanThanhChiTien(record);
-            break;
+function sendMailPayment(record, user, template) {
+    if (!record || !user || !user.email) return false;
+    try {
+        vars["$G.mail.receiver"] = [user.email];
+        vars["$G.mail.receiver.name"] = user["full.name"] || user.fullName || "";
+        vars["$G.mail.tem"] = template;
+
+        callRuleSet(record, "ESD_HTKT_PAYMENT_SENDEMAIL");
+        return true;
+    } catch (e) {
+        print("[ESD_HTKT_PAYMENT_WF_SendEmail] Error: " + e);
+        return false;
+    } finally {
+        cleanGlobalVariable();
+    }
+}
+
+// 1. Gửi cho người tạo hồ sơ (Owner)
+function sendMailToOwner(record, template) {
+    var createdBy = record["created.by"] || record.created_by;
+    var userOwner = lib.ESD_Utils.getOneRecord("contacts", 'contact.name="' + createdBy + '"', ["email", "full.name"]);
+    if (userOwner) return sendMailPayment(record, userOwner, template);
+    return false;
+}
+
+// 2. Gửi cho người duyệt / tiếp nhận theo Phase
+function sendMailToPhaseApprover(record, approverContactId) {
+    if (!approverContactId) return false;
+    var approver = lib.ESD_Utils.getOneRecord("contacts", 'contact.name="' + approverContactId + '"', ["email", "full.name"]);
+    if (approver) return sendMailPayment(record, approver, emailList.YeuCauPheDuyet);
+    return false;
+}
+
+// 3. Xử lý gửi mail khi Trả về chỉnh sửa (returnToUpdate)
+function sendMailOnReturn(record) {
+    return sendMailToOwner(record, emailList.YeuCauChinhSua);
+}
+
+// 4. Xử lý gửi mail khi Phê duyệt hoàn tất (approval_final)
+function sendMailOnApproved(record) {
+    return sendMailToOwner(record, emailList.PheDuyet);
+}
+
+// 5. Xử lý gửi mail khi Hạch toán thành công (accounted)
+function sendMailOnAccounted(record) {
+    sendMailToOwner(record, emailList.HoanThanhChi);
+    if (record.contract_id) {
+        var contractExecutor = getCommonName("esdHDcontract", 'id="' + record.contract_id + '"', "executor.id");
+        if (contractExecutor) {
+            var executorContact = lib.ESD_Utils.getOneRecord("contacts", 'contact.name="' + contractExecutor + '"', ["email", "full.name"]);
+            if (executorContact) sendMailPayment(record, executorContact, emailList.HoanThanhChi);
+        }
     }
 }
 ```
+
+### 5.2. Điểm móc nối (Hooks) trong `ESD_HTKT_PAYMENT_WF`
+
+1. **Trong hàm `updateNextStatus(record, previousRecord)`**:
+   - Khi chuyển sang phase tiếp theo $\rightarrow$ gọi `sendMailToPhaseApprover(record, targetUser)`.
+   - Khi phase đạt `approval_final` (status `approved`) $\rightarrow$ gọi `sendMailOnApproved(record)`.
+2. **Trong hàm `returnToUpdate(record)`**:
+   - Sau khi cập nhật trạng thái `request_edit` $\rightarrow$ gọi `sendMailOnReturn(record)`.
+3. **Khi đồng bộ trạng thái hạch toán OGL (`accounted`)**:
+   - Gọi `sendMailOnAccounted(record)`.
+
+---
+
+## 6. KẾ HOẠCH TRIỂN KHAI & KIỂM THỬ (TEST PLAN)
+
+### Bước 1: Cấu hình SM Backend
+* RuleSet: `ESD_HTKT_PAYMENT_SENDEMAIL`.
+* 5 Email Template (`TEM_TT01` - `TEM_TT05`) với các placeholder `{id}`, `{description}`, `{total.amount.paid}`, `{return.reason}`, `{link}`.
+
+### Bước 2: Kịch bản kiểm thử (Test Cases)
+1. **TC-01 (ĐMMS -> KTTC)**: ĐMMS trình phiếu $\rightarrow$ Kiểm tra mail `TEM_TT01` đến `user.checker.kttc`.
+2. **TC-02 (KTTC -> Cấp duyệt ĐMMS)**: KTTC hoàn tất xử lý $\rightarrow$ Mail `TEM_TT01` đến `user.checker.dmms` / `user.approver.dmms`.
+3. **TC-03 (Duyệt ĐMMS -> Duyệt KTTC -> Duyệt Thẩm quyền)**: Từng cấp duyệt thành công $\rightarrow$ Mail `TEM_TT01` đến người duyệt cấp tiếp theo.
+4. **TC-04 (Trả về - returnToUpdate)**: Cấp bất kỳ trả về kèm lý do $\rightarrow$ Mail `TEM_TT02` đến `created.by` hiển thị đúng lý do trả về.
+5. **TC-05 (Duyệt cuối & Ký số xong)**: Cấp thẩm quyền duyệt $\rightarrow$ Mail `TEM_TT03` báo về `created.by`.
+6. **TC-06 (Hạch toán xong)**: Cập nhật `accounted` $\rightarrow$ Mail `TEM_TT04` báo về `created.by` và người quản lý hợp đồng.

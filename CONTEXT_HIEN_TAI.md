@@ -274,14 +274,15 @@ payment.created.by
   - Sử dụng các hàm tính hạn: `getDaysUntil`, `getDaysBetween`, `isReminderDue`.
 
 ### Khởi tạo cho Phân hệ Thanh toán (Payment)
-- **Thư mục tài liệu**: `Gửi Email/README.md`
-- **Thư viện script mới**: `Gửi Email/ESD_HTKT_PAYMENT_ACTION_WF_SendEmail.js`
+- **Workflow tương ứng**: `ESD_HTKT_PAYMENT_WF` (`WF/PAYMENT_WF.js`)
+- **Tài liệu đặc tả riêng**: `Gửi Email/Thanh toán/README.md`
+- **Thư viện script gửi email**: `Gửi Email/Thanh toán/ESD_HTKT_PAYMENT_WF_SendEmail.js`
 - **RuleSet dự kiến**: `ESD_HTKT_PAYMENT_SENDEMAIL`
 - **Template dự kiến**:
-  - `TEM_TT01`: Yêu cầu phê duyệt hồ sơ thanh toán.
-  - `TEM_TT02`: Yêu cầu chỉnh sửa / từ chối hồ sơ thanh toán.
-  - `TEM_TT03`: Thông báo hồ sơ thanh toán đã phê duyệt / ký số.
-  - `TEM_TT04`: Thông báo hoàn thành hạch toán / chi tiền.
+  - `TEM_TT01`: Yêu cầu rà soát / phê duyệt / tiếp nhận hồ sơ thanh toán theo phase.
+  - `TEM_TT02`: Yêu cầu chỉnh sửa / trả về hồ sơ thanh toán (`returnToUpdate`).
+  - `TEM_TT03`: Thông báo hồ sơ thanh toán đã phê duyệt / ký số hoàn tất (`approval_final`).
+  - `TEM_TT04`: Thông báo hoàn thành hạch toán / chi tiền (`accounted`).
   - `TEM_TT05`: Cảnh báo sắp đến hạn thanh toán.
 - **Nguyên tắc kỹ thuật**: Mọi hàm gửi mail phải bọc trong `try/finally` và gọi `cleanGlobalVariable()` để giải phóng `$G.mail.receiver`, `$G.mail.receiver.name`, `$G.mail.tem`.
 

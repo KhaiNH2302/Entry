@@ -181,11 +181,6 @@ function canUpdateApprovalInfo(record, field) {
 
 function updateNextStatus(record, previousRecord) {
 	var currentPhase = record.current_phase || record["current.phase"];
-	var initialStatus = record.status;
-
-	print("[PAYMENT_WF.updateNextStatus] >>> START -> record.id=" + (record.id || record["id"]) + ", currentPhase=" + currentPhase + ", status=" + initialStatus);
-
-	// thang add logic sign KS
 	var oldPhase = currentPhase;
 	var documentResult = null;
 
@@ -197,39 +192,29 @@ function updateNextStatus(record, previousRecord) {
 		oldPhase = String(previousRecord["current.phase"]).trim();
 	}
 
-	print("[PAYMENT_WF.updateNextStatus] oldPhase resolved=" + oldPhase + ", target HTKT_WF_PHASE.INITIAL_KTTC=" + HTKT_WF_PHASE.INITIAL_KTTC);
-
 	// trưởng thêm: Chỉ tạo bản trình ký khi rời phase initial_kttc.
 	if (oldPhase === HTKT_WF_PHASE.INITIAL_KTTC) {
 		try {
 			htktWfAssertDependencies(true);
 
 			var paymentId = htktWfPaymentId(record);
-			print("[PAYMENT_WF.updateNextStatus] Checking presentation for paymentId=" + paymentId);
 
 			var currentDocument = htktWfDocument().getCurrentPresentation({
 				paymentId: paymentId
 			});
-
-			print("[PAYMENT_WF.updateNextStatus] currentDocument check result=" + JSON.stringify(currentDocument));
 
 			if (currentDocument && currentDocument.success === true) {
 				documentResult = htktWfOk({
 					idempotent: true,
 					document: currentDocument.data
 				}, "Bản trình ký đã được tạo trước đó.");
-				print("[PAYMENT_WF.updateNextStatus] Presentation already existed, skip generate.");
 			} else if (currentDocument && currentDocument.code && currentDocument.code !== "DOCUMENT_NOT_FOUND") {
-				print("[PAYMENT_WF.updateNextStatus] Error checking presentation: " + currentDocument.message);
 				throw new Error(currentDocument.message || "Không kiểm tra được bản trình ký hiện tại.");
 			} else {
-				print("[PAYMENT_WF.updateNextStatus] Generating new presentation...");
 				documentResult = htktWfDocument().generateAndUploadPresentation({
 					paymentId: paymentId,
 					currentUser: htktWfCurrentUser()
 				});
-
-				print("[PAYMENT_WF.updateNextStatus] generateAndUploadPresentation result=" + JSON.stringify(documentResult));
 
 				if (!documentResult || documentResult.success !== true) {
 					var documentError = documentResult && documentResult.message
@@ -238,12 +223,10 @@ function updateNextStatus(record, previousRecord) {
 					if (documentResult && documentResult.detail) {
 						documentError += " " + documentResult.detail;
 					}
-					print("[PAYMENT_WF.updateNextStatus] ERROR generating presentation: " + documentError);
 					throw new Error(documentError);
 				}
 			}
 		} catch (docErr) {
-			print("[PAYMENT_WF.updateNextStatus] EXCEPTION in presentation handling: " + docErr);
 			throw docErr;
 		}
 	}
@@ -252,28 +235,15 @@ function updateNextStatus(record, previousRecord) {
 		record.status = "initialized";
 	} else if (NEXT_PHASE_MAP[currentPhase]) {
 		record.status = NEXT_PHASE_MAP[currentPhase];
-		print("[PAYMENT_WF.updateNextStatus] Mapped status from NEXT_PHASE_MAP[" + currentPhase + "] -> " + record.status);
-	} else {
-		print("[PAYMENT_WF.updateNextStatus] WARNING: currentPhase '" + currentPhase + "' not found in NEXT_PHASE_MAP!");
 	}
-
-	print("[PAYMENT_WF.updateNextStatus] Final record.status=" + record.status);
 
 	try {
 		if (currentPhase == "initial_dmms") {
 			lib.ESD_HTKT_PAYMENT_VENDOR.syncVendorOglFromPayment(record);
 		}
-	} catch (e) {
-		print("[PAYMENT_WF.updateNextStatus] syncVendorOglFromPayment exception: " + e);
-	}
+	} catch (e) {}
 
-	try {
-		createApprovalHistory(record);
-	} catch (histErr) {
-		print("[PAYMENT_WF.updateNextStatus] createApprovalHistory exception: " + histErr);
-	}
-
-	print("[PAYMENT_WF.updateNextStatus] <<< END updateNextStatus successfully");
+	createApprovalHistory(record);
 	return documentResult;
 }
 
@@ -347,7 +317,7 @@ function cancelRequest(record) {
 		if (currentUser && paymentId) {
 			createActivity(
 					"activityHTKTpayment",
-					"Xóa Đề nghị Thanh toán",
+					'Xóa Đề nghị Thanh toán: Mã đề nghị: "' + paymentId + '"',
 					paymentId,
 					"Xóa",
 					currentUser
@@ -407,7 +377,12 @@ function returnToUpdate(record, documentsAlreadyDeleted) {
  * 4. TẦNG VALIDATION NGHIỆP VỤ (BUSINESS VALIDATIONS)
  * ============================================================================= */
 
-function validateDataInPhase(record) {
+function validateDataInPhase(record, type) {
+	// Nếu không phải gọi từ Workflow (Trình duyệt / Chuyển bước) -> Bỏ qua kiểm tra chuyển phase
+	if (type !== "wf") {
+		return null;
+	}
+
 	var errorMss = [];
 
 	// Validate chung thông tin NCC + thanh toán
@@ -517,6 +492,12 @@ function validateFromCbKttc() {
 		errorMss.push(refundMatchResult.error);
 	}
 	//////////////////
+
+	// Validate phương thức thanh toán của các nhà cung cấp nếu >= 2 NCC
+	var paymentMethodResult = validateAllVendorsPaymentMethodMatch(paymentId);
+	if (paymentMethodResult.success !== true) {
+		errorMss.push(paymentMethodResult.error);
+	}
 
 	// Validate thông tin phê duyệt
 	if (!record["user.approver.kttc"]) {
@@ -1048,6 +1029,8 @@ function isSignaturePhase(record) {
 	return htktWfIsSignaturePhaseValue(htktWfPhase(record));
 }
 
+
+
 // Kiểm tra quyền hiển thị Workflow Action Test ký.
 function checkCanSign(record) {
 	var actorResult = validateCurrentActor(record);
@@ -1090,7 +1073,7 @@ function validateCurrentActor(record) {
 function htktWfValidateLegacy(record) {
 	var errors;
 	try {
-		errors = validateDataInPhase(record);
+		errors = validateDataInPhase(record, "wf");
 	} catch (error) {
 		return htktWfFailException("WORKFLOW_VALIDATION_EXCEPTION", "Không thực hiện được validation workflow hiện tại.", error);
 	}
@@ -1602,3 +1585,58 @@ function escapeSmQueryValue(value) {
 			.replace(/\\/g, "\\\\")
 			.replace(/"/g, '\\"');
 }
+
+// Kiểm tra phương thức thanh toán của các NCC (>=2 NCC thì phải đồng nhất: chỉ TIENMAT hoặc chỉ CHUYENKHOAN)
+function validateAllVendorsPaymentMethodMatch(paymentId) {
+	if (!paymentId) {
+		return { success: false, error: "Không tìm thấy mã đề nghị thanh toán." };
+	}
+
+	var pvFile = null;
+	try {
+		pvFile = new SCFile("esdHTKTpaymentVendor", SCFILE_READONLY);
+		var query = 'payment.id="' + escapeSmQueryValue(paymentId) + '"';
+		var rc = pvFile.doSelect(query);
+
+		var count = 0;
+		var hasCash = false;
+		var hasTransfer = false;
+		var hasOther = false;
+
+		while (rc == RC_SUCCESS) {
+			count++;
+			var method = String(pvFile["payment.method"] || "").trim().toUpperCase();
+
+			if (method === "TIENMAT") {
+				hasCash = true;
+			} else if (method === "CHUYENKHOAN") {
+				hasTransfer = true;
+			} else {
+				hasOther = true;
+			}
+
+			rc = pvFile.getNext();
+		}
+
+		if (count >= 2) {
+			if (hasOther || (hasCash && hasTransfer) || (!hasCash && !hasTransfer)) {
+				return {
+					success: false,
+					error: "Phương thức toán của các nhà cung cấp đang không đồng nhất."
+				};
+			}
+		}
+
+		return { success: true };
+	} catch (e) {
+		return {
+			success: false,
+			error: "Lỗi kiểm tra phương thức thanh toán của nhà cung cấp: " + e
+		};
+	} finally {
+		if (pvFile) {
+			try { pvFile.doClose(); } catch (e) {}
+		}
+	}
+}
+
