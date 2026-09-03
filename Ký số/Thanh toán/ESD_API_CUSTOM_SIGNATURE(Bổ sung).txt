@@ -1,3 +1,12 @@
+case "getFileECM_HTKT_Payment":
+                result = lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm(parsed);
+                break;
+case "deleteFileECM_HTKT_Payment":
+    result = lib.ESD_HTKT_PAYMENT_DOCUMENT.deleteFileECM_HTKT(parsed);
+    break;
+case "addFileECM_HTKT_Payment":
+    result = lib.ESD_HTKT_PAYMENT_DOCUMENT.addFileECM_HTKT(parsed);
+    break;
 case "getStatusKySo_PAYMENT_HTKT":
     result = lib.ESD_ACTIONS_INTEGRATIONS.getStatusKySo_Payment_HTKT(parsed);
     result = safeParse(result);
