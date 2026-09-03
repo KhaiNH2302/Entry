@@ -1,0 +1,9 @@
+case "getStatusKySo_PAYMENT_HTKT":
+    result = lib.ESD_ACTIONS_INTEGRATIONS.getStatusKySo_Payment_HTKT(parsed);
+    result = safeParse(result);
+    break;
+case "getStatusPhieu_PAYMENT_HTKT":
+    result =
+        lib.ESD_ACTIONS_INTEGRATIONS.getStatusPhieu_Payment_HTKT(parsed);
+    result = safeParse(result);
+    break;

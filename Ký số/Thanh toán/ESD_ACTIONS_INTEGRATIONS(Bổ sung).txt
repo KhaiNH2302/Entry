@@ -1,0 +1,230 @@
+function getStatusPhieu_Payment_HTKT(input) {
+    input = input || {};
+
+    var paymentId = "";
+    var oldObjectId = "";
+
+    if (typeof input === "object" && input !== null) {
+        paymentId = String(input.id || input.paymentId || "").trim();
+        oldObjectId = String(input.oldObjectId || input.old_object_id || "").trim();
+    } else {
+        paymentId = String(input || "").trim();
+    }
+
+    if (!paymentId || !oldObjectId) {
+        return {
+            Code: "FAIL",
+            status: false,
+            Msg: "Thieu ma phieu hoac Object ID cu."
+        };
+    }
+
+    var attachmentFile = null;
+
+    try {
+        attachmentFile = new SCFile(
+            "esdHTKTpaymentAttachment",
+            SCFILE_READONLY
+        );
+
+        var safePaymentId = paymentId
+            .replace(/\\/g, "\\\\")
+            .replace(/"/g, '\\"');
+
+        var query =
+            'payment.id="' + safePaymentId + '"' +
+            ' and doc.code="TRINH_KY"';
+
+        var rc = attachmentFile.doSelect(query);
+        var oldAttachmentExists = false;
+        var newObjectId = "";
+
+        while (rc == RC_SUCCESS) {
+            var objectId = String(
+                attachmentFile["ecm.object.id"] || ""
+            ).trim();
+
+            if (objectId === oldObjectId) {
+                oldAttachmentExists = true;
+            } else if (objectId) {
+                newObjectId = objectId;
+            }
+
+            rc = attachmentFile.getNext();
+        }
+
+        var completed =
+            newObjectId !== "" &&
+            oldAttachmentExists === false;
+
+        return {
+            Code: "OK",
+            status: completed,
+            pending: !completed
+        };
+
+    } catch (error) {
+        return {
+            Code: "FAIL",
+            status: false,
+            Msg: "Khong kiem tra duoc trang thai ky so."
+        };
+
+    } finally {
+        try {
+            if (attachmentFile) {
+                attachmentFile.doClose();
+            }
+        } catch (closeError) {}
+    }
+}
+
+/**
+ * Vấn tin kết quả ký SmartCA cho payment HTKT.
+ *
+ * @param {string|object} input - Mã đề nghị thanh toán HTKT hoặc object chứa id/paymentId.
+ * @returns {{status: "SUCCESS"|"PENDING"|"ERROR", objectidext?: string, attachmentId?: string}}
+ */
+function getStatusKySo_Payment_HTKT(input) {
+    var paymentId = "";
+    if (typeof input === "object" && input !== null) {
+        paymentId = String(input.id || input.paymentId || "").trim();
+    } else {
+        paymentId = String(input || "").trim();
+    }
+
+    if (!paymentId) {
+        return { status: "ERROR" };
+    }
+
+    try {
+        var tokenResult = lib.ESD_DIGITAL_SIGNATURE.getTokenKeycloak();
+        var accessToken = tokenResult && tokenResult.access_token;
+
+        if (!accessToken) {
+            return { status: "ERROR" };
+        }
+
+        // Đọc attachment TRINH_KY để lấy transactionId.
+        // transactionId được lưu tại signatureConfirmReal khi SM nhận action ky-so.
+        var attachmentFile = new SCFile(
+            "esdHTKTpaymentAttachment",
+            SCFILE_READONLY
+        );
+
+        var rc = attachmentFile.doSelect(
+            'payment.id="' +
+                paymentId +
+                '" and doc.code="TRINH_KY"'
+        );
+
+        if (rc != RC_SUCCESS) {
+            try {
+                attachmentFile.doClose();
+            } catch (closeError) {
+                // Bỏ qua lỗi đóng file.
+            }
+
+            return { status: "ERROR" };
+        }
+
+        // Tên field đúng theo dbdict: transactionId.
+        var transactionId = String(
+            attachmentFile["transactionId"] || ""
+        ).trim();
+
+        var attachmentId = String(
+            attachmentFile["id"] || ""
+        ).trim();
+
+        try {
+            attachmentFile.doClose();
+        } catch (closeError) {
+            // Bỏ qua lỗi đóng file.
+        }
+
+        if (!transactionId) {
+            return {
+                status: "PENDING",
+                attachmentId: attachmentId
+            };
+        }
+
+        // Vấn tin kết quả ký từ DSM.
+        var body = {
+            requestId: paymentId,
+            username: null,
+            password: null,
+            clientDt: String(system.functions.tod()),
+            channel: "A100_IBC",
+            reftype: "x",
+            refid: null,
+            sessionkey: null,
+            spname: null,
+            data: {
+                app_id: "A452_DSM",
+                transaction_id: transactionId
+            }
+        };
+
+        var params = {
+            accessToken: accessToken,
+            requestId: paymentId,
+            requestTime: system.functions.tod(),
+            body: body
+        };
+
+        var response = lib.ESD_DIGITAL_SIGNATURE.getStatusSign(params);
+        var parsed = typeof response === "string"
+            ? JSON.parse(response)
+            : response;
+
+        if (
+            parsed &&
+            parsed.data &&
+            parsed.data.signed &&
+            parsed.data.signed.length > 0
+        ) {
+            var signedRow = parsed.data.signed[0];
+            var signCode = String(signedRow.status || "").trim();
+            var objectIdExt = signedRow.objectidext
+                ? String(signedRow.objectidext).trim()
+                : "";
+
+            // trưởng thêm: có objectidext (file mới đã ký lên ECM) -> dừng vấn tin.
+            // 07: file kết quả đã được tải lên ECM.
+            // 05 chỉ hoàn tất khi DSM đã trả objectidext.
+            if (
+                objectIdExt ||
+                signCode === "07" ||
+                (signCode === "05" && objectIdExt)
+            ) {
+                return {
+                    status: "SUCCESS",
+                    objectidext: objectIdExt || null,
+                    attachmentId: attachmentId
+                };
+            }
+
+            if (signCode) {
+                return {
+                    status: "PENDING",
+                    attachmentId: attachmentId
+                };
+            }
+        }
+
+        return {
+            status: "PENDING",
+            attachmentId: attachmentId
+        };
+    } catch (error) {
+        lib.ESD_Utils.writeSystemLog(
+            "[HTKT_PAYMENT_SIGNATURE] getStatusKySo_Payment_HTKT error: " +
+            (error && error.message ? error.message : String(error))
+        );
+
+        return { status: "ERROR" };
+    }
+}
+

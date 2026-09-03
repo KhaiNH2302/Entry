@@ -1,0 +1,9 @@
+case "getStatusKySo_HTKT":
+    result = lib.ESD_ACTIONS_INTEGRATIONS.getStatusKySo_HTKT(parsed);
+    result = safeParse(result);
+    break;
+case "getStatusPhieu_HTKT":
+    result =
+        lib.ESD_ACTIONS_INTEGRATIONS.getStatusPhieu_HTKT(parsed);
+    result = safeParse(result);
+    break;

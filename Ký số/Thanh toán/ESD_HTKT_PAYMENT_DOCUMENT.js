@@ -75,7 +75,7 @@ function assertDependencies(requireEform) {
 	if (!lib || !lib.ESD_HTKT_PAYMENT_COMMON || typeof lib.ESD_HTKT_PAYMENT_COMMON.ok !== "function") {
 		throw new Error("Thiếu thư viện ESD_HTKT_PAYMENT_COMMON.");
 	}
-	/* REAL UAT:
+	// REAL UAT:
 	if (!lib.ESD_ENV_CONFIG ||
 		typeof lib.ESD_ENV_CONFIG.getENV !== "function" ||
 		typeof lib.ESD_ENV_CONFIG.esdEcmService !== "function") {
@@ -100,25 +100,26 @@ function assertDependencies(requireEform) {
 			"."
 		);
 	}
-	*/
 
+	/* MOCK SIT:
 	var environment = "SIT";
 	var provider = "MOCK";
 	var storageBaseUrl = CONFIG.MOCK_STORAGE_BASE_URL;
+	*/
 
 	if (requireEform === true &&
 			(!lib.ESD_HTKT_PAYMENT_EFORM_SERVICE || typeof lib.ESD_HTKT_PAYMENT_EFORM_SERVICE.generatePresentationPdf !== "function")) {
 		throw new Error("Thiếu thư viện ESD_HTKT_PAYMENT_EFORM_SERVICE.");
 	}
 
-	/* REAL UAT:
+	// REAL UAT:
 	if (provider === "REAL" && (!lib.ESD_ECM_SERVICE ||
 		typeof lib.ESD_ECM_SERVICE.uploadFileTaiLieu !== "function" ||
 		typeof lib.ESD_ECM_SERVICE.downloadDocument !== "function" ||
 		typeof lib.ESD_ECM_SERVICE.deleteDocument !== "function")) {
 		throw new Error("Thiếu hoặc sai contract thư viện ESD_ECM_SERVICE (upload/download/delete).");
 	}
-	*/
+
 	return {
 		ENVIRONMENT: environment,
 		PROVIDER: provider,
@@ -253,9 +254,7 @@ function uploadDocument(input) {
 				fileName: input.fileName,
 				content: input.pdfBase64
 			});
-		}
-		/* REAL UAT:
-		else {
+		} else {
 			rawResponse = lib.ESD_ECM_SERVICE.uploadFileTaiLieu({
 				docCat: CONFIG.ECM_REQUEST.DOC_CATEGORY,
 				docName: input.documentName || ("Phieu-de-nghi-thanh-toan-" + paymentId),
@@ -270,7 +269,6 @@ function uploadDocument(input) {
 				seq: CONFIG.ECM_REQUEST.SEQUENCE
 			});
 		}
-		*/
 
 		var parsed = parseDocumentStorageResponse(rawResponse);
 		if (parsed.success !== true) return parsed;
@@ -317,16 +315,13 @@ function downloadDocument(documentIdentity) {
 			rawResponse = postDocumentJson(environmentConfig.STORAGE_BASE_URL + "/CDM/service/document/download", {
 				documentId: docIdOrObjectId
 			});
-		}
-		/* REAL UAT:
-		else {
+		} else {
 			rawResponse = lib.ESD_ECM_SERVICE.downloadDocument([{
 				DOC_OBJECTID: String(documentIdentity.objectId || documentIdentity.docId || ""),
 				APP_ID: CONFIG.ECM_REQUEST.APP_ID,
 				SESSION_ID: CONFIG.ECM_REQUEST.SESSION_ID
 			}]);
 		}
-		*/
 
 		print("[HTKT_PAYMENT_DOC.downloadDocument] >> rawResponse=" + (rawResponse ? String(rawResponse).substring(0, 300) : "EMPTY"));
 
@@ -395,6 +390,12 @@ function deleteStoredDocument(docId) {
 					environmentConfig.STORAGE_BASE_URL + "/CDM/service/document/delete",
 					{ documentId: safeDocId }
 			);
+		} else {
+			rawResponse = lib.ESD_ECM_SERVICE.deleteDocument([{
+				DOC_ID: safeDocId,
+				APP_ID: CONFIG.ECM_REQUEST.APP_ID,
+				SESSION_ID: CONFIG.ECM_REQUEST.SESSION_ID
+			}]);
 		}
 
 		var parsed = parseDocumentStorageResponse(rawResponse);
@@ -1125,9 +1126,7 @@ function addFileECM_HTKT(file) {
 				fileName: oldDocument.name,
 				content: signedFile.data.pdfBase64
 			});
-		}
-		/* REAL UAT:
-		else {
+		} else {
 			result = lib.ESD_ECM_SERVICE.uploadFileTaiLieu({
 				"docCat": CONFIG.ECM_REQUEST.DOC_CATEGORY,
 				"docName": file.documentName || "Phieu de nghi thanh toan - " + paymentId,
@@ -1143,7 +1142,6 @@ function addFileECM_HTKT(file) {
 				"userId": currentUser
 			});
 		}
-		*/
 		result = JSON.parse(result);
 
 		if (result && result.Data && result.Data[0]) {
