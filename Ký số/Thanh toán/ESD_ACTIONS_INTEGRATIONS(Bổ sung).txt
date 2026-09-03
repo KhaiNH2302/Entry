@@ -130,7 +130,7 @@ function getStatusKySo_Payment_HTKT(input) {
 
         // Tên field đúng theo dbdict: transactionId.
         var transactionId = String(
-            attachmentFile["transactionId"] || ""
+            attachmentFile["transaction.id"] || ""
         ).trim();
 
         var attachmentId = String(
