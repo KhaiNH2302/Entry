@@ -303,14 +303,14 @@ function htktFormatMoney(value) {
 	var result = "";
 
 	while (integerPart.length > 3) {
-		result = "," + integerPart.substr(integerPart.length - 3) + result;
+		result = "." + integerPart.substr(integerPart.length - 3) + result;
 		integerPart = integerPart.substr(0, integerPart.length - 3);
 	}
 
 	result = integerPart + result;
 
 	if (decimalPart !== "" && Number(decimalPart) !== 0) {
-		result += "." + decimalPart;
+		result += "," + decimalPart;
 	}
 
 	return (isNegative ? "-" : "") + result;
