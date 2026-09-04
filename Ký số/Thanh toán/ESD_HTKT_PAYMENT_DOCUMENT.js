@@ -23,7 +23,7 @@ var CONFIG = {
 	NAME_PREFIX: "Phieu-de-nghi-thanh-toan-",
 	MAX_SCAN_RECORDS: 500,
 	HTTP_TIMEOUT: 300,
-	MOCK_STORAGE_BASE_URL: "https://mockapi.smartsolutionvn.com.vn",
+	// MOCK_STORAGE_BASE_URL: "https://mockapi.smartsolutionvn.com.vn",
 	ECM_REQUEST: {
 		APP_ID: "NEWTPSS",
 		SESSION_ID: "csep_session",
@@ -472,8 +472,8 @@ function mapAttachment(file) {
 		size: getCommon().toNumber(getCommon().readValue(file, ["size"], 0), 0),
 		docCode: getCommon().readString(file, ["doc.code"], ""),
 		groupCode: getCommon().readString(file, ["group.code"], ""),
-		status: rawStatus || STATUS.CURRENT,
-		type: rawType || CONFIG.DOCUMENT_TYPE,
+		status: rawStatus,
+		type: rawType,
 		versionNo: 0
 	};
 }
@@ -525,18 +525,21 @@ function selectAttachmentById(attachmentId, readOnly) {
 
 function isPresentationAttachment(mapped) {
 	if (!mapped) return false;
-	if (mapped.docCode === CONFIG.DOCUMENT_CODE || mapped.docCode === "TRINH_KY") return true;
-	if (mapped.type === CONFIG.DOCUMENT_TYPE || mapped.type === "TRINH_KY" || mapped.type === "Trinh ky" || mapped.type === "Trình ký") return true;
-	if (mapped.groupCode && mapped.groupCode.indexOf("HTKT_TK") === 0) return true;
-	if (mapped.name && (mapped.name.indexOf(CONFIG.NAME_PREFIX) === 0 || mapped.name.indexOf("Phieu-de-nghi-thanh-toan") === 0)) return true;
+	// Bản trình ký ĐNTT do hệ thống tự sinh luôn có groupCode dạng HTKT_TK...
+	if (mapped.groupCode && mapped.groupCode.indexOf(CONFIG.GROUP_PREFIX) === 0) {
+		return true;
+	}
+	// Hoặc phải có đồng thời docCode là TRINH_KY và tên file bắt đầu bằng prefix Phieu-de-nghi-thanh-toan-
+	if ((mapped.docCode === CONFIG.DOCUMENT_CODE || mapped.docCode === "TRINH_KY") &&
+			(mapped.name && mapped.name.indexOf(CONFIG.NAME_PREFIX) === 0)) {
+		return true;
+	}
 	return false;
 }
 
 function isAttachmentActive(attachment) {
 	if (!attachment) return false;
-	if (attachment.status === STATUS.CURRENT || attachment.status === STATUS.COMPLETED) return true;
-	if (!attachment.status || attachment.status === "ACTIVE" || attachment.status === "DA KI" || attachment.status === "DA_KI") return true;
-	return false;
+	return attachment.status === STATUS.CURRENT || attachment.status === STATUS.COMPLETED;
 }
 
 function listAttachmentsByQuery(queryStr, sortFn) {
@@ -573,7 +576,7 @@ function listByPayment(paymentId) {
 	if (!safeId) return [];
 
 	var records = listAttachmentsByQuery(
-			'payment.id="' + getCommon().escapeQueryValue(safeId) + '"',
+			'payment.id="' + getCommon().escapeQueryValue(safeId) + '" and (doc.code="' + CONFIG.DOCUMENT_CODE + '" or type="' + CONFIG.DOCUMENT_TYPE + '")',
 			function (a, b) {
 				if (a.groupCode !== b.groupCode) return a.groupCode < b.groupCode ? -1 : 1;
 				var aTime = getCommon().toString(a.uploadedAt);

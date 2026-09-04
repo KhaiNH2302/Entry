@@ -7,14 +7,14 @@ var HTKT_DOC_GENERATE_PDF_BASE64_PATH = "/api/generate/pdf/base64";
 var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
-//var HTKT_CASH_TEMPLATE_ID = "1058881c-d3b9-4032-b7d4-e9db38bc56a1";
+//var HTKT_CASH_TEMPLATE_ID = "b6a72410-27cc-423f-b672-5b643c332010";
 //var HTKT_CASH_TEMPLATE_CODE = "01-TUTM";
-//var HTKT_TRANSFER_TEMPLATE_ID = "f4fd98b7-10b4-4084-8876-0b81f6049f22";
+//var HTKT_TRANSFER_TEMPLATE_ID = "496288db-cabf-479e-ab4e-19d786e24e39";
 //var HTKT_TRANSFER_TEMPLATE_CODE = "03-TUCK";
 
-var HTKT_CASH_TEMPLATE_ID = "db2e5842-c020-4cbd-a16e-d00de5632653";
+var HTKT_CASH_TEMPLATE_ID = "4c46548f-fcd0-47e6-8852-dedeedfacc40";
 var HTKT_CASH_TEMPLATE_CODE = "01-TUTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "e705a15c-3910-4aeb-b935-c7efb84874fd";
+var HTKT_TRANSFER_TEMPLATE_ID = "d1192500-d732-4a92-a8ef-84aa37c78c7f";
 var HTKT_TRANSFER_TEMPLATE_CODE = "03-TUCK";
 var HTKT_PREPAYMENT_RECIPIENT = "Lãnh đạo đơn vị";
 
@@ -895,8 +895,6 @@ function htktBuildSupplementalEntryRows(prepaymentId, entryRows, defaultCurrency
 			unit_code: htktGetEntityUnitDisplay(
 					HTKT_COMMON.trim(rowEntry.branch) || rowEntry.branch_entity_code
 			),
-			department_code: htktGetCostCenterDisplay(rowEntry.department),
-			transaction_office: htktGetTransactionOfficeDisplay(rowEntry.transaction_office),
 			description: rowEntry.description,
 			currency: rowEntry.currency || defaultCurrency || "",
 			debit_amount: debitAmount,
@@ -1076,8 +1074,6 @@ function htktBuildDetailAccountingRows(entryRows, defaultCurrency) {
 			unit_code: htktGetEntityUnitDisplay(
 					HTKT_COMMON.trim(entry.branch) || entry.branch_entity_code
 			),
-			department_code: htktGetCostCenterDisplay(entry.department),
-			transaction_office: htktGetTransactionOfficeDisplay(entry.transaction_office),
 			description: entry.description,
 			currency: entry.currency || defaultCurrency || "",
 			debit_amount: debitAmount,
@@ -1090,6 +1086,38 @@ function htktBuildDetailAccountingRows(entryRows, defaultCurrency) {
 		totalDebitRaw: totalDebitRaw,
 		totalCreditRaw: totalCreditRaw
 	};
+}
+
+function htktBuildOtherUsers(prepaymentFile) {
+	var roleUsers = [
+		{
+			role: "Cán bộ KTTC tiếp nhận",
+			username: HTKT_COMMON.readString(prepaymentFile, ["user.checker.kttc"])
+		},
+		{
+			role: "Cán bộ Rà soát ĐMMS",
+			username: HTKT_COMMON.readString(prepaymentFile, ["user.checker.dmms"])
+		},
+		{
+			role: "Cán bộ Rà soát cuối",
+			username: HTKT_COMMON.readString(prepaymentFile, ["user.checker.final"])
+		}
+	];
+	var otherUsers = [];
+
+	for (var i = 0; i < roleUsers.length; i++) {
+		if (!roleUsers[i].username) continue;
+
+		otherUsers.push({
+			username: roleUsers[i].role + " - " + roleUsers[i].username
+		});
+	}
+
+	for (var userIndex = 0; userIndex < otherUsers.length - 1; userIndex++) {
+		otherUsers[userIndex].username += "\t";
+	}
+
+	return otherUsers;
 }
 
 function htktGetAccountingBankName(entry, vendorById) {
@@ -1257,7 +1285,7 @@ function htktBuildTemplateData(prepaymentId) {
 				vendorData.totalAmountRaw
 		),
 
-		supplemental_entry_rows: supplementalData.summary,
+		supplemental_entry_rows: [],
 		supplemental_entry_groups: supplementalData.groups,
 
 		payment_method: paymentTemplate.payment_method,
@@ -1298,6 +1326,7 @@ function htktBuildTemplateData(prepaymentId) {
 		user_approver_kttc: "",
 		blank_signature: "",
 		user_approver_final: "",
+		other_users: htktBuildOtherUsers(prepaymentFile),
 
 		prepayment_id: prepaymentId,
 		created_by_username: createdByUsername,
@@ -1578,13 +1607,8 @@ function RENDER() {
 		base64PDF = htktEscapeForJavaScript(generated.data.pdfBase64);
 	}
 	return (
-			"<!DOCTYPE html>" +
-			"<html><head><meta charset='utf-8'>" +
-			"<style>" +
-			"html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#525659;}" +
-			"#htktPdfFrame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:block;}" +
-			"</style></head><body>" +
-			"<iframe id='htktPdfFrame'></iframe>" +
+			"<div style='margin:0;padding:0;width:100%;height:100%;font-family:Arial,sans-serif;'>" +
+			"<iframe id='htktPdfFrame' width='100%' height='100%' style='min-height:700px;border:none;background:#e5e7eb;'></iframe>" +
 			"<script>" +
 			"(function(){" +
 			"var base64='" + base64PDF + "';" +
@@ -1605,7 +1629,7 @@ function RENDER() {
 			"}" +
 			"})();" +
 			"</script>" +
-			"</body></html>"
+			"</div>"
 	);
 }
 /* =============================================================================
@@ -1648,13 +1672,8 @@ function RENDER_PRINT() {
 
 	// Chi hien thi mot giao dien PDF; nguoi dung bam nut Print tren toolbar.
 	return (
-			"<!DOCTYPE html>" +
-			"<html><head><meta charset='utf-8'>" +
-			"<style>" +
-			"html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#525659;}" +
-			"#htktPrintFrame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:block;}" +
-			"</style></head><body>" +
-			"<iframe id='htktPrintFrame'></iframe>" +
+			"<div style='margin:0;padding:0;width:100%;height:100%;font-family:Arial,sans-serif;'>" +
+			"<iframe id='htktPrintFrame' width='100%' height='100%' style='min-height:700px;border:none;background:#e5e7eb;'></iframe>" +
 			"<script>" +
 			"(function(){" +
 			"var base64='" + base64PDF + "';" +
@@ -1674,7 +1693,7 @@ function RENDER_PRINT() {
 			"}" +
 			"})();" +
 			"</script>" +
-			"</body></html>"
+			"</div>"
 	);
 }
 

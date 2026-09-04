@@ -7,15 +7,15 @@ var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
 
-// var HTKT_CASH_TEMPLATE_ID = "f25ef10b-cc9d-466c-9fd5-6b4708bf1a4a";
-// var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-// var HTKT_TRANSFER_TEMPLATE_ID = "26632b12-9e38-42d2-a8aa-75dce22de2d6";
-// var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
-
-var HTKT_CASH_TEMPLATE_ID = "c577c5e7-484f-401b-ad6e-a49186d64d57";
+var HTKT_CASH_TEMPLATE_ID = "f25ef10b-cc9d-466c-9fd5-6b4708bf1a4a";
 var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "c5985acb-3a69-49fc-b41c-7d572d3279ec";
-var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK__3_";
+var HTKT_TRANSFER_TEMPLATE_ID = "26632b12-9e38-42d2-a8aa-75dce22de2d6";
+var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
+
+// var HTKT_CASH_TEMPLATE_ID = "c577c5e7-484f-401b-ad6e-a49186d64d57";
+// var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
+// var HTKT_TRANSFER_TEMPLATE_ID = "c5985acb-3a69-49fc-b41c-7d572d3279ec";
+// var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK__3_";
 var HTKT_PAYMENT_RECIPIENT = "Lãnh đạo đơn vị";
 
 function htktEscapeForJavaScript(value) {
@@ -2002,13 +2002,8 @@ function RENDER() {
 		base64PDF = htktEscapeForJavaScript(generated.data.pdfBase64);
 	}
 	return (
-			"<!DOCTYPE html>" +
-			"<html><head><meta charset='utf-8'>" +
-			"<style>" +
-			"html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#525659;}" +
-			"#htktPdfFrame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:block;}" +
-			"</style></head><body>" +
-			"<iframe id='htktPdfFrame'></iframe>" +
+			"<div style='margin:0;padding:0;width:100%;height:100%;font-family:Arial,sans-serif;'>" +
+			"<iframe id='htktPdfFrame' width='100%' height='100%' style='min-height:700px;border:none;background:#e5e7eb;'></iframe>" +
 			"<script>" +
 			"(function(){" +
 			"var base64='" + base64PDF + "';" +
@@ -2029,7 +2024,7 @@ function RENDER() {
 			"}" +
 			"})();" +
 			"</script>" +
-			"</body></html>"
+			"</div>"
 	);
 }
 
@@ -2075,13 +2070,8 @@ function RENDER_PRINT() {
 
 	// Chi hien thi mot giao dien PDF; nguoi dung bam nut Print tren toolbar.
 	return (
-			"<!DOCTYPE html>" +
-			"<html><head><meta charset='utf-8'>" +
-			"<style>" +
-			"html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#525659;}" +
-			"#htktPrintFrame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:block;}" +
-			"</style></head><body>" +
-			"<iframe id='htktPrintFrame'></iframe>" +
+			"<div style='margin:0;padding:0;width:100%;height:100%;font-family:Arial,sans-serif;'>" +
+			"<iframe id='htktPrintFrame' width='100%' height='100%' style='min-height:700px;border:none;background:#e5e7eb;'></iframe>" +
 			"<script>" +
 			"(function(){" +
 			"var base64='" + base64PDF + "';" +
@@ -2101,7 +2091,7 @@ function RENDER_PRINT() {
 			"}" +
 			"})();" +
 			"</script>" +
-			"</body></html>"
+			"</div>"
 	);
 }
 
