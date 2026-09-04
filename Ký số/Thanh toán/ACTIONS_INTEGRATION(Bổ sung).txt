@@ -1,5 +1,6 @@
-else if (tableName === "esdHTKTpayment" String(id '').indexOf('TU') === 0) {
+else if (tableName === "esdHTKTpayment") {
 lib.ESD_HTKT_PAYMENT_SIGNATURE.signaturePayment(id, userad.toUpperCase(), status, object_ids);
 if (sign_tech != "HSM") {
 lib.ESD_HTKT_PAYMENT_SIGNATURE.createScheduleSignatureHTKT(id, 10);
+}
 }

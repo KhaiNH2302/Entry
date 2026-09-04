@@ -479,11 +479,6 @@ function selectAttachmentById(attachmentId, readOnly) {
 	return null;
 }
 
-function isAttachmentActive(attachment) {
-	if (!attachment) return false;
-	return attachment.status === STATUS.CURRENT || attachment.status === STATUS.COMPLETED;
-}
-
 function listAttachmentsByQuery(queryStr, sortFn) {
 	var records = [];
 	var file = null;
