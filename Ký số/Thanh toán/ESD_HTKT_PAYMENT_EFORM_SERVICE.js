@@ -1652,7 +1652,7 @@ function htktBuildTemplateData(paymentId) {
 		template_code: paymentTemplate.template_code,
 		output_file_name:
 				HTKT_COMMON.sanitizeFileName(
-						"Phieu-de-nghi-thanh-toan" + paymentId
+						"Phieu-de-nghi-thanh-toan-" + paymentId
 				) + ".pdf"
 	};
 

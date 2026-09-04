@@ -525,16 +525,11 @@ function selectAttachmentById(attachmentId, readOnly) {
 
 function isPresentationAttachment(mapped) {
 	if (!mapped) return false;
-	// Bản trình ký ĐNTT do hệ thống tự sinh luôn có groupCode dạng HTKT_TK...
-	if (mapped.groupCode && mapped.groupCode.indexOf(CONFIG.GROUP_PREFIX) === 0) {
-		return true;
-	}
-	// Hoặc phải có đồng thời docCode là TRINH_KY và tên file bắt đầu bằng prefix Phieu-de-nghi-thanh-toan-
-	if ((mapped.docCode === CONFIG.DOCUMENT_CODE || mapped.docCode === "TRINH_KY") &&
-			(mapped.name && mapped.name.indexOf(CONFIG.NAME_PREFIX) === 0)) {
-		return true;
-	}
-	return false;
+	var isDocCode = mapped.docCode === CONFIG.DOCUMENT_CODE || mapped.docCode === "TRINH_KY";
+	var isType = mapped.type === CONFIG.DOCUMENT_TYPE || mapped.type === "Trinh ky" || mapped.type === "TRINH_KY";
+	var isGroup = mapped.groupCode && mapped.groupCode.indexOf(CONFIG.GROUP_PREFIX) === 0;
+
+	return (isDocCode && isType) || isGroup;
 }
 
 function isAttachmentActive(attachment) {
@@ -576,7 +571,7 @@ function listByPayment(paymentId) {
 	if (!safeId) return [];
 
 	var records = listAttachmentsByQuery(
-			'payment.id="' + getCommon().escapeQueryValue(safeId) + '" and (doc.code="' + CONFIG.DOCUMENT_CODE + '" or type="' + CONFIG.DOCUMENT_TYPE + '")',
+			'payment.id="' + getCommon().escapeQueryValue(safeId) + '"',
 			function (a, b) {
 				if (a.groupCode !== b.groupCode) return a.groupCode < b.groupCode ? -1 : 1;
 				var aTime = getCommon().toString(a.uploadedAt);
