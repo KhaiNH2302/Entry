@@ -1834,56 +1834,9 @@ function htktGetPdfBase64Cached(templateId, templateData) {
  * 7. CONTEXT DÙNG CHO PREVIEW / NEXTJS
  * ============================================================================= */
 
-function htktGetCurrentPaymentId(input) {
-	var paymentId = "";
-	if (input) {
-		if (typeof input === "string") {
-			paymentId = HTKT_COMMON.trim(input);
-		} else {
-			paymentId = HTKT_COMMON.readString(input, ["paymentId", "payment_id", "payment.id", "id"], "");
-		}
-	}
-	if (!paymentId) {
-		paymentId = HTKT_COMMON.getCurrentPaymentId(input);
-	}
-	if (!paymentId) {
-		try {
-			if (vars.$L_file) {
-				paymentId = HTKT_COMMON.readString(vars.$L_file, ["id", "payment.id", "payment_id"], "");
-			}
-		} catch (e1) {
-		}
-	}
-	if (!paymentId) {
-		try {
-			if (vars["$L.file"]) {
-				paymentId = HTKT_COMMON.readString(vars["$L.file"], ["id", "payment.id", "payment_id"], "");
-			}
-		} catch (e2) {
-		}
-	}
-	if (!paymentId) {
-		try {
-			if (vars["$L.parent"]) {
-				paymentId = HTKT_COMMON.readString(vars["$L.parent"], ["id", "payment.id", "payment_id"], "");
-			}
-		} catch (e3) {
-		}
-	}
-	if (!paymentId) {
-		try {
-			if (vars["$L.filed"]) {
-				paymentId = HTKT_COMMON.readString(vars["$L.filed"], ["id", "payment.id", "payment_id"], "");
-			}
-		} catch (e4) {
-		}
-	}
-	return HTKT_COMMON.trim(paymentId);
-}
-
 function generatePresentationPdf(input) {
 	input = input || {};
-	var paymentId = htktGetCurrentPaymentId(input);
+	var paymentId = HTKT_COMMON.getCurrentPaymentId(input);
 
 	if (!paymentId) {
 		return {
@@ -1972,9 +1925,7 @@ function RENDER() {
 	try {
 		var paymentId = HTKT_COMMON.getCurrentPaymentId({});
 		var fetched = paymentId
-				? (lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT
-						? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({id: paymentId})
-						: lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm({id: paymentId}))
+				? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({ id: paymentId })
 				: null;
 
 		if (fetched && fetched.success === true && fetched.data && fetched.data.Data) {
@@ -2038,9 +1989,7 @@ function RENDER_PRINT() {
 	try {
 		var paymentId = HTKT_COMMON.getCurrentPaymentId({});
 		var fetched = paymentId
-				? (lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT
-						? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({id: paymentId})
-						: lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm({id: paymentId}))
+				? lib.ESD_HTKT_PAYMENT_DOCUMENT.get_file_ecm_HTKT({ id: paymentId })
 				: null;
 
 		if (fetched && fetched.success === true && fetched.data && fetched.data.Data) {
