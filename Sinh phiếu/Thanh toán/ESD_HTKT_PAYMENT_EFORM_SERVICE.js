@@ -7,15 +7,15 @@ var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
 
-// var HTKT_CASH_TEMPLATE_ID = "f25ef10b-cc9d-466c-9fd5-6b4708bf1a4a";
-// var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-// var HTKT_TRANSFER_TEMPLATE_ID = "26632b12-9e38-42d2-a8aa-75dce22de2d6";
-// var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
-
-var HTKT_CASH_TEMPLATE_ID = "HTKT_TTTM";
+var HTKT_CASH_TEMPLATE_ID = "f25ef10b-cc9d-466c-9fd5-6b4708bf1a4a";
 var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "HTKT_TTCK";
-var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK__3_";
+var HTKT_TRANSFER_TEMPLATE_ID = "26632b12-9e38-42d2-a8aa-75dce22de2d6";
+var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
+
+//var HTKT_CASH_TEMPLATE_ID = "HTKT_TTTM";
+//var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
+//var HTKT_TRANSFER_TEMPLATE_ID = "HTKT_TTCK";
+//var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK__3_";
 var HTKT_PAYMENT_RECIPIENT = "Lãnh đạo đơn vị";
 
 function htktEscapeForJavaScript(value) {
@@ -874,6 +874,12 @@ function htktResolvePaymentTemplate(sourceRows) {
 		var source = sourceRows[i];
 		var rawMethod = HTKT_COMMON.trim(source.payment_method);
 
+		// payment_method is optional. Empty values do not affect template
+		// resolution; non-empty unsupported values remain invalid.
+		if (!rawMethod) {
+			continue;
+		}
+
 		if (htktIsCashPaymentMethod(rawMethod)) {
 			hasCash = true;
 		} else if (htktIsTransferPaymentMethod(rawMethod)) {
@@ -937,12 +943,15 @@ function htktBuildPaymentTemplateRows(sourceRows, paymentKind) {
 
 	for (var i = 0; i < sourceRows.length; i++) {
 		var source = sourceRows[i];
-		var isCash = htktIsCashPaymentMethod(source.payment_method);
-		var isTransfer = htktIsTransferPaymentMethod(source.payment_method);
+		var rawMethod = HTKT_COMMON.trim(source.payment_method);
+		var hasPaymentMethod = rawMethod !== "";
+		var isCash = htktIsCashPaymentMethod(rawMethod);
+		var isTransfer = htktIsTransferPaymentMethod(rawMethod);
 
 		if (
-				(paymentKind === "cash" && !isCash) ||
-				(paymentKind === "transfer" && !isTransfer)
+				hasPaymentMethod &&
+				((paymentKind === "cash" && !isCash) ||
+						(paymentKind === "transfer" && !isTransfer))
 		) {
 			continue;
 		}
@@ -2043,7 +2052,3 @@ function RENDER_PRINT() {
 			"</div>"
 	);
 }
-
-
-
-
