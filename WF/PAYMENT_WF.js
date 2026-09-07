@@ -1201,7 +1201,9 @@ function prepareApprovalForSignature(record) {
 	}
 
 	var doc = documentResult.data;
-	if (doc.status !== "CURRENT" || !doc.ecmObjectId) {
+	var docStatus = String(doc.status || "").trim().toUpperCase();
+	var isSignableStatus = docStatus === "CURRENT" || docStatus === "CHO KY SO" || docStatus === "DANG THUC HIEN KY SO" || !docStatus;
+	if (!isSignableStatus || !doc.ecmObjectId) {
 		return htktWfFail("CURRENT_PRESENTATION_NOT_SIGNABLE", "Bản trình ký hiện hành không ở trạng thái cho phép ký.", "status=" + String(doc.status || ""), doc);
 	}
 

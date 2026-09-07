@@ -435,13 +435,22 @@ function deleteStoredDocument(docId) {
 
 function mapAttachment(file) {
 	if (!file) return null;
-	var rawStatus = getCommon().toUpper(getCommon().readString(file, ["status"], ""));
+	var rawStatus = getCommon().toUpper(getCommon().readString(file, ["status", "doc.status"], ""));
 	var rawType = getCommon().readString(file, ["type"], "");
+	var objectId = getCommon().readString(file, ["ecm.object.id"], "");
+
+	// Tự động fallback về CURRENT nếu status trong DB bị rỗng nhưng có objectId hợp lệ
+	if (!rawStatus && objectId) {
+		rawStatus = STATUS.CURRENT;
+	}
+
+	var versionNo = getCommon().toNumber(getCommon().readValue(file, ["version.no", "version_no"]), 0);
+
 	return {
 		id: getCommon().readString(file, ["id"], ""),
 		paymentId: getCommon().readString(file, ["payment.id"], ""),
 		ecmDocId: getCommon().readString(file, ["ecm.doc.id"], ""),
-		ecmObjectId: getCommon().readString(file, ["ecm.object.id"], ""),
+		ecmObjectId: objectId,
 		name: getCommon().readString(file, ["name"], ""),
 		uploadedBy: getCommon().readString(file, ["uploaded.by"], ""),
 		uploadedAt: getCommon().readValue(file, ["uploaded.at"], null),
@@ -450,7 +459,7 @@ function mapAttachment(file) {
 		groupCode: getCommon().readString(file, ["group.code"], ""),
 		status: rawStatus,
 		type: rawType,
-		versionNo: 0
+		versionNo: versionNo
 	};
 }
 
@@ -590,7 +599,7 @@ function insertAttachment(input) {
 	var name = getCommon().trim(input.name);
 	var uploadedBy = getCommon().trim(input.uploadedBy);
 	var groupCode = getCommon().trim(input.groupCode);
-	var status = getCommon().toUpper(input.status);
+	var status = getCommon().toUpper(input.status) || STATUS.CURRENT;
 	var versionNo = getCommon().toNumber(input.versionNo, 0);
 
 	if (!paymentId || !objectId || !name || !uploadedBy || !groupCode || !status) {
@@ -612,6 +621,9 @@ function insertAttachment(input) {
 		file["uploaded.at"] = input.uploadedAt || getCommon().getSystemDateTime();
 		file["status"] = status;
 		file["type"] = CONFIG.DOCUMENT_TYPE;
+		try {
+			file["version.no"] = versionNo > 0 ? versionNo : 1;
+		} catch (eVer) {}
 
 		var rc = file.doInsert();
 		if (rc !== RC_SUCCESS) {
