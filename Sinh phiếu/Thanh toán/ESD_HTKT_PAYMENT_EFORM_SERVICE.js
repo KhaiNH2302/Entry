@@ -7,9 +7,9 @@ var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
 
-var HTKT_CASH_TEMPLATE_ID = "f25ef10b-cc9d-466c-9fd5-6b4708bf1a4a";
+var HTKT_CASH_TEMPLATE_ID = "d9d1f4b3-db38-430c-8b3f-e1c26b77f610";
 var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "26632b12-9e38-42d2-a8aa-75dce22de2d6";
+var HTKT_TRANSFER_TEMPLATE_ID = "bc37f81e-ef2f-42b7-8d78-6e2876aac20a";
 var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
 
 //var HTKT_CASH_TEMPLATE_ID = "HTKT_TTTM";
@@ -1584,24 +1584,42 @@ function htktBuildTemplateData(paymentId) {
 		refund_submit_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "",
 		refund_amount_to_submit_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "",
 
-		// Thông tin tài khoản Có hoàn tạm ứng (siêu ngắn gọn):
-		ref_acc: prepaymentCreditAccountNumbers,                               // {ref_acc}   : Số TK ghi Có (TK tạm ứng, VD: 126150610)
-		prepay_no: prepaymentCreditAccountNumbers,                             // Alias tương thích
-		ref_name: prepaymentCreditAccountNames,                                // {ref_name}  : Tên TK ghi Có (VD: Tạm ứng cho NCC...)
-		prepay_name: prepaymentCreditAccountNames,                             // Alias tương thích
-		ref_bank: prepaymentCreditBankNames,                                   // {ref_bank}  : Tại Ngân hàng (VD: VietinBank)
-		prepay_bank: prepaymentCreditBankNames,                                 // Alias tương thích
+		// Thông tin tài khoản Có hoàn tạm ứng (chỉ hiển thị khi có hoàn ứng):
+		ref_acc: hasRefundAmount ? prepaymentCreditAccountNumbers : "",        // {ref_acc}   : Số TK ghi Có (TK tạm ứng, VD: 126150610)
+		prepay_no: hasRefundAmount ? prepaymentCreditAccountNumbers : "",      // Alias tương thích
+		ref_name: hasRefundAmount ? prepaymentCreditAccountNames : "",         // {ref_name}  : Tên TK ghi Có (VD: Tạm ứng cho NCC...)
+		prepay_name: hasRefundAmount ? prepaymentCreditAccountNames : "",      // Alias tương thích
+		ref_bank: hasRefundAmount ? prepaymentCreditBankNames : "",            // {ref_bank}  : Tại Ngân hàng (VD: VietinBank)
+		prepay_bank: hasRefundAmount ? prepaymentCreditBankNames : "",          // Alias tương thích
+
+		// Block điều kiện hiển thị phần thông tin nộp hoàn ứng trong bảng ({#refund_info}...{/refund_info}):
+		refund_info: hasRefundAmount ? [{
+			transfer_checkbox: paymentData.transferCheckbox,
+			cash_checkbox: paymentData.cashCheckbox,
+			ref_acc: prepaymentCreditAccountNumbers,
+			ref_name: prepaymentCreditAccountNames,
+			ref_bank: prepaymentCreditBankNames
+		}] : [],
+		ref_info: hasRefundAmount ? [{
+			transfer_checkbox: paymentData.transferCheckbox,
+			cash_checkbox: paymentData.cashCheckbox,
+			ref_acc: prepaymentCreditAccountNumbers,
+			ref_name: prepaymentCreditAccountNames,
+			ref_bank: prepaymentCreditBankNames
+		}] : [],
+		has_refund: hasRefundAmount,
+		has_refund_amount: hasRefundAmount,
 
 		// Các alias tương thích ngược cũ
-		prepayment_credit_account_numbers: prepaymentCreditAccountNumbers,
-		prepayment_credit_account_number: prepaymentCreditAccountNumbers,
-		prepayment_credit_account_names: prepaymentCreditAccountNumbers,
-		prepayment_credit_account_name: prepaymentCreditAccountNumbers,
-		prepayment_credit_bank_accounts: prepaymentCreditAccountNames,
-		prepayment_credit_bank_account: prepaymentCreditAccountNames,
-		prepayment_credit_bank_names: prepaymentCreditBankNames,
-		prepayment_credit_bank_name: prepaymentCreditBankNames,
-		bank_name: prepaymentCreditBankNames,
+		prepayment_credit_account_numbers: hasRefundAmount ? prepaymentCreditAccountNumbers : "",
+		prepayment_credit_account_number: hasRefundAmount ? prepaymentCreditAccountNumbers : "",
+		prepayment_credit_account_names: hasRefundAmount ? prepaymentCreditAccountNumbers : "",
+		prepayment_credit_account_name: hasRefundAmount ? prepaymentCreditAccountNumbers : "",
+		prepayment_credit_bank_accounts: hasRefundAmount ? prepaymentCreditAccountNames : "",
+		prepayment_credit_bank_account: hasRefundAmount ? prepaymentCreditAccountNames : "",
+		prepayment_credit_bank_names: hasRefundAmount ? prepaymentCreditBankNames : "",
+		prepayment_credit_bank_name: hasRefundAmount ? prepaymentCreditBankNames : "",
+		bank_name: hasRefundAmount ? prepaymentCreditBankNames : "",
 
 		/* =========================================================================
 		 * 5. BẢNG CÁC NGHĨA VỤ THANH TOÁN KHÁC (Vòng lặp: {#supp})
