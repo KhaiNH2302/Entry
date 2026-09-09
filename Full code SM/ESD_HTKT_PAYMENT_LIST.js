@@ -1,3 +1,16 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_LIST
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tra cứu và phân trang danh sách các phiếu đề nghị thanh toán (esdHTKTpayment).
+ * - Phân quyền dữ liệu tra cứu theo quyền hạn và phạm vi đơn vị của người dùng (Data Permission).
+ * - Hỗ trợ các bộ lọc tìm kiếm theo mã phiếu, trạng thái workflow, người tạo, ngày lập.
+ * - Chuẩn hóa định dạng danh sách trả về cho giao diện NextJS/Web frontend.
+ * -----------------------------------------------------------------------------
+ */
+
 function qHTKT(value) {
 	return (value == null ? "" : String(value)).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }

@@ -1,3 +1,16 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_CREATE_REQUEST
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Khởi tạo và lưu thông tin phiếu đề nghị thanh toán mới (esdHTKTpayment).
+ * - Tự động sinh mã phiếu, khởi tạo trạng thái và phân quyền theo cấp đơn vị của người lập.
+ * - Tra cứu danh sách hợp đồng mua sắm (esdHTKTpurchaseContract) và nhà cung cấp liên kết.
+ * - Xử lý lưu danh sách tài liệu đính kèm và đồng bộ thông tin hợp đồng liên quan.
+ * -----------------------------------------------------------------------------
+ */
+
 var createActivity = lib.ESD_Utils.createActivity;
 
 function run() {
@@ -108,7 +121,7 @@ function createPaymentRequest(input) {
 		 * HTKT PAYMENT CURRENT USER
 		 */
 		var currentUser = htktCreatePay_resolveCurrentUser(contractData);
-		print("Người dùng hiện tại: " + currentUser);
+		// print("Người dùng hiện tại: " + currentUser);
 		if (!currentUser) {
 			return {
 				success: false,
@@ -137,7 +150,7 @@ function createPaymentRequest(input) {
 
 		// Map dữ liệu
 		mapPaymentRecord(paymentRec, contractData, newPaymentId);
-		print("New Payment", paymentRec);
+		// print("New Payment", paymentRec);
 
 
 		var returnCode;
@@ -173,7 +186,7 @@ function createPaymentRequest(input) {
 			try {
 				lib.ESD_HD_Integration.createContractPayment(paymentRec);
 			} catch (ex) {
-				print("[ERROR] Đồng bộ createContractPayment thất bại cho ID: " + paymentRec["id"] + " | Detail: " + ex);
+				// print("[ERROR] Đồng bộ createContractPayment thất bại cho ID: " + paymentRec["id"] + " | Detail: " + ex);
 			}
 
 
@@ -479,7 +492,7 @@ function listPurchaseContracts(input) {
 	}
 
 	var unitLv1Param = params.unitLv1 || params["unit.lv1"];
-	print("unitLv1Param: " + unitLv1Param);
+	// print("unitLv1Param: " + unitLv1Param);
 	if (unitLv1Param && String(unitLv1Param).trim() === "099917000") {
 		conditions.push("unit.lv1 like \"0999*\"");
 	} else {
@@ -531,7 +544,7 @@ function listPurchaseContracts(input) {
 			rc = f.getNext();
 		}
 	} catch (e) {
-		print("[ERROR listPurchaseContracts] Lỗi doSelect: " + e);
+		// print("[ERROR listPurchaseContracts] Lỗi doSelect: " + e);
 		return {
 			success: false,
 			message: "Lỗi lấy danh sách hợp đồng mua sắm: " + e.toString()
@@ -579,8 +592,8 @@ function htktCreatePay_detectInitialRoleByRights(contactId) {
 	var RIGHT_ACCOUNTING_INPUT = "0040040003000003";
 
 	var rights = htktCreatePay_getRights(contactId);
-	print("=== [DEBUG] Kiểm tra quyền của User: " + contactId + " ===");
-	print("Danh sách quyền thực tế: " + JSON.stringify(rights));
+	// print("=== [DEBUG] Kiểm tra quyền của User: " + contactId + " ===");
+	// print("Danh sách quyền thực tế: " + JSON.stringify(rights));
 	/*
 	 * Quy tắc nhận diện role khi khởi tạo phiếu:
 	 *
@@ -728,7 +741,7 @@ function getOglBranchCodeByDepartment(departmentCode) {
 			return String(rawOglCode).trim().replace(/^0+/, "");
 		}
 	} catch (e) {
-		print("Lỗi truy vấn esdDMentity: " + e.toString());
+		// print("Lỗi truy vấn esdDMentity: " + e.toString());
 	}
 
 	return "";
@@ -825,7 +838,7 @@ function listFileAttachment(input) {
 			rc = f.getNext();
 		}
 	} catch (e) {
-		print("[ERROR listFileAttachment] Lỗi doSelect: " + e);
+		// print("[ERROR listFileAttachment] Lỗi doSelect: " + e);
 	} finally {
 		try { if (f) f.doClose(); } catch (e) {}
 	}

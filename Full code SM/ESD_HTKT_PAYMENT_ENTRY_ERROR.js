@@ -1,3 +1,16 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_ENTRY_ERROR
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tra cứu và phân trang danh sách các đề nghị thanh toán bị lỗi hạch toán hoặc lỗi đồng bộ OGL.
+ * - Phân quyền dữ liệu theo phạm vi quyền hạn của người dùng (Data Scope / Permission).
+ * - Cung cấp bộ lọc tìm kiếm nâng cao theo trạng thái lỗi, đơn vị, người tạo và khoảng thời gian.
+ * - Trả về cấu trúc dữ liệu chuẩn hóa phục vụ hiển thị trên giao diện NextJS/Web.
+ * -----------------------------------------------------------------------------
+ */
+
 
 function qHTKT(value) {
 	return (value == null ? "" : String(value)).replace(/\\/g, "\\\\").replace(/"/g, '\\"');

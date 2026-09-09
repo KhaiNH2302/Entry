@@ -1,3 +1,15 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_SUPPLIER_LEDGER_LIST
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tra cứu và tổng hợp số dư công nợ, tạm ứng của nhà cung cấp (esdHTKTsupplierLedger).
+ * - Xử lý đối trừ tạm ứng, tính toán số tiền còn phải thanh toán hoặc thu hồi hoàn ứng.
+ * - Tự động sinh và cập nhật bút toán hoàn ứng/đối trừ tạm ứng vào bảng bút toán esdHTKTpaymentEntry.
+ * -----------------------------------------------------------------------------
+ */
+
 var logger = typeof getLog === 'function' ? getLog("ESD_HTKT_PAYMENT_SUPPLIER_LEDGER_LIST") : { info: function(m) { debugPaymentEntry('INFO', m); }, error: function(m) { debugPaymentEntry('ERROR', m); } };
 
 
@@ -145,7 +157,7 @@ function getListSupplierLedger(input) {
 						var parsedData = JSON.parse(rawData);
 						resultMap[key].currency = parsedData.currency || String(file["currency"] || "").trim();
 					} catch (e) {
-						print("[DEBUG run] Error parsing column 'data': " + e);
+						// print("[DEBUG run] Error parsing column 'data': " + e);
 						resultMap[key].currency = String(file["currency"] || "").trim();
 					}
 				} else {
@@ -332,7 +344,7 @@ function getListAccountsPayable(input) {
 					var parsedData = JSON.parse(rawData);
 					item.currency = parsedData.currency || String(file["currency"] || "").trim();
 				} catch (e) {
-					print("[DEBUG run] Error parsing column 'data': " + e);
+					// print("[DEBUG run] Error parsing column 'data': " + e);
 					item.currency = String(file["currency"] || "").trim();
 				}
 			} else {
@@ -478,7 +490,7 @@ function closeSCFile(file) {
 function saveListPaymentEntryRefund(input) {
 	var rawDetails = "";
 
-	print("[PAYMENT_ENTRY_REFUND] input=" + input);
+	// print("[PAYMENT_ENTRY_REFUND] input=" + input);
 
 
 	if (input.esdHTKTlistPaymentVendor && input.esdHTKTlistPaymentVendor.details) {
@@ -498,7 +510,7 @@ function saveListPaymentEntryRefund(input) {
 		}
 	}
 
-	print("[PAYMENT_ENTRY_REFUND] rawDetails=" + rawDetails);
+	// print("[PAYMENT_ENTRY_REFUND] rawDetails=" + rawDetails);
 
 	if (!rawDetails) {
 		return { success: false, message: "Thiếu dữ liệu chi tiết" };
@@ -508,7 +520,7 @@ function saveListPaymentEntryRefund(input) {
 		var parsedData = JSON.parse(rawDetails);
 		var dataObj = [];
 
-		print("[PAYMENT_ENTRY_REFUND] parsedData=" + JSON.stringify(parsedData));
+		// print("[PAYMENT_ENTRY_REFUND] parsedData=" + JSON.stringify(parsedData));
 
 		if (parsedData.dataFromPopup && Array.isArray(parsedData.dataFromPopup)) {
 			dataObj = parsedData.dataFromPopup;
@@ -518,7 +530,7 @@ function saveListPaymentEntryRefund(input) {
 			return { success: false, message: "Dữ liệu không đúng định dạng danh sách (Array)" };
 		}
 
-		print("[PAYMENT_ENTRY_REFUND] dataObj.length=" + dataObj.length);
+		// print("[PAYMENT_ENTRY_REFUND] dataObj.length=" + dataObj.length);
 
 		if (dataObj.length === 0) {
 			return { success: false, message: "Danh sách trống" };
@@ -542,7 +554,7 @@ function saveListPaymentEntryRefund(input) {
 			var apCode = feeData['apCode'];
 
 			if (paymentId === "" || vendorId === "") {
-				print("Bỏ qua dòng số " + (i + 1) + " do thiếu thông tin paymentId hoặc vendorId");
+				// print("Bỏ qua dòng số " + (i + 1) + " do thiếu thông tin paymentId hoặc vendorId");
 				failedIds.push(paymentId || ("dòng " + (i + 1)));
 				continue;
 			}
@@ -561,7 +573,7 @@ function saveListPaymentEntryRefund(input) {
 						deletedIds.push(paymentId);
 						affectedPaymentIds[paymentId] = true;
 					} else {
-						print("Lỗi hệ thống khi xóa bút toán cho paymentId: " + paymentId);
+						// print("Lỗi hệ thống khi xóa bút toán cho paymentId: " + paymentId);
 						failedIds.push(paymentId);
 					}
 				}
@@ -579,7 +591,7 @@ function saveListPaymentEntryRefund(input) {
 						updatedIds.push(paymentId);
 						affectedPaymentIds[paymentId] = true;
 					} else {
-						print("Lỗi hệ thống khi cập nhật DB cho paymentId: " + paymentId);
+						// print("Lỗi hệ thống khi cập nhật DB cho paymentId: " + paymentId);
 						failedIds.push(paymentId);
 					}
 
@@ -600,8 +612,8 @@ function saveListPaymentEntryRefund(input) {
 						accountNumber = prepaymentEntryFile['account.number'] || "";
 						accountName = prepaymentEntryFile['account.name'] || "";
 					} else {
-						print("[PAYMENT_ENTRY_REFUND] Khong tim thay tai khoan tam ung cho refId: " + refId +
-								", query=" + prepaymentEntryQuery);
+						/* print("[PAYMENT_ENTRY_REFUND] Khong tim thay tai khoan tam ung cho refId: " + refId +
+								", query=" + prepaymentEntryQuery); */
 					}
 
 					// B2: Thêm mới
@@ -626,7 +638,7 @@ function saveListPaymentEntryRefund(input) {
 						addedIds.push(newId);
 						affectedPaymentIds[paymentId] = true;
 					} else {
-						print("Lỗi hệ thống khi thêm mới DB cho paymentId: " + paymentId + ", id dự kiến: " + newId);
+						// print("Lỗi hệ thống khi thêm mới DB cho paymentId: " + paymentId + ", id dự kiến: " + newId);
 						failedIds.push(paymentId);
 					}
 				}
@@ -708,7 +720,7 @@ function saveListPaymentEntryPayable(input) {
 
 
 			if (paymentId === "" || vendorId === "") {
-				print("Bỏ qua dòng số " + (i + 1) + " do thiếu thông tin paymentId hoặc vendorId");
+				// print("Bỏ qua dòng số " + (i + 1) + " do thiếu thông tin paymentId hoặc vendorId");
 				failedIds.push(paymentId || ("dòng " + (i + 1)));
 				continue;
 			}
@@ -727,7 +739,7 @@ function saveListPaymentEntryPayable(input) {
 						deletedIds.push(paymentId);
 						affectedPaymentIds[paymentId] = true;
 					} else {
-						print("Lỗi hệ thống khi xóa bút toán cho paymentId: " + paymentId);
+						// print("Lỗi hệ thống khi xóa bút toán cho paymentId: " + paymentId);
 						failedIds.push(paymentId);
 					}
 				}
@@ -779,7 +791,7 @@ function saveListPaymentEntryPayable(input) {
 						updatedIds.push(paymentId);
 						affectedPaymentIds[paymentId] = true;
 					} else {
-						print("Lỗi hệ thống khi cập nhật DB cho paymentId: " + paymentId);
+						// print("Lỗi hệ thống khi cập nhật DB cho paymentId: " + paymentId);
 						failedIds.push(paymentId);
 					}
 
@@ -809,7 +821,7 @@ function saveListPaymentEntryPayable(input) {
 						addedIds.push(newId);
 						affectedPaymentIds[paymentId] = true;
 					} else {
-						print("Lỗi hệ thống khi thêm mới DB cho paymentId: " + paymentId + ", id dự kiến: " + newId);
+						// print("Lỗi hệ thống khi thêm mới DB cho paymentId: " + paymentId + ", id dự kiến: " + newId);
 						failedIds.push(paymentId);
 					}
 				}
@@ -885,7 +897,7 @@ function getCurrentPaymentSummary(input) {
 			result.approved_invoice_amount = Number(file["approved.invoice.amount"] || 0);
 		}
 	} catch (e) {
-		print("[DEBUG getCurrentPaymentSummary] Error querying esdHTKTpaymentVendor: " + e);
+		// print("[DEBUG getCurrentPaymentSummary] Error querying esdHTKTpaymentVendor: " + e);
 	} finally {
 		closeSCFile(file);
 	}
@@ -973,7 +985,7 @@ function getSupplierDebtSummary(input) {
 			rcTu = fileTamUng.getNext();
 		}
 	} catch (eTu) {
-		print("[DEBUG getSupplierDebtSummary TAM_UNG] Error: " + eTu);
+		// print("[DEBUG getSupplierDebtSummary TAM_UNG] Error: " + eTu);
 	} finally {
 		closeSCFile(fileTamUng);
 	}
@@ -1002,7 +1014,7 @@ function getSupplierDebtSummary(input) {
 			rcThue = fileThue.getNext();
 		}
 	} catch (eThue) {
-		print("[DEBUG getSupplierDebtSummary THUE] Error: " + eThue);
+		// print("[DEBUG getSupplierDebtSummary THUE] Error: " + eThue);
 	} finally {
 		closeSCFile(fileThue);
 	}
@@ -1075,7 +1087,7 @@ function getSupplierDebtSummary(input) {
 			rcPt = filePhaiTra.getNext();
 		}
 	} catch (ePt) {
-		print("[DEBUG getSupplierDebtSummary THANH_TOAN] Error: " + ePt);
+		// print("[DEBUG getSupplierDebtSummary THANH_TOAN] Error: " + ePt);
 	} finally {
 		closeSCFile(filePhaiTra);
 	}
@@ -1128,14 +1140,14 @@ function testPaging(start, count) {
 //           var rc = f.doSelectEx("SELECT request.id FROM esdHTKTaccountingInformation WHERE true", start, count);
 		while (rc == RC_SUCCESS) {
 			var reqId = String(f["request.id"] || f["requestId"] || "").trim();
-			print("Row data: " + reqId);
+			// print("Row data: " + reqId);
 			resultList.push({
 				requestId: reqId
 			});
 			rc = f.getNext();
 		}
 	} catch (e) {
-		print("[testPaging Error]: " + e.toString());
+		// print("[testPaging Error]: " + e.toString());
 	} finally {
 		if (f) {
 			try {
@@ -1149,7 +1161,7 @@ function testPaging(start, count) {
 		data: resultList
 	});
 
-	print("JSON Result: " + jsonResult);
+	// print("JSON Result: " + jsonResult);
 	return jsonResult;
 }
 

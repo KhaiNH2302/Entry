@@ -1,3 +1,15 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_FILE_ATTACHMENT
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Quản lý danh sách các tệp đính kèm (esdHTKTpaymentAttachment) thuộc đề nghị thanh toán.
+ * - Thực hiện thêm mới, cập nhật, xóa và liên kết tài liệu với từng hạng mục/nhà cung cấp.
+ * - Kiểm tra tính hợp lệ và đồng bộ thông tin file đính kèm giữa NextJS và Service Manager.
+ * -----------------------------------------------------------------------------
+ */
+
 var createActivity = lib.ESD_Utils.createActivity;
 
 function run() {
@@ -76,7 +88,7 @@ function addFileAttachment(fileInput) {
 				var fileName = feeData['name'] || "File không tên";
 				successFileNames.push(fileName);
 			} else {
-				console.error("Không thể chèn file đính kèm: " + feeData['name'] + ". Mã lỗi hệ thống: " + rc);
+				// console.error("Không thể chèn file đính kèm: " + feeData['name'] + ". Mã lỗi hệ thống: " + rc);
 			}
 		}
 

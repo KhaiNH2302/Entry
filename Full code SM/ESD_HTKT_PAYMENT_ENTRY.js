@@ -1,4 +1,16 @@
-/** Tự động sinh và đồng bộ bút toán thanh toán trong esdHTKTpaymentEntry. */
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_ENTRY
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tự động tính toán và sinh các dòng bút toán định khoản Nợ/Có (esdHTKTpaymentEntry).
+ * - Đồng bộ bút toán tự động khi có thay đổi từ hóa đơn, nhà cung cấp hoặc phân bổ chi phí.
+ * - Áp dụng các quy tắc hạch toán kế toán theo loại đề nghị, tài khoản thuế, tạm ứng và thanh toán.
+ * - Kiểm tra tính cân bằng Nợ/Có (Balance check) trước khi chuyển trạng thái hồ sơ.
+ * -----------------------------------------------------------------------------
+ */
+
 var logger = typeof getLog === 'function' ? getLog("ESD_HTKT_PAYMENT_ENTRY") : { info: function(m) {}, error: function(m) {} };
 
 /*
@@ -646,7 +658,7 @@ function getPaymentById(paymentId) {
 			};
 		}
 	} catch (e) {
-		logger.info("getPaymentById failed for paymentId: " + paymentId + " | Exception: " + e);
+		// logger.info("getPaymentById failed for paymentId: " + paymentId + " | Exception: " + e);
 	} finally {
 		if (file) {
 			try {
@@ -672,7 +684,7 @@ function handlePaymentCostDivisionAndAccountingSync(rec) {
 	}
 
 	var payment = getPaymentById(paymentId);
-	logger.info("handlePaymentCostDivisionAndAccountingSync | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+	// logger.info("handlePaymentCostDivisionAndAccountingSync | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
 
 	if (!payment || payment["current.phase"] !== "initial_kttc") {
 		return;
@@ -684,7 +696,7 @@ function handlePaymentCostDivisionAndAccountingSync(rec) {
 				rec
 		);
 	} catch (ex) {
-		logger.info("handlePaymentCostDivisionAndAccountingSync failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+		// logger.info("handlePaymentCostDivisionAndAccountingSync failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
 	}
 }
 
@@ -703,7 +715,7 @@ function handleSyncPaymentEntryByInvoice(rec) {
 	}
 
 	var payment = getPaymentById(paymentId);
-	logger.info("handleSyncPaymentEntryByInvoice | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+	// logger.info("handleSyncPaymentEntryByInvoice | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
 
 	if (!payment || payment["current.phase"] !== "initial_kttc") {
 		return;
@@ -715,7 +727,7 @@ function handleSyncPaymentEntryByInvoice(rec) {
 				rec
 		);
 	} catch (ex) {
-		logger.info("handleSyncPaymentEntryByInvoice failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+		// logger.info("handleSyncPaymentEntryByInvoice failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
 	}
 }
 
@@ -735,7 +747,7 @@ function handleSyncPaymentEntryByVendor(rec) {
 	}
 
 	var payment = getPaymentById(paymentId);
-	logger.info("handleSyncPaymentEntryByVendor | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+	// logger.info("handleSyncPaymentEntryByVendor | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
 
 	if (!payment || payment["current.phase"] !== "initial_kttc") {
 		return;
@@ -747,7 +759,7 @@ function handleSyncPaymentEntryByVendor(rec) {
 				rec
 		);
 	} catch (ex) {
-		logger.info("handleSyncPaymentEntryByVendor failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+		// logger.info("handleSyncPaymentEntryByVendor failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
 	}
 }
 
@@ -770,7 +782,7 @@ function handleUpdatePaymentVendorAndAccountingSync(rec, oldRec) {
 	}
 
 	var payment = getPaymentById(paymentId);
-	logger.info("handleUpdatePaymentVendorAndAccountingSync | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
+	// logger.info("handleUpdatePaymentVendorAndAccountingSync | paymentId: " + paymentId + " | payment: " + (payment ? JSON.stringify(payment) : payment));
 
 	if (!payment || payment["current.phase"] !== "initial_kttc") {
 		return;
@@ -782,7 +794,7 @@ function handleUpdatePaymentVendorAndAccountingSync(rec, oldRec) {
 				rec
 		);
 	} catch (ex) {
-		logger.info("handleUpdatePaymentVendorAndAccountingSync failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
+		// logger.info("handleUpdatePaymentVendorAndAccountingSync failed for ID: " + (rec["id"] || "") + " | Exception: " + ex);
 	}
 }
 

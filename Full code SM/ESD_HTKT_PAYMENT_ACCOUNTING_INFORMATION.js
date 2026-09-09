@@ -1,9 +1,15 @@
 /**
- * Sinh esdHTKTaccountingInformation cho đề nghị thanh toán.
- * Mỗi bản ghi tương ứng một lần gọi API: AP invoice/payment, GL hoặc CORE.
+ * ScriptLibrary : ESD_HTKT_PAYMENT_ACCOUNTING_INFORMATION
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Sinh và quản lý bản ghi esdHTKTaccountingInformation cho đề nghị thanh toán.
+ * - Xử lý thông tin hạch toán chi tiết theo dòng chi phí, nhà cung cấp và định khoản nợ/có.
+ * - Chuẩn hóa payload và điều phối đồng bộ dữ liệu kế toán sang OGL/Core Banking.
+ * - Cung cấp API run() tiếp nhận và điều phối thực thi từ client/NextJS.
+ * -----------------------------------------------------------------------------
  */
-
-
 
 function run() {
 	try {
@@ -28,7 +34,7 @@ function run() {
 		var output = JSON.stringify(result, null, 2);
 		input.queryReturn = output;
 		if (action === 'previewPaymentAccountingInformation') {
-			try { print(output); } catch (ignorePrint) {}
+			// try { print(output); } catch (ignorePrint) {}
 		}
 		return result;
 	} catch (e) {

@@ -1,3 +1,16 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_VENDOR
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Quản lý danh sách nhà cung cấp thụ hưởng trong đề nghị thanh toán (esdHTKTpaymentVendor).
+ * - Thêm mới, cập nhật, xóa thông tin thanh toán (số tài khoản, ngân hàng, số tiền, hình thức thanh toán).
+ * - Kiểm tra và xác thực tính hợp lệ của thông tin nhà cung cấp với dữ liệu Vendor/Site tập trung.
+ * - Tự động đồng bộ và tính toán lại tổng tiền đề nghị thanh toán và bút toán hạch toán.
+ * -----------------------------------------------------------------------------
+ */
+
 function run() {
 
 	try {
@@ -232,7 +245,7 @@ function getPaymentRemainingAmount(paymentId) {
 			rc = f.getNext();
 		}
 	} catch (e) {
-		print("[ERROR getPaymentVendorListByPaymentId] Lỗi doSelect: " + e);
+		// print("[ERROR getPaymentVendorListByPaymentId] Lỗi doSelect: " + e);
 	} finally {
 		try { if (f) f.doClose(); } catch (e) {}
 	}
@@ -260,7 +273,7 @@ function getListInvoinVendor(input) {
 		vendorId = tempObj.vendorId || "";
 
 	} catch (ex) {
-		print("[DEBUG run] Error parsing JSON: " + ex);
+		// print("[DEBUG run] Error parsing JSON: " + ex);
 		return invoiceList;
 	}
 
@@ -342,7 +355,7 @@ function getInvoicesBySupplier(input) {
 		vendorId = tempObj.vendorId || "";
 
 	} catch (ex) {
-		print("[DEBUG run] Error parsing JSON: " + ex);
+		// print("[DEBUG run] Error parsing JSON: " + ex);
 		return invoiceList;
 	}
 
@@ -591,7 +604,7 @@ function createListInvoinVendor(input) {
 						}
 					}
 				} catch (limitErr) {
-					print("Lỗi kiểm tra hạn mức (đã bỏ qua): " + limitErr.toString());
+					// print("Lỗi kiểm tra hạn mức (đã bỏ qua): " + limitErr.toString());
 					itemCheckStatus = 'ChuaKiemTra';
 				}
 
@@ -619,7 +632,7 @@ function createListInvoinVendor(input) {
 						invFile["request.id"] = itemRec["payment.id"];
 						var rcUpdate = invFile.doUpdate();
 						if (rcUpdate != RC_SUCCESS) {
-							print("Lỗi khi cập nhật request.id cho hóa đơn id: " + invoiceId);
+							// print("Lỗi khi cập nhật request.id cho hóa đơn id: " + invoiceId);
 						}
 
 						// Gọi API
@@ -630,16 +643,16 @@ function createListInvoinVendor(input) {
 								invFile.doUpdate();
 							}
 						} catch (apiErr) {
-							print("Lỗi khi gọi API check hóa đơn " + invoiceId + ": " + apiErr.toString());
+							// print("Lỗi khi gọi API check hóa đơn " + invoiceId + ": " + apiErr.toString());
 						}
 
 
 					} else {
-						print("Không tìm thấy hóa đơn trong bảng esdHTKTinvoice với id: " + invoiceId);
+						// print("Không tìm thấy hóa đơn trong bảng esdHTKTinvoice với id: " + invoiceId);
 					}
 				}
 			} else {
-				print("Không thể thêm bản ghi vào esdHTKTpaymentInvoice cho hóa đơn: " + feeData['id']);
+				// print("Không thể thêm bản ghi vào esdHTKTpaymentInvoice cho hóa đơn: " + feeData['id']);
 			}
 		}
 
@@ -685,10 +698,10 @@ function createListInvoinVendor(input) {
 
 						var rcVendorUpdate = vendorFile.doUpdate();
 						if (rcVendorUpdate != RC_SUCCESS) {
-							print("Lỗi khi cập nhật amount cho payment.id: " + paymentKey + " và vendor.id: " + vendorKey);
+							// print("Lỗi khi cập nhật amount cho payment.id: " + paymentKey + " và vendor.id: " + vendorKey);
 						}
 					} else {
-						print("Không tìm thấy bản ghi trong esdHTKTpaymentVendor với payment.id: " + paymentKey + " và vendor.id: " + vendorKey);
+						// print("Không tìm thấy bản ghi trong esdHTKTpaymentVendor với payment.id: " + paymentKey + " và vendor.id: " + vendorKey);
 					}
 				}
 			}
@@ -719,10 +732,10 @@ function createListInvoinVendor(input) {
 
 						var rcPaymentUpdate = paymentFile.doUpdate();
 						if (rcPaymentUpdate != RC_SUCCESS) {
-							print("Lỗi khi cập nhật tổng amount cho esdHTKTpayment với id: " + prepId);
+							// print("Lỗi khi cập nhật tổng amount cho esdHTKTpayment với id: " + prepId);
 						}
 					} else {
-						print("Không tìm thấy bản ghi trong esdHTKTpayment với id: " + prepId);
+						// print("Không tìm thấy bản ghi trong esdHTKTpayment với id: " + prepId);
 					}
 				}
 			}
@@ -945,7 +958,7 @@ function syncPaymentEntries(paymentIds) {
 					"esdHTKTpaymentInvoice", { "payment.id": paymentId }
 			);
 		} catch (syncError) {
-			console.error("Khong the sinh lai but toan cho " + paymentId + ": " + syncError.toString());
+			// console.error("Khong the sinh lai but toan cho " + paymentId + ": " + syncError.toString());
 		}
 	}
 }
@@ -1186,7 +1199,7 @@ function formatDateToDDMMYYYY(rawDate) {
 			return day + "/" + month + "/" + year;
 		}
 	} catch (e) {
-		print("Lỗi định dạng ngày: " + e.toString());
+		// print("Lỗi định dạng ngày: " + e.toString());
 	}
 
 	return rawDate;
@@ -1214,7 +1227,7 @@ function queryVendorData(record) {
 			vars.$isAmountReadonly = true;
 		} else {
 			// Xử lý khi không tìm thấy dữ liệu phù hợp
-			print("Không tìm thấy bản ghi phù hợp với điều kiện: " + sqlVendor);
+			// print("Không tìm thấy bản ghi phù hợp với điều kiện: " + sqlVendor);
 		}
 	}
 }
@@ -1343,7 +1356,7 @@ function deletePaymentInvoice(input) {
 		return executeDeletePaymentInvoice(invoiceId, paymentId);
 
 	} catch (error) {
-		print("[PAYMENT_INVOICE_DELETE] error=" + error.toString());
+		// print("[PAYMENT_INVOICE_DELETE] error=" + error.toString());
 		return {
 			success: false,
 			message: "Lỗi khi xử lý xóa: " + error.toString()
@@ -1383,7 +1396,7 @@ function executeDeletePaymentInvoice(invoiceId, paymentId) {
 		}
 		try { if (paymentInvFile) paymentInvFile.doClose(); } catch (e) {}
 
-		print("[PAYMENT_INVOICE_DELETE] deleted mapping rows count=" + deletedCount);
+		// print("[PAYMENT_INVOICE_DELETE] deleted mapping rows count=" + deletedCount);
 
 		// Bước 2: Cập nhật lại esdHTKTinvoice (set request.id = null)
 		var invFile = new SCFile("esdHTKTinvoice");
@@ -1393,7 +1406,7 @@ function executeDeletePaymentInvoice(invoiceId, paymentId) {
 		if (rcInv === RC_SUCCESS) {
 			invFile["request.id"] = null;
 			var rcUpdate = invFile.doUpdate();
-			print("[PAYMENT_INVOICE_DELETE] update invoice request.id to null rc=" + rcUpdate);
+			// print("[PAYMENT_INVOICE_DELETE] update invoice request.id to null rc=" + rcUpdate);
 		}
 		try { if (invFile) invFile.doClose(); } catch (e) {}
 
@@ -1408,7 +1421,7 @@ function executeDeletePaymentInvoice(invoiceId, paymentId) {
 		};
 
 	} catch (error) {
-		print("[PAYMENT_INVOICE_DELETE] error=" + error.toString());
+		// print("[PAYMENT_INVOICE_DELETE] error=" + error.toString());
 		return {
 			success: false,
 			message: "Lỗi khi xử lý xóa: " + error.toString()
@@ -1454,10 +1467,10 @@ function refreshPaymentAmountsAfterInvoiceDelete(paymentId, vendorIds) {
 			vendorFile["amount"] = vendorInvoiceAmount;
 			var rcVendorUpdate = vendorFile.doUpdate();
 			if (rcVendorUpdate !== RC_SUCCESS) {
-				print(
+				/* print(
 						"[PAYMENT_INVOICE_DELETE] Khong the cap nhat amount cho payment.id=" +
 						paymentId + ", vendor.id=" + vendorId
-				);
+				); */
 			}
 		}
 		try { vendorFile.doClose(); } catch (vendorCloseError) {}
@@ -1482,10 +1495,10 @@ function refreshPaymentAmountsAfterInvoiceDelete(paymentId, vendorIds) {
 		paymentFile["approved.invoice.amount"] = totalPaymentAmount;
 		var rcPaymentUpdate = paymentFile.doUpdate();
 		if (rcPaymentUpdate !== RC_SUCCESS) {
-			print(
+			/* print(
 					"[PAYMENT_INVOICE_DELETE] Khong the cap nhat approved.invoice.amount cho payment.id=" +
 					paymentId
-			);
+			); */
 		}
 	}
 	try { paymentFile.doClose(); } catch (paymentCloseError) {}
@@ -1540,10 +1553,10 @@ function getAllVendorsByPaymentId(paymentId) {
 			rc = f.getNext();
 		}
 	} catch (e) {
-		print(
+		/* print(
 				"[getAllVendorsByPaymentId] Lỗi: " +
 				e.toString()
-		);
+		); */
 	} finally {
 		try {
 			f.doClose();
@@ -1602,7 +1615,7 @@ function getPaymentVendorList(paymentId) {
  */
 function handleVendorChangeUpdate(record) {
 	if (!record || !record["payment.id"]) {
-		print("[handleVendorChangeUpdate] Thiếu record hoặc paymentId.");
+		// print("[handleVendorChangeUpdate] Thiếu record hoặc paymentId.");
 		return;
 	}
 
@@ -1625,12 +1638,12 @@ function handleVendorChangeUpdate(record) {
 		var rc = f.doSelect('id="' + paymentId + '"');
 
 		if (rc != RC_SUCCESS) {
-			print(
+			/* print(
 					"[handleVendorChangeUpdate] Không tìm thấy paymentId=" +
 					paymentId +
 					". rc=" +
 					rc
-			);
+			); */
 			return;
 		}
 
@@ -1642,21 +1655,21 @@ function handleVendorChangeUpdate(record) {
 		var updateRc = f.doUpdate();
 
 		if (updateRc != RC_SUCCESS) {
-			print(
+			/* print(
 					"[handleVendorChangeUpdate] Update thất bại: " +
 					system.functions.valmessage(updateRc)
-			);
+			); */
 			return;
 		}
 
 
 	} catch (e) {
-		print(
+		/* print(
 				"[handleVendorChangeUpdate] Error paymentId=" +
 				paymentId +
 				": " +
 				String(e.message || e)
-		);
+		); */
 	} finally {
 		if (f) {
 			f.doClose();

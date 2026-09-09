@@ -1,3 +1,16 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_ENTRY_RESULT
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tiếp nhận và xử lý kết quả phản hồi từ API hạch toán OGL / Core Banking.
+ * - Cập nhật mã chứng từ kế toán, trạng thái thành công/thất bại vào esdHTKTaccountingInformation.
+ * - Cập nhật trạng thái phiếu đề nghị và các dòng bút toán chi tiết tương ứng.
+ * - Ghi nhận thông tin lỗi chi tiết khi hạch toán thất bại để phục vụ tra cứu và xử lý lại.
+ * -----------------------------------------------------------------------------
+ */
+
 var ACCOUNTING_INFORMATION_TABLE = 'esdHTKTaccountingInformation';
 var PAYMENT_ENTRY_TABLE = 'esdHTKTpaymentEntry';
 var DEBIT_ACCOUNT_TYPE = '\u006e\u1ee3';

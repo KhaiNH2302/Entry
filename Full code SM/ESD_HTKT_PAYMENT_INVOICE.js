@@ -1,3 +1,15 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_INVOICE
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Thêm mới, cập nhật, xóa và liên kết hóa đơn (esdHTKTpaymentInvoice) vào đề nghị thanh toán.
+ * - Kiểm tra tính hợp lệ, trạng thái và kiểm tra hạn mức hóa đơn.
+ * - Tự động kích hoạt đồng bộ lại bút toán hạch toán khi danh sách hóa đơn thay đổi.
+ * -----------------------------------------------------------------------------
+ */
+
 function run() {
 	try {
 		var input = vars['$L.file'];
@@ -185,7 +197,7 @@ function deletePaymentInvoice(input) {
 			syncPaymentEntryAfterInvoiceDelete(paymentId);
 
 		} else {
-			console.warn("Không tìm thấy bản ghi liên kết trong esdHTKTpaymentInvoice với query: " + linkQuery);
+			// console.warn("Không tìm thấy bản ghi liên kết trong esdHTKTpaymentInvoice với query: " + linkQuery);
 		}
 
 		var invFile = new SCFile("esdHTKTinvoice");
@@ -205,7 +217,7 @@ function deletePaymentInvoice(input) {
 			}
 
 		} else {
-			console.warn("Không tìm thấy hóa đơn " + invoiceId + " trong bảng esdHTKTinvoice để gỡ liên kết.");
+			// console.warn("Không tìm thấy hóa đơn " + invoiceId + " trong bảng esdHTKTinvoice để gỡ liên kết.");
 		}
 
 
@@ -255,6 +267,6 @@ function syncPaymentEntryAfterInvoiceDelete(paymentId) {
 				{ "payment.id": paymentId }
 		);
 	} catch (syncError) {
-		console.error("Khong the sinh lai but toan cho " + paymentId + ": " + syncError.toString());
+		// console.error("Khong the sinh lai but toan cho " + paymentId + ": " + syncError.toString());
 	}
 }

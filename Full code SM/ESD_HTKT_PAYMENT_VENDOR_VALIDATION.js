@@ -1,10 +1,22 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_VENDOR_VALIDATION
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Kiểm tra và xác thực thông tin tài khoản ngân hàng của người thụ hưởng qua hệ thống NAPAS / Core.
+ * - Xác thực thông tin Vendor Site và trạng thái đồng bộ với hệ thống Oracle GL (OGL).
+ * - Kiểm tra tính đầy đủ và hợp lệ của các trường thông tin thụ hưởng trước khi tạo phiếu.
+ * -----------------------------------------------------------------------------
+ */
+
 // =============================================================================
 // HELPER FUNCTIONS (CÁC HÀM HỖ TRỢ CHUẨN HÓA VÀ XỬ LÝ DỮ LIỆU)
 // =============================================================================
 
 
 function handleBeforeDeleteRecord(currentRecord) {
-	print('[SL] Xoa record = ', currentRecord);
+	// print('[SL] Xoa record = ', currentRecord);
 }
 
 /**

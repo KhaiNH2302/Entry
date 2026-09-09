@@ -1,12 +1,13 @@
 /**
- * ScriptLibrary: ESD_HTKT_PAYMENT_DSM
+ * ScriptLibrary : ESD_HTKT_PAYMENT_DSM
  * -----------------------------------------------------------------------------
- * Module  : HTKT - Đề nghị thanh toan
- * Version : 1.0.0
- *
- * Adapter kỹ thuật riêng của HTKT để gọi Keycloak/DSM UAT.
- * Không chứa logic workflow, attachment hoặc nghiệp vụ phê duyệt.
- * Không phụ thuộc và không sửa ESD_DIGITAL_SIGNATURE dùng chung.
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Cung cấp adapter kết nối và xác thực với hệ thống Keycloak và DSM (Digital Signature Module).
+ * - Tạo phiên ký số, lấy URL ký và xử lý callback trạng thái ký số của người phê duyệt.
+ * - Tích hợp ký số trực tiếp trên các tài liệu trình ký PDF của hồ sơ thanh toán.
+ * - Xử lý mã hóa, chữ ký số và giải mã phản hồi từ hệ thống DSM.
  * -----------------------------------------------------------------------------
  */
 

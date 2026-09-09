@@ -1,3 +1,16 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_EFORM_SERVICE
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tạo template HTML/CSS phiếu Đề nghị thanh toán và các bảng biểu chi tiết liên quan.
+ * - Điền dữ liệu động (thông tin người tạo, nhà cung cấp, hóa đơn, hạch toán, luồng duyệt).
+ * - Chuyển đổi số tiền thành chữ tiếng Việt và định dạng tiền tệ, ngày tháng chuẩn nghiệp vụ.
+ * - Cung cấp API render HTML/PDF phục vụ xem trước, in ấn hoặc lưu trữ ECM.
+ * -----------------------------------------------------------------------------
+ */
+
 var HTKT_COMMON = lib.ESD_HTKT_PAYMENT_COMMON;
 var HTKT_TABLE = HTKT_COMMON.getTables();
 
@@ -355,7 +368,7 @@ function htktGetVendorInfo(vendorId) {
 			}
 		}
 	} catch (eVendor) {
-		HTKT_COMMON.log("Không query được esdHTKTvendor cho vendorId " + safeVendorId + ". " + HTKT_COMMON.exceptionToString(eVendor));
+		// HTKT_COMMON.log("Không query được esdHTKTvendor cho vendorId " + safeVendorId + ". " + HTKT_COMMON.exceptionToString(eVendor));
 	} finally {
 		if (f) {
 			HTKT_COMMON.closeFile(f);
@@ -736,10 +749,10 @@ function htktGetSupplierLedgerRows(paymentId, vendorId, contractId) {
 			rc = file.getNext();
 		}
 	} catch (eSupplierLedger) {
-		HTKT_COMMON.log(
+		/* HTKT_COMMON.log(
 				"Không lấy được công nợ NCC " + safeVendorId + ". " +
 				HTKT_COMMON.exceptionToString(eSupplierLedger)
-		);
+		); */
 		result = [];
 		rowKeys = [];
 	}
@@ -1709,8 +1722,8 @@ function htktHttpPost(url, body) {
 		new Header("Accept", "application/json")
 	];
 
-	HTKT_COMMON.log("EFORM POST " + safeUrl);
-	HTKT_COMMON.log("EFORM request body length = " + safeBody.length);
+	// HTKT_COMMON.log("EFORM POST " + safeUrl);
+	// HTKT_COMMON.log("EFORM request body length = " + safeBody.length);
 
 	try {
 		responseBody = doHTTPRequest(

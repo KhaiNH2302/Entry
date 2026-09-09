@@ -1,3 +1,14 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_VIEW_SUPPLIER
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tra cứu chi tiết thông tin nhà cung cấp, chi nhánh và thông tin tài khoản ngân hàng liên kết.
+ * - Tổng hợp lịch sử giao dịch, hóa đơn và các phiếu đề nghị thanh toán liên quan đến nhà cung cấp.
+ * -----------------------------------------------------------------------------
+ */
+
 
 function renderTabInvoice(endpoint, input, extraData) {
 	var currentRecord = extraData;

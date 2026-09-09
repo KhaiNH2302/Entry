@@ -1,3 +1,15 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_VIEW
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Truy vấn và tổng hợp toàn bộ dữ liệu của một đề nghị thanh toán phục vụ hiển thị chi tiết.
+ * - Xác định quyền xem/sửa và trạng thái các nút hành động của người dùng đối với phiếu.
+ * - Chuẩn hóa payload chi tiết phiếu đề nghị thanh toán trả về cho NextJS/Web frontend.
+ * -----------------------------------------------------------------------------
+ */
+
 function getList() {
 	return lib.ESD_Addon_Nextjs_V1.renderPageNextJS('HachToanKeToan/ThanhToan/DanhSachDeNghi', '', {})
 }

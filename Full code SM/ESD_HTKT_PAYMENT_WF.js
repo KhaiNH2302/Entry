@@ -1,20 +1,13 @@
 /**
  * ScriptLibrary : ESD_HTKT_PAYMENT_WF
  * -----------------------------------------------------------------------------
- * Module        : HTKT - Đề nghị thanh toán
- * Version       : 2.1.0
- * Environment   : OpenText Service Manager (JavaScript ES5 Engine)
- *
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
  * Chức năng:
- * - Quản lý Workflow & Chuyển trạng thái Phiếu đề nghị thanh toán.
- * - Kiểm tra quyền hạn (Checker/Approver), Validate dữ liệu theo Phase.
- * - Ghi nhận Lịch sử hoạt động (Activity History).
- * - Tích hợp Quản lý Bản trình ký PDF & Ký số DSM (v2.0.0).
- *
- * Phụ thuộc:
- * - ESD_HTKT_PAYMENT_COMMON >= 1.0.0
- * - ESD_HTKT_PAYMENT_DOCUMENT >= 2.0.0 (Optional/Dynamic)
- * - ESD_Utils, ESD_HTKT_SCHEDULE_OGL
+ * - Quản lý vòng đời trạng thái (Workflow Lifecycle) của phiếu đề nghị thanh toán từ Tạo mới đến Đóng phiếu.
+ * - Kiểm tra điều kiện chuyển phase, thẩm định quyền hạn người thực hiện (Reviewer, Approver).
+ * - Tích hợp gọi sinh EForm, upload bản trình ký PDF và kích hoạt quy trình ký số DSM.
+ * - Ghi nhận lịch sử hoạt động (Activity History / Audit Trail) của hồ sơ qua từng bước duyệt.
  * -----------------------------------------------------------------------------
  */
 
@@ -298,9 +291,9 @@ function createApprovalHistory(record) {
 				currentUser
 		);
 	} catch (e) {
-		print(
+		/* print(
 				"[ESD_HTKT_PAYMENT_WF.createApprovalHistory] Không thể ghi activity: " + e.toString()
-		);
+		); */
 	}
 }
 
@@ -324,9 +317,9 @@ function cancelRequest(record) {
 			);
 		}
 	} catch (e) {
-		print(
+		/* print(
 				"[ESD_HTKT_PAYMENT_WF.cancelRequest] Không thể ghi activity: " + e.toString()
-		);
+		); */
 	}
 }
 
@@ -366,9 +359,9 @@ function returnToUpdate(record, documentsAlreadyDeleted) {
 			);
 		}
 	} catch (e) {
-		print(
+		/* print(
 				"[ESD_HTKT_PAYMENT_WF.returnToUpdate] Không thể ghi activity: " + e.toString()
-		);
+		); */
 	}
 }
 
@@ -1503,7 +1496,7 @@ function checkRefundAmountMatch(paymentId, vendorId) {
 			headerRefundAmount = Number(paymentVendorFile["refund.amount"] || 0);
 		}
 	} catch (e) {
-		print("[DEBUG checkRefundAmountMatch] Error querying paymentVendor: " + e);
+		// print("[DEBUG checkRefundAmountMatch] Error querying paymentVendor: " + e);
 	} finally {
 		if (paymentVendorFile) {
 			try { paymentVendorFile.doClose(); } catch (e) {}
@@ -1521,7 +1514,7 @@ function checkRefundAmountMatch(paymentId, vendorId) {
 			rcEntry = entryFile.getNext();
 		}
 	} catch (e2) {
-		print("[DEBUG checkRefundAmountMatch] Error querying paymentEntry: " + e2);
+		// print("[DEBUG checkRefundAmountMatch] Error querying paymentEntry: " + e2);
 	} finally {
 		if (entryFile) {
 			try { entryFile.doClose(); } catch (e) {}

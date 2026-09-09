@@ -1,8 +1,13 @@
 /**
- * HTKT Signature Handler (Thanh toán)
- * Xử lý kết quả ký số cho:
- * - esdHTKTpayment
- * - esdHTKTpaymentAttachment
+ * ScriptLibrary : ESD_HTKT_PAYMENT_SIGNATURE
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tiếp nhận kết quả ký số điện tử từ hệ thống DSM cho phiếu đề nghị thanh toán.
+ * - Cập nhật chữ ký số, thông tin chứng thư và thời gian ký vào bản ghi tài liệu trình ký.
+ * - Điều phối chuyển bước workflow tương ứng sau khi người duyệt hoàn tất ký số.
+ * -----------------------------------------------------------------------------
  */
 
 // khai báo function:

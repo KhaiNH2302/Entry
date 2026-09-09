@@ -1,11 +1,15 @@
 /**
- * ScriptLibrary:
- * ESD_HTKT_PAYMENT_LOAD_APPROVAL_COMBOBOX
- *
- * Hàm public:
- * loadPaymentApprovalComboBoxes()
- *
+ * ScriptLibrary : ESD_HTKT_PAYMENT_LOAD_APRROVAL_COMBOBOX
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tải danh sách người duyệt hợp lệ (Reviewer, Approver, Kế toán trưởng, Ban Giám đốc, v.v.).
+ * - Áp dụng ma trận phân quyền phê duyệt dựa trên đơn vị người tạo, hạn mức số tiền và quy trình.
+ * - Hỗ trợ tải dữ liệu động cho các Combobox chọn người phê duyệt trên giao diện đề nghị thanh toán.
+ * -----------------------------------------------------------------------------
  */
+
 // trưởng thêm
 function getPaymentRoleByRights(contactId) {
 	var RIGHT_VIEW_INVOICE = "0040040001000001";
@@ -677,7 +681,7 @@ function loadPaymentApprovalComboBoxes() {
 
 		if (!contactId || !targetLv1) {
 			result.message = "Thiếu contactId hoặc targetLv1.";
-			print("[ERROR] " + result.message);
+			// print("[ERROR] " + result.message);
 			return result;
 		}
 
@@ -693,7 +697,7 @@ function loadPaymentApprovalComboBoxes() {
 		} catch (e) {
 			result.message = String(e.message || e);
 
-			print("[EXCEPTION] " + result.message);
+			// print("[EXCEPTION] " + result.message);
 
 			return result;
 		}
@@ -708,7 +712,7 @@ function loadPaymentApprovalComboBoxes() {
 
 		if (!result.scope) {
 			result.scope = "QT_PQDL_01";
-			print("[SCOPE] Không có scope -> mặc định QT_PQDL_01");
+			// print("[SCOPE] Không có scope -> mặc định QT_PQDL_01");
 		}
 
 		result.rawUnits = normalizeArray(
