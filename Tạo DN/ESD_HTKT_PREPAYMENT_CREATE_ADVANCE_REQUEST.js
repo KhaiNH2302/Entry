@@ -1,3 +1,13 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PREPAYMENT_CREATE_ADVANCE_REQUEST
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Khởi tạo Đề nghị tạm ứng
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Khởi tạo phiếu Đề nghị tạm ứng mới, sinh mã phiếu và liên kết hợp đồng mua sắm, tài liệu đính kèm.
+ * -----------------------------------------------------------------------------
+ */
+
 var createActivity = lib.ESD_Utils.createActivity;
 
 function run() {
@@ -185,7 +195,7 @@ function createAdvanceRequest(input) {
 			try {
 				lib.ESD_HD_Integration.createContractPayment(prepaymentRec);
 			} catch (ex) {
-				print("[ERROR] Đồng bộ createContractPayment thất bại cho ID: " + prepaymentRec["id"] + " | Detail: " + ex);
+				// print("[ERROR] Đồng bộ createContractPayment thất bại cho ID: " + prepaymentRec["id"] + " | Detail: " + ex);
 			}
 
 
@@ -474,7 +484,7 @@ function listPurchaseContracts(input) {
 			rc = f.getNext();
 		}
 	} catch (e) {
-		print("[ERROR listPurchaseContracts] Lỗi doSelect: " + e);
+		// print("[ERROR listPurchaseContracts] Lỗi doSelect: " + e);
 	} finally {
 		try { if (f) f.doClose(); } catch (e) {}
 	}
@@ -743,7 +753,7 @@ function listFileAttachment(input) {
 			rc = f.getNext();
 		}
 	} catch (e) {
-		print("[ERROR listFileAttachment] Lỗi doSelect: " + e);
+		// print("[ERROR listFileAttachment] Lỗi doSelect: " + e);
 	} finally {
 		try { if (f) f.doClose(); } catch (e) {}
 	}

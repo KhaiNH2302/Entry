@@ -1,11 +1,13 @@
 /**
- * ScriptLibrary: ESD_HTKT_PAYMENT_DOCUMENT
+ * ScriptLibrary : ESD_HTKT_PAYMENT_DOCUMENT
  * -----------------------------------------------------------------------------
- * Module      : HTKT - Đề nghị thanh toán
- * Version     : 2.1.0
- *
- * Chức năng   : Quản lý vòng đời bản trình ký PDF (EForm PDF -> ECM Storage -> Versioning).
- * Môi trường  : OpenText Service Manager (JavaScript ES5 Engine).
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Quản lý vòng đời và phiên bản tài liệu trình ký PDF của đề nghị thanh toán.
+ * - Tích hợp với dịch vụ lưu trữ tài liệu tập trung (ECM/CDM Storage).
+ * - Xử lý upload, download và đính kèm bản trình ký PDF vào hệ thống Service Manager.
+ * - Đồng bộ trạng thái file trình ký phục vụ quy trình ký số điện tử (DSM).
  * -----------------------------------------------------------------------------
  */
 
@@ -90,9 +92,9 @@ function assertDependencies(requireEform) {
 	}
 
 	if (provider === "REAL" && (!lib.ESD_ECM_SERVICE ||
-		typeof lib.ESD_ECM_SERVICE.uploadFileTaiLieu !== "function" ||
-		typeof lib.ESD_ECM_SERVICE.downloadDocument !== "function" ||
-		typeof lib.ESD_ECM_SERVICE.deleteDocument !== "function")) {
+			typeof lib.ESD_ECM_SERVICE.uploadFileTaiLieu !== "function" ||
+			typeof lib.ESD_ECM_SERVICE.downloadDocument !== "function" ||
+			typeof lib.ESD_ECM_SERVICE.deleteDocument !== "function")) {
 		throw new Error("Thiếu hoặc sai contract thư viện ESD_ECM_SERVICE (upload/download/delete).");
 	}
 
@@ -285,7 +287,7 @@ function downloadDocument(documentIdentity) {
 		var rawResponse;
 
 		var docIdOrObjectId = getCommon().trim(documentIdentity.docId) || getCommon().trim(documentIdentity.objectId);
-		print("[HTKT_PAYMENT_DOC.downloadDocument] >> START: provider=" + provider + ", docIdOrObjectId=" + docIdOrObjectId + ", url=" + (environmentConfig.STORAGE_BASE_URL + "/CDM/service/document/download"));
+		// print("[HTKT_PAYMENT_DOC.downloadDocument] >> START: provider=" + provider + ", docIdOrObjectId=" + docIdOrObjectId + ", url=" + (environmentConfig.STORAGE_BASE_URL + "/CDM/service/document/download"));
 
 		if (provider === "MOCK") {
 			rawResponse = postDocumentJson(environmentConfig.STORAGE_BASE_URL + "/CDM/service/document/download", {
@@ -299,11 +301,11 @@ function downloadDocument(documentIdentity) {
 			}]);
 		}
 
-		print("[HTKT_PAYMENT_DOC.downloadDocument] >> rawResponse=" + (rawResponse ? String(rawResponse).substring(0, 300) : "EMPTY"));
+		// print("[HTKT_PAYMENT_DOC.downloadDocument] >> rawResponse=" + (rawResponse ? String(rawResponse).substring(0, 300) : "EMPTY"));
 
 		var parsed = parseDocumentStorageResponse(rawResponse);
 		if (parsed.success !== true) {
-			print("[HTKT_PAYMENT_DOC.downloadDocument] >> parseDocumentStorageResponse FAILED: " + JSON.stringify(parsed));
+			// print("[HTKT_PAYMENT_DOC.downloadDocument] >> parseDocumentStorageResponse FAILED: " + JSON.stringify(parsed));
 			return parsed;
 		}
 
@@ -313,7 +315,7 @@ function downloadDocument(documentIdentity) {
 			dataObject = dataObject[0];
 		}
 		if (responseData.code !== "OK" || !dataObject || typeof dataObject !== "object") {
-			print("[HTKT_PAYMENT_DOC.downloadDocument] >> responseData not OK: " + JSON.stringify(responseData));
+			// print("[HTKT_PAYMENT_DOC.downloadDocument] >> responseData not OK: " + JSON.stringify(responseData));
 			return responseFail("DOCUMENT_DOWNLOAD_FAILED", responseData.message || "Tải bản trình ký thất bại.", "", responseData);
 		}
 
@@ -329,11 +331,11 @@ function downloadDocument(documentIdentity) {
 		}
 
 		if (!pdfBase64) {
-			print("[HTKT_PAYMENT_DOC.downloadDocument] >> DOCUMENT_PDF_NOT_FOUND in keys=" + Object.keys(dataObject).join(","));
+			// print("[HTKT_PAYMENT_DOC.downloadDocument] >> DOCUMENT_PDF_NOT_FOUND in keys=" + Object.keys(dataObject).join(","));
 			return responseFail("DOCUMENT_PDF_NOT_FOUND", "Response không chứa PDF Base64 hợp lệ.", "", responseData);
 		}
 
-		print("[HTKT_PAYMENT_DOC.downloadDocument] >> SUCCESS: fileName=" + fileName + ", size=" + pdfBase64.length);
+		// print("[HTKT_PAYMENT_DOC.downloadDocument] >> SUCCESS: fileName=" + fileName + ", size=" + pdfBase64.length);
 
 		return responseOk({
 			docId: getCommon().trim(documentIdentity.docId),
@@ -345,7 +347,7 @@ function downloadDocument(documentIdentity) {
 			pdfBase64: pdfBase64
 		}, "Tải bản trình ký thành công.");
 	} catch (error) {
-		print("[HTKT_PAYMENT_DOC.downloadDocument] >> EXCEPTION: " + error);
+		// print("[HTKT_PAYMENT_DOC.downloadDocument] >> EXCEPTION: " + error);
 		return responseFailException("DOCUMENT_DOWNLOAD_EXCEPTION", "Có lỗi khi tải bản trình ký.", error, documentIdentity);
 	}
 }
@@ -863,6 +865,7 @@ function downloadPresentation(input) {
 	}, "Tải bản trình ký thành công.");
 }
 
+// Action getFileECM cho màn ký số NextJS, lấy đúng bản trình ký hiện hành từ attachment
 // Action getFileECM cho màn ký số NextJS, lấy đúng bản trình ký hiện hành từ attachment
 function get_file_ecm_HTKT(file) {
 	try {

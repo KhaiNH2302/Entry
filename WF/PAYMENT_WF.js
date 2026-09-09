@@ -1,20 +1,13 @@
 /**
  * ScriptLibrary : ESD_HTKT_PAYMENT_WF
  * -----------------------------------------------------------------------------
- * Module        : HTKT - Đề nghị thanh toán
- * Version       : 2.1.0
- * Environment   : OpenText Service Manager (JavaScript ES5 Engine)
- *
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
  * Chức năng:
- * - Quản lý Workflow & Chuyển trạng thái Phiếu đề nghị thanh toán.
- * - Kiểm tra quyền hạn (Checker/Approver), Validate dữ liệu theo Phase.
- * - Ghi nhận Lịch sử hoạt động (Activity History).
- * - Tích hợp Quản lý Bản trình ký PDF & Ký số DSM (v2.0.0).
- *
- * Phụ thuộc:
- * - ESD_HTKT_PAYMENT_COMMON >= 1.0.0
- * - ESD_HTKT_PAYMENT_DOCUMENT >= 2.0.0 (Optional/Dynamic)
- * - ESD_Utils, ESD_HTKT_SCHEDULE_OGL
+ * - Quản lý vòng đời trạng thái (Workflow Lifecycle) của phiếu đề nghị thanh toán từ Tạo mới đến Đóng phiếu.
+ * - Kiểm tra điều kiện chuyển phase, thẩm định quyền hạn người thực hiện (Reviewer, Approver).
+ * - Tích hợp gọi sinh EForm, upload bản trình ký PDF và kích hoạt quy trình ký số DSM.
+ * - Ghi nhận lịch sử hoạt động (Activity History / Audit Trail) của hồ sơ qua từng bước duyệt.
  * -----------------------------------------------------------------------------
  */
 
@@ -298,9 +291,9 @@ function createApprovalHistory(record) {
 				currentUser
 		);
 	} catch (e) {
-		print(
+		/* print(
 				"[ESD_HTKT_PAYMENT_WF.createApprovalHistory] Không thể ghi activity: " + e.toString()
-		);
+		); */
 	}
 }
 
@@ -324,9 +317,9 @@ function cancelRequest(record) {
 			);
 		}
 	} catch (e) {
-		print(
+		/* print(
 				"[ESD_HTKT_PAYMENT_WF.cancelRequest] Không thể ghi activity: " + e.toString()
-		);
+		); */
 	}
 }
 
@@ -366,9 +359,9 @@ function returnToUpdate(record, documentsAlreadyDeleted) {
 			);
 		}
 	} catch (e) {
-		print(
+		/* print(
 				"[ESD_HTKT_PAYMENT_WF.returnToUpdate] Không thể ghi activity: " + e.toString()
-		);
+		); */
 	}
 }
 
@@ -699,119 +692,121 @@ function validateVendorAndPaymentDetails(record) {
 		errorMss.push("Vui lòng nhập số tiền.");
 	}
 
-	var paymentMethod = record["payment.method"];
-	if (!paymentMethod) {
-		errorMss.push("Vui lòng chọn phương thức thanh toán.");
-	} else {
-		if (paymentMethod === "CHUYENKHOAN") {
-			if (!record["beneficiary.account"]) {
-				errorMss.push("Số tài khoản thụ hưởng không được để trống.");
-			} else {
-				var beneficiaryAccount = String(record["beneficiary.account"]).trim();
-				if (!/^\d+$/.test(beneficiaryAccount)) {
-					errorMss.push("Số tài khoản thụ hưởng chỉ được phép nhập số.");
+	if (amountField > 0) {
+		var paymentMethod = record["payment.method"];
+		if (!paymentMethod) {
+			errorMss.push("Vui lòng chọn phương thức thanh toán.");
+		} else {
+			if (paymentMethod === "CHUYENKHOAN") {
+				if (!record["beneficiary.account"]) {
+					errorMss.push("Số tài khoản thụ hưởng không được để trống.");
 				} else {
-					checkMaxLength(beneficiaryAccount, 255, "Số tài khoản thụ hưởng");
-				}
-			}
-
-			if (!record["beneficiary.bank"]) {
-				errorMss.push("Ngân hàng thụ hưởng không được để trống.");
-			} else {
-				var bankValue = String(record["beneficiary.bank"]).trim();
-				checkMaxLength(bankValue, 255, "Ngân hàng thụ hưởng");
-
-				// Lấy danh sách Value List từ biến $bankcode của hệ thống
-				var validBankCodes = vars.$bankcode;
-				var isBankValid = false;
-
-				if (validBankCodes != null) {
-					// Ép kiểu về mảng Javascript chuẩn (phòng trường hợp là SCArray của HPSM)
-					var bankCodeArray = (typeof validBankCodes.toArray === 'function') ? validBankCodes.toArray() : validBankCodes;
-
-					// Kiểm tra giá trị có nằm trong Value List không
-					for (var i = 0; i < bankCodeArray.length; i++) {
-						if (bankCodeArray[i] != null && String(bankCodeArray[i]).trim() === bankValue) {
-							isBankValid = true;
-							break;
-						}
+					var beneficiaryAccount = String(record["beneficiary.account"]).trim();
+					if (!/^\d+$/.test(beneficiaryAccount)) {
+						errorMss.push("Số tài khoản thụ hưởng chỉ được phép nhập số.");
+					} else {
+						checkMaxLength(beneficiaryAccount, 255, "Số tài khoản thụ hưởng");
 					}
 				}
 
-				if (!isBankValid) {
-					errorMss.push("Ngân hàng thụ hưởng không hợp lệ. Vui lòng chọn ngân hàng có trong danh sách.");
-				}
-			}
-
-			if (!record["beneficiary.name"]) {
-				errorMss.push("Tên chủ tài khoản thụ hưởng không được để trống.");
-			} else {
-				checkMaxLength(record["beneficiary.name"], 255, "Tên chủ tài khoản thụ hưởng");
-			}
-
-			if (!record["transaction.des"]) {
-				errorMss.push("Nội dung giao dịch không được để trống.");
-			} else {
-				checkMaxLength(record["transaction.des"], 255, "Nội dung giao dịch");
-			}
-
-		} else if (paymentMethod === "TIENMAT") {
-			if (!record["beneficiary.name"]) {
-				errorMss.push("Họ tên người thụ hưởng tiền mặt không được để trống.");
-			} else {
-				checkMaxLength(record["beneficiary.name"], 255, "Họ tên người thụ hưởng tiền mặt");
-			}
-
-			if (!record["identity.number"]) {
-				errorMss.push("Số giấy tờ tùy thân (CMND/CCCD/Hộ chiếu) không được để trống.");
-			} else {
-				var identityNumber = String(record["identity.number"]).trim();
-				if (!/^\d+$/.test(identityNumber)) {
-					errorMss.push("Số giấy tờ tùy thân chỉ được phép nhập số.");
+				if (!record["beneficiary.bank"]) {
+					errorMss.push("Ngân hàng thụ hưởng không được để trống.");
 				} else {
-					checkMaxLength(identityNumber, 255, "Số giấy tờ tùy thân");
+					var bankValue = String(record["beneficiary.bank"]).trim();
+					checkMaxLength(bankValue, 255, "Ngân hàng thụ hưởng");
+
+					// Lấy danh sách Value List từ biến $bankcode của hệ thống
+					var validBankCodes = vars.$bankcode;
+					var isBankValid = false;
+
+					if (validBankCodes != null) {
+						// Ép kiểu về mảng Javascript chuẩn (phòng trường hợp là SCArray của HPSM)
+						var bankCodeArray = (typeof validBankCodes.toArray === 'function') ? validBankCodes.toArray() : validBankCodes;
+
+						// Kiểm tra giá trị có nằm trong Value List không
+						for (var i = 0; i < bankCodeArray.length; i++) {
+							if (bankCodeArray[i] != null && String(bankCodeArray[i]).trim() === bankValue) {
+								isBankValid = true;
+								break;
+							}
+						}
+					}
+
+					if (!isBankValid) {
+						errorMss.push("Ngân hàng thụ hưởng không hợp lệ. Vui lòng chọn ngân hàng có trong danh sách.");
+					}
 				}
-			}
 
-			if (!record["issued.date"]) {
-				errorMss.push("Ngày cấp giấy tờ tùy thân không được để trống.");
-			} else {
-				var issuedDate = new Date(record["issued.date"]);
-				var today = new Date();
-
-				issuedDate.setHours(0, 0, 0, 0);
-				today.setHours(0, 0, 0, 0);
-
-				if (issuedDate > today) {
-					errorMss.push("Ngày cấp giấy tờ tùy thân không được vượt quá ngày hiện tại.");
+				if (!record["beneficiary.name"]) {
+					errorMss.push("Tên chủ tài khoản thụ hưởng không được để trống.");
+				} else {
+					checkMaxLength(record["beneficiary.name"], 255, "Tên chủ tài khoản thụ hưởng");
 				}
-			}
 
-			if (!record["issued.place"]) {
-				errorMss.push("Nơi cấp giấy tờ tùy thân không được để trống.");
-			} else {
-				checkMaxLength(record["issued.place"], 255, "Nơi cấp giấy tờ tùy thân");
-			}
+				if (!record["transaction.des"]) {
+					errorMss.push("Nội dung giao dịch không được để trống.");
+				} else {
+					checkMaxLength(record["transaction.des"], 255, "Nội dung giao dịch");
+				}
 
-			if (!record["phone"]) {
-				errorMss.push("Số điện thoại người thụ hưởng không được để trống.");
-			} else {
-				var phone = String(record["phone"]).trim();
-				if (!/^\d+$/.test(phone)) {
-					errorMss.push("Số điện thoại chỉ được chứa các chữ số.");
+			} else if (paymentMethod === "TIENMAT") {
+				if (!record["beneficiary.name"]) {
+					errorMss.push("Họ tên người thụ hưởng tiền mặt không được để trống.");
+				} else {
+					checkMaxLength(record["beneficiary.name"], 255, "Họ tên người thụ hưởng tiền mặt");
 				}
-				if (phone.length !== 10) {
-					errorMss.push("Số điện thoại phải gồm đúng 10 số.");
-				}
-				if (phone.charAt(0) !== "0") {
-					errorMss.push("Số điện thoại phải bắt đầu bằng số 0.");
-				}
-			}
 
-			if (!record["transaction.des"]) {
-				errorMss.push("Nội dung giao dịch không được để trống.");
-			} else {
-				checkMaxLength(record["transaction.des"], 255, "Nội dung giao dịch");
+				if (!record["identity.number"]) {
+					errorMss.push("Số giấy tờ tùy thân (CMND/CCCD/Hộ chiếu) không được để trống.");
+				} else {
+					var identityNumber = String(record["identity.number"]).trim();
+					if (!/^\d+$/.test(identityNumber)) {
+						errorMss.push("Số giấy tờ tùy thân chỉ được phép nhập số.");
+					} else {
+						checkMaxLength(identityNumber, 255, "Số giấy tờ tùy thân");
+					}
+				}
+
+				if (!record["issued.date"]) {
+					errorMss.push("Ngày cấp giấy tờ tùy thân không được để trống.");
+				} else {
+					var issuedDate = new Date(record["issued.date"]);
+					var today = new Date();
+
+					issuedDate.setHours(0, 0, 0, 0);
+					today.setHours(0, 0, 0, 0);
+
+					if (issuedDate > today) {
+						errorMss.push("Ngày cấp giấy tờ tùy thân không được vượt quá ngày hiện tại.");
+					}
+				}
+
+				if (!record["issued.place"]) {
+					errorMss.push("Nơi cấp giấy tờ tùy thân không được để trống.");
+				} else {
+					checkMaxLength(record["issued.place"], 255, "Nơi cấp giấy tờ tùy thân");
+				}
+
+				if (!record["phone"]) {
+					errorMss.push("Số điện thoại người thụ hưởng không được để trống.");
+				} else {
+					var phone = String(record["phone"]).trim();
+					if (!/^\d+$/.test(phone)) {
+						errorMss.push("Số điện thoại chỉ được chứa các chữ số.");
+					}
+					if (phone.length !== 10) {
+						errorMss.push("Số điện thoại phải gồm đúng 10 số.");
+					}
+					if (phone.charAt(0) !== "0") {
+						errorMss.push("Số điện thoại phải bắt đầu bằng số 0.");
+					}
+				}
+
+				if (!record["transaction.des"]) {
+					errorMss.push("Nội dung giao dịch không được để trống.");
+				} else {
+					checkMaxLength(record["transaction.des"], 255, "Nội dung giao dịch");
+				}
 			}
 		}
 	}
@@ -1501,7 +1496,7 @@ function checkRefundAmountMatch(paymentId, vendorId) {
 			headerRefundAmount = Number(paymentVendorFile["refund.amount"] || 0);
 		}
 	} catch (e) {
-		print("[DEBUG checkRefundAmountMatch] Error querying paymentVendor: " + e);
+		// print("[DEBUG checkRefundAmountMatch] Error querying paymentVendor: " + e);
 	} finally {
 		if (paymentVendorFile) {
 			try { paymentVendorFile.doClose(); } catch (e) {}
@@ -1519,7 +1514,7 @@ function checkRefundAmountMatch(paymentId, vendorId) {
 			rcEntry = entryFile.getNext();
 		}
 	} catch (e2) {
-		print("[DEBUG checkRefundAmountMatch] Error querying paymentEntry: " + e2);
+		// print("[DEBUG checkRefundAmountMatch] Error querying paymentEntry: " + e2);
 	} finally {
 		if (entryFile) {
 			try { entryFile.doClose(); } catch (e) {}

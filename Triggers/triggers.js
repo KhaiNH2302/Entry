@@ -1,9 +1,11 @@
 /**
- * =============================================================================
- * TRIGGERS - ĐỒNG BỘ BÚT TOÁN THANH TOÁN (PAYMENT ENTRY)
- * =============================================================================
- * File cấu hình các hàm gọi Trigger trong HP Service Manager (HPSM).
- * Toàn bộ logic nghiệp vụ, log và kiểm tra phase được đặt trong thư viện ESD_HTKT_PAYMENT_ENTRY.
+ * ScriptLibrary : triggers
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Database Triggers
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Khai báo và xử lý các trigger bắt sự kiện trước/sau khi lưu dữ liệu các bảng HTKT.
+ * -----------------------------------------------------------------------------
  */
 
 /**

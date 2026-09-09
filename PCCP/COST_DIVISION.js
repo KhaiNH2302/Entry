@@ -1,15 +1,25 @@
-// Script Library cho Quản lý Phân bổ chi phí (esdHTKTpaymentCostDivision)
-// Updated: Thêm getCreatorUnitInfo, getDepartments, getTransactionOffices, getGlAccounts
-// Combined fix: bỏ trailing comma (lỗi compile ES3) + fix logic ghi đè/import trùng + dùng Native SM Query (sửa lỗi SQL) + Lọc PGD và Phòng ban theo org.code & Loại trừ 98
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_COST_DIVISION
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Quản lý danh sách dòng phân bổ chi phí (esdHTKTcostDivision) của đề nghị thanh toán.
+ * - Thực hiện các thao tác Thêm, Sửa, Xóa và Import dữ liệu phân bổ chi phí.
+ * - Tự động tra cứu và điền thông tin đơn vị kế toán (GL Unit, Cost Center, Transaction Office).
+ * - Đồng bộ và cập nhật tổng tiền chi phí lên phiếu đề nghị và bảng bút toán liên quan.
+ * -----------------------------------------------------------------------------
+ */
 
+// Script Library cho Quản lý Phân bổ chi phí (esdHTKTpaymentCostDivision)
 function run() {
 	try {
 		var input = vars["$L.file"];
 
-		print("===== DEBUG =====");
-		print("name = " + input["name"]);
-		print("details = " + input["details"]);
-		print("queryString = " + input["queryString"]);
+		// print("===== DEBUG =====");
+		// print("name = " + input["name"]);
+		// print("details = " + input["details"]);
+		// print("queryString = " + input["queryString"]);
 
 		if (!input) {
 			return;
@@ -820,7 +830,7 @@ function getCostDivision(input) {
  */
 function createCostDivision(input) {
 	var rawDetails = extractRawDetails(input);
-	print("[COST_DIVISION_CREATE] rawDetails=" + rawDetails);
+	// print("[COST_DIVISION_CREATE] rawDetails=" + rawDetails);
 
 	if (!rawDetails) {
 		return { success: false, message: "Thiếu dữ liệu phân bổ chi phí" };
@@ -865,7 +875,7 @@ function createCostDivision(input) {
 			details: results
 		};
 	} catch (e) {
-		print("[COST_DIVISION_CREATE] error=" + e.toString());
+		// print("[COST_DIVISION_CREATE] error=" + e.toString());
 		return {
 			success: false,
 			message: "Lỗi định dạng JSON dữ liệu đầu vào: " + e.toString()
@@ -878,7 +888,7 @@ function createCostDivision(input) {
  */
 function updateCostDivision(input) {
 	var rawDetails = extractRawDetails(input);
-	print("[COST_DIVISION_UPDATE] rawDetails=" + rawDetails);
+	// print("[COST_DIVISION_UPDATE] rawDetails=" + rawDetails);
 
 	if (!rawDetails) {
 		return {
@@ -1043,7 +1053,7 @@ function updateCostDivision(input) {
 			};
 		}
 	} catch (e) {
-		print("[COST_DIVISION_UPDATE] error=" + e.toString());
+		// print("[COST_DIVISION_UPDATE] error=" + e.toString());
 		return { success: false, message: "Lỗi xử lý cập nhật: " + e.toString() };
 	}
 }
@@ -1053,7 +1063,7 @@ function updateCostDivision(input) {
  */
 function deleteCostDivision(input) {
 	var rawDetails = extractRawDetails(input);
-	print("[COST_DIVISION_DELETE] rawDetails=" + rawDetails);
+	// print("[COST_DIVISION_DELETE] rawDetails=" + rawDetails);
 
 	if (!rawDetails) {
 		return { success: false, message: "Thiếu dữ liệu chi tiết cần xóa" };
@@ -1143,7 +1153,7 @@ function deleteCostDivision(input) {
 			details: results
 		};
 	} catch (e) {
-		print("[COST_DIVISION_DELETE] error=" + e.toString());
+		// print("[COST_DIVISION_DELETE] error=" + e.toString());
 		return { success: false, message: "Lỗi xử lý xóa: " + e.toString() };
 	}
 }
@@ -1153,7 +1163,7 @@ function deleteCostDivision(input) {
  */
 function importCostDivision(input) {
 	var rawDetails = extractRawDetails(input);
-	print("[COST_DIVISION_IMPORT] rawDetails=" + rawDetails);
+	// print("[COST_DIVISION_IMPORT] rawDetails=" + rawDetails);
 
 	if (!rawDetails) {
 		return { success: false, message: "Thiếu dữ liệu phân bổ chi phí" };
@@ -1268,7 +1278,7 @@ function importCostDivision(input) {
 			details: results
 		};
 	} catch (e) {
-		print("[COST_DIVISION_IMPORT] error=" + e.toString());
+		// print("[COST_DIVISION_IMPORT] error=" + e.toString());
 		return {
 			success: false,
 			message: "Lỗi định dạng JSON dữ liệu đầu vào: " + e.toString()
@@ -1393,7 +1403,8 @@ function validateUnit(unitId) {
 function validateTransactionOffice(transactionCode, unitId) {
 	if (!transactionCode) return { isValid: false, branchName: "" };
 
-	if (transactionCode === "000000" || transactionCode === "0000000") return { isValid: true, branchName: "Không xác định" };
+//    if (transactionCode === "000000" || transactionCode === "0000000") return { isValid: true, branchName: "Không xác định" };
+	if (transactionCode === "0000000") return { isValid: true, branchName: "Không xác định" };
 
 	var prefix = getUnitPrefix5(unitId);
 	if (!prefix) return { isValid: false, branchName: "" };

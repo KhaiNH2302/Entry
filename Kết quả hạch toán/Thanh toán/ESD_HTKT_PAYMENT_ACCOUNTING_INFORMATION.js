@@ -1,6 +1,14 @@
 /**
- * Sinh esdHTKTaccountingInformation cho đề nghị thanh toán.
- * Mỗi bản ghi tương ứng một lần gọi API: AP invoice/payment, GL hoặc CORE.
+ * ScriptLibrary : ESD_HTKT_PAYMENT_ACCOUNTING_INFORMATION
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Sinh và quản lý bản ghi esdHTKTaccountingInformation cho đề nghị thanh toán.
+ * - Xử lý thông tin hạch toán chi tiết theo dòng chi phí, nhà cung cấp và định khoản nợ/có.
+ * - Chuẩn hóa payload và điều phối đồng bộ dữ liệu kế toán sang OGL/Core Banking.
+ * - Cung cấp API run() tiếp nhận và điều phối thực thi từ client/NextJS.
+ * -----------------------------------------------------------------------------
  */
 
 function run() {
@@ -26,7 +34,7 @@ function run() {
 		var output = JSON.stringify(result, null, 2);
 		input.queryReturn = output;
 		if (action === 'previewPaymentAccountingInformation') {
-			try { print(output); } catch (ignorePrint) {}
+			// try { print(output); } catch (ignorePrint) {}
 		}
 		return result;
 	} catch (e) {
@@ -158,7 +166,9 @@ function generatePaymentAccountingInformation(paymentId, previewOnly) {
 			glGroups[groupKey].push(glEntry);
 		}
 
-		var glMaker = safeString(payment.created_by).trim();
+		var glMakerResult = resolvePaymentMaker(payment);
+		if (!glMakerResult.success) return glMakerResult;
+		var glMaker = glMakerResult.data;
 		var glApprover = safeString(payment.user_approver_kttc).trim();
 		var glContext = { maker: glMaker, approver: glApprover, checker: glApprover };
 
@@ -398,6 +408,23 @@ function buildAccountingInformationRow(payment, item, createdTime) {
 	};
 }
 
+function resolvePaymentMaker(payment) {
+	var initialRole = safeString(payment.initial_role).trim().toLowerCase();
+
+	if (initialRole === 'kttc') {
+		return { success: true, data: safeString(payment.created_by).trim() };
+	}
+	if (initialRole === 'dmms') {
+		return { success: true, data: safeString(payment.user_checker_kttc).trim() };
+	}
+	return errorResult(
+			'INVALID_PAYMENT_INITIAL_ROLE ' +
+			'Khong map duoc initial.role="' +
+			payment.initial_role +
+			'" sang can bo KTTC tao/tiep nhan.'
+	);
+}
+
 function buildVendorContext(payment, vendorRow) {
 	var vendor = selectOne(TABLE_VENDOR, 'id="' + escapeQueryValue(vendorRow.vendor_id) + '"', function (f) {
 		return { number: readText(f, 'vendor.number'), name: readText(f, 'vendor.name') };
@@ -411,23 +438,9 @@ function buildVendorContext(payment, vendorRow) {
 	if (!vendor || !vendor.number) return errorResult('Khong tim thay vendor.number cua NCC ' + vendorRow.vendor_id + '.');
 	if (!entityResult.success) return entityResult;
 
-	var initialRole = safeString(payment.initial_role).trim().toLowerCase();
-	var maker = '';
-
-	if (initialRole === 'kttc') {
-		maker = safeString(payment.created_by).trim();
-	} else if (initialRole === 'dmms') {
-		maker = safeString(
-				payment.user_checker_kttc
-		).trim();
-	} else {
-		return errorResult(
-				'INVALID_PAYMENT_INITIAL_ROLE ' +
-				'Khong map duoc initial.role="' +
-				payment.initial_role +
-				'" sang can bo KTTC tao/tiep nhan.'
-		);
-	}
+	var makerResult = resolvePaymentMaker(payment);
+	if (!makerResult.success) return makerResult;
+	var maker = makerResult.data;
 
 	var checker = safeString(payment.user_approver_kttc).trim();
 	var cashout = mapPaymentMethodToCashout(vendorRow.payment_method);
@@ -524,7 +537,7 @@ function mapGlPayload(requestId, accountingDate, payment, context, entries) {
 			accountedDR: debit ? entries[i].amount : 0, accountedCR: debit ? 0 : entries[i].amount,
 			lineDesc: entries[i].description });
 	}
-	return { success: true, data: { requestId: requestId, accountingDate: accountingDate,
+	return { success: true, data: { requestId: requestId, referenceId: payment.id, accountingDate: accountingDate,
 			currencyCode: entries[0].currency || 'VND', transactionDesc: payment.description || 'Hach toan GL',
 			branchCode: formatBranchCode(entries[0].branch, '000'), source: 'QLTS', category: 'QLTS' || TYPE_GL,
 			createdby: context.maker, approvedby: context.approver, line: lines,
@@ -541,7 +554,7 @@ function mapCorePayload(requestId, entry, context) {
 			requestId: requestId, clientDt: clientDate, channel: 'A101_IBR',
 			spname: 'com.xesapi.xferadd20.FunsTransferAdd', data: {
 				depAcctIdFrom: { acctId: '1111', acctCur: entry.currency },
-				depAcctIdTo: { acctId: entry.account_number, acctCur: entry.currency },
+				depAcctIdTo: { acctId: entry.account_number, acctCur: entry.currency, toBranchId: String(entry.branch).slice(2) },
 				amount: amount, curCode: entry.currency, reversedInd: 'N',
 				trnRefNum: requestId, notes: description } } };
 	return { subType: SUB_CITAD, data: {
@@ -550,7 +563,7 @@ function mapCorePayload(requestId, entry, context) {
 				serviceBranch: '', pmtType: 'Outgoing IBPS_Bilateral', pmtMethod: 'Account',
 				trnType: 'Transaction Internet Banking', fromAcctId: '101870783864',
 				toAcctId: entry.account_number, toBankId: safeString(bankParts[1]).trim(),
-				toBranchId: safeString(bankParts[0]).trim(), toAcctName: truncate(entry.account_name, 150),
+				toBranchId: safeString(bankParts[0]).trim(), toAcctName: truncate(entry.account_name, 150), serviceBranch: String(entry.branch).slice(2),
 				amount: [{ amount: amount, crcd: entry.currency, amountType: 'TRAN_AMOUNT' }],
 				trnDesc: truncate(description, 269), chanRefNum: requestId } } };
 }
@@ -705,7 +718,8 @@ function mapDiscountType(deductionType) {
 function mapPaymentMethodToCashout(value) {
 	var normalized = normalizeIdentity(value);
 	if (normalized === 'tienmat') return CASH_YES;
-	if (normalized === 'chuyenkhoan') return CASH_NO;
+	// payment.method is optional; when omitted, use the non-cash flow.
+	if (!normalized || normalized === 'chuyenkhoan') return CASH_NO;
 	return '';
 }
 
@@ -842,7 +856,10 @@ function readNumber(record, field) { return toNumber(readField(record, field)); 
 function readField(record, field) { try { return record[field]; } catch (e) { return ''; } }
 function isDebit(value) { var v = normalizeIdentity(value); return v === 'no' || v === 'debit'; }
 function isCredit(value) { var v = normalizeIdentity(value); return v === 'co' || v === 'credit' || v === 'asset' || v === 'taisan'; }
-function isBankTransfer(value) { return normalizeIdentity(value) === 'chuyenkhoan'; }
+function isBankTransfer(value) {
+	var normalized = normalizeIdentity(value);
+	return !normalized || normalized === 'chuyenkhoan';
+}
 function sumEntryAmounts(rows) { var n = 0; for (var i = 0; i < rows.length; i++) n += toNumber(rows[i].amount); return n; }
 function sumInvoiceLineAmounts(rows) { var n = 0; for (var i = 0; i < rows.length; i++) n += toNumber(rows[i].amount); return n; }
 function entryIds(rows) { var r = []; for (var i = 0; i < rows.length; i++) r.push(rows[i].id); return r; }

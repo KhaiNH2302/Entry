@@ -1,3 +1,14 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PREPAYMENT_ENTRY_RESULT
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Kết quả hạch toán Tạm ứng
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Tiếp nhận và xử lý kết quả phản hồi từ API hạch toán OGL cho hồ sơ tạm ứng.
+ * - Cập nhật mã chứng từ và trạng thái hạch toán vào hồ sơ tạm ứng.
+ * -----------------------------------------------------------------------------
+ */
+
 var ACCOUNTING_INFORMATION_TABLE = 'esdHTKTaccountingInformation';
 var PREPAYMENT_ENTRY_TABLE = 'esdHTKTprepaymentEntry';
 var DEBIT_ACCOUNT_TYPE = '\u006e\u1ee3';

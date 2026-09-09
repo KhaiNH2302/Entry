@@ -1,3 +1,16 @@
+/**
+ * ScriptLibrary : ESD_HTKT_PAYMENT_CREATE_REQUEST
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Đề nghị thanh toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Khởi tạo và lưu thông tin phiếu đề nghị thanh toán mới (esdHTKTpayment).
+ * - Tự động sinh mã phiếu, khởi tạo trạng thái và phân quyền theo cấp đơn vị của người lập.
+ * - Tra cứu danh sách hợp đồng mua sắm (esdHTKTpurchaseContract) và nhà cung cấp liên kết.
+ * - Xử lý lưu danh sách tài liệu đính kèm và đồng bộ thông tin hợp đồng liên quan.
+ * -----------------------------------------------------------------------------
+ */
+
 var createActivity = lib.ESD_Utils.createActivity;
 
 function run() {
@@ -21,6 +34,10 @@ function run() {
 			case 'listPurchaseContracts':
 				result = listPurchaseContracts(input);
 				break;
+			case 'listFileAttachment':
+				listFileAttachment(input);
+				break;
+
 
 			default:
 				result = { success: false, message: "Hành động (name) không hợp lệ: " + name };
@@ -104,7 +121,7 @@ function createPaymentRequest(input) {
 		 * HTKT PAYMENT CURRENT USER
 		 */
 		var currentUser = htktCreatePay_resolveCurrentUser(contractData);
-		print("Người dùng hiện tại: " + currentUser);
+		// print("Người dùng hiện tại: " + currentUser);
 		if (!currentUser) {
 			return {
 				success: false,
@@ -133,7 +150,7 @@ function createPaymentRequest(input) {
 
 		// Map dữ liệu
 		mapPaymentRecord(paymentRec, contractData, newPaymentId);
-		print("New Payment", paymentRec);
+		// print("New Payment", paymentRec);
 
 
 		var returnCode;
@@ -169,7 +186,7 @@ function createPaymentRequest(input) {
 			try {
 				lib.ESD_HD_Integration.createContractPayment(paymentRec);
 			} catch (ex) {
-				print("[ERROR] Đồng bộ createContractPayment thất bại cho ID: " + paymentRec["id"] + " | Detail: " + ex);
+				// print("[ERROR] Đồng bộ createContractPayment thất bại cho ID: " + paymentRec["id"] + " | Detail: " + ex);
 			}
 
 
@@ -387,9 +404,7 @@ function mapRowToObject(scFileRecord, fieldMappings) {
 }
 
 
-
 function listPurchaseContracts(input) {
-
 	// 1. Lấy dữ liệu linh hoạt từ details hoặc queryString
 	var rawData = input ? (input.details || input.queryString) : null;
 	if (!rawData) return { success: false, message: "Thiếu dữ liệu đầu vào." };
@@ -462,18 +477,43 @@ function listPurchaseContracts(input) {
 	// 2. Xây dựng điều kiện lọc WHERE
 	var conditions = [];
 
-	conditions.push("contract.value.after.tax > 0");
+	conditions.push("((category=\"HD_GT\" and contract.value.after.tax > 0) or (category=\"HD_KMS\" and total.budget > 0))");
+
+	var role = params.initialRole || (input ? input.initialRole : null);
+	if (role) {
+		role = String(role).trim().toLowerCase();
+		if (role === "dmms") {
+			conditions.push("executor.id=\"" + params.currentUser + "\"");
+		}
+	}
+
 	if (params.status) {
 		conditions.push("status=\"" + params.status + "\"");
 	}
 
 	var unitLv1Param = params.unitLv1 || params["unit.lv1"];
-	if (unitLv1Param) {
+	// print("unitLv1Param: " + unitLv1Param);
+	if (unitLv1Param && String(unitLv1Param).trim() === "099917000") {
+		conditions.push("unit.lv1 like \"0999*\"");
+	} else {
 		conditions.push("unit.lv1=\"" + unitLv1Param + "\"");
 	}
 
-	var whereClause = conditions.length > 0 ? conditions.join(" and ") : "true";
+	//    var unitLv1Param = params.unitLv1 || params["unit.lv1"];
+	//    if (unitLv1Param && String(unitLv1Param).trim() !== "099917000") {
+	//        conditions.push("unit.lv1=\"" + unitLv1Param + "\"");
+	//    }
+	//    conditions.push("contract.value.after.tax > 0");
+	//    if (params.status) {
+	//        conditions.push("status=\"" + params.status + "\"");
+	//    }
+	//    var unitLv1Param = params.unitLv1 || params["unit.lv1"];
+	//    if (unitLv1Param) {
+	//        conditions.push("unit.lv1=\"" + unitLv1Param + "\"");
+	//    }
 
+
+	var whereClause = conditions.length > 0 ? conditions.join(" and ") : "true";
 
 
 	var sqlFields = fieldMappings.map(function(item) {
@@ -504,7 +544,7 @@ function listPurchaseContracts(input) {
 			rc = f.getNext();
 		}
 	} catch (e) {
-		print("[ERROR listPurchaseContracts] Lỗi doSelect: " + e);
+		// print("[ERROR listPurchaseContracts] Lỗi doSelect: " + e);
 		return {
 			success: false,
 			message: "Lỗi lấy danh sách hợp đồng mua sắm: " + e.toString()
@@ -552,8 +592,8 @@ function htktCreatePay_detectInitialRoleByRights(contactId) {
 	var RIGHT_ACCOUNTING_INPUT = "0040040003000003";
 
 	var rights = htktCreatePay_getRights(contactId);
-	print("=== [DEBUG] Kiểm tra quyền của User: " + contactId + " ===");
-	print("Danh sách quyền thực tế: " + JSON.stringify(rights));
+	// print("=== [DEBUG] Kiểm tra quyền của User: " + contactId + " ===");
+	// print("Danh sách quyền thực tế: " + JSON.stringify(rights));
 	/*
 	 * Quy tắc nhận diện role khi khởi tạo phiếu:
 	 *
@@ -701,8 +741,108 @@ function getOglBranchCodeByDepartment(departmentCode) {
 			return String(rawOglCode).trim().replace(/^0+/, "");
 		}
 	} catch (e) {
-		print("Lỗi truy vấn esdDMentity: " + e.toString());
+		// print("Lỗi truy vấn esdDMentity: " + e.toString());
 	}
 
 	return "";
+}
+
+
+//
+function listFileAttachment(input) {
+
+	// 1. Lấy dữ liệu linh hoạt từ details hoặc queryString
+	var rawData = input ? (input.details || input.queryString) : null;
+	if (!rawData) return { success: false, message: "Thiếu dữ liệu đầu vào." };
+
+	var params = {};
+	try {
+		params = JSON.parse(rawData);
+		if (Array.isArray(params)) {
+			params = params[0] || {};
+		}
+	} catch (e) {
+		return { success: false, message: "Dữ liệu JSON đầu vào không hợp lệ." };
+	}
+
+	// 2. Cập nhật fieldMappings bao gồm các trường từ bảng chính và các bảng join
+	var fieldMappings = [
+		['id', 'id', 'S'],
+		['id.activity.vj', 'id.activity.vj', 'S'],
+		['name', 'name', 'S'],
+		['status', 'status', 'S'],
+		['created.by', 'created.by', 'S'],
+		['created.at', 'created.at', 'D'],
+		['sysmodtime', 'sysmodtime', 'D'],
+		['sysmoduser', 'sysmoduser', 'S'],
+		['sizeKb', 'sizeKb', 'N'],
+		['parent.id', 'parent.id', 'S'],
+		['attach.type', 'attach.type', 'S'],
+		['note', 'note', 'S'],
+		['executor', 'executor', 'S'],
+		['document.type', 'document.type', 'S'],
+		['attach.id', 'attach.id', 'S'],
+		['table', 'table', 'S'],
+		['doc.id', 'doc.id', 'S'],
+		['document.source', 'document.source', 'S'],
+		['document.date', 'document.date', 'D'],
+		['category', 'category', 'S'],
+		['step.status', 'step.status', 'S'],
+		['transaction.id', 'transaction.id', 'S'],
+		['function', 'function', 'S'],
+		['original.id', 'original.id', 'S'],
+
+		['at.id', 'at_id', 'S'],
+		['at.name', 'at_name', 'S'],
+		['p.id', 'p_id', 'S'],
+		['p.contract.id', 'p_contract_id', 'S']
+	];
+
+	// 3. Xây dựng điều kiện lọc WHERE
+	var conditions = [];
+
+	if (params.status) {
+		conditions.push("status=\"" + params.status + "\"");
+	}
+	if (params.paymentId) {
+		conditions.push("p.id=\"" + params.paymentId + "\"");
+	}
+
+	conditions.push("original.id = at.id");
+	conditions.push("p.contract.id = at.parent.id");
+
+	var whereClause = conditions.length > 0 ? conditions.join(" and ") : "true";
+
+	var sqlFields = fieldMappings.map(function(item) {
+		return item[0];
+	}).join(", ");
+
+	// 4. Truy vấn đa bảng trong Service Manager
+	var querySQL = " SELECT " + sqlFields + " FROM esdHDtlks, esdHDattachment at, esdHTKTpayment p WHERE " + whereClause;
+
+	var dataArray = [];
+	var f = new SCFile('esdHDtlks', SCFILE_READONLY);
+
+	try {
+		var rc = f.doSelect(querySQL);
+
+		while (rc == RC_SUCCESS) {
+			var itemData = mapRowToObject(f, fieldMappings);
+
+			var wrappedItem = {
+				"esdHDtlks": itemData
+			};
+
+			dataArray.push(JSON.stringify(wrappedItem));
+
+			rc = f.getNext();
+		}
+	} catch (e) {
+		// print("[ERROR listFileAttachment] Lỗi doSelect: " + e);
+	} finally {
+		try { if (f) f.doClose(); } catch (e) {}
+	}
+
+	// Trả mảng kết quả
+	input.queryReturnArray = system.functions.denull(dataArray);
 }

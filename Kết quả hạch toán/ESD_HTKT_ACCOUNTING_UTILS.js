@@ -1,3 +1,14 @@
+/**
+ * ScriptLibrary : ESD_HTKT_ACCOUNTING_UTILS
+ * -----------------------------------------------------------------------------
+ * Module       : HTKT - Tiện ích hạch toán kế toán
+ * Version      : 1.0.0
+ * Chức năng:
+ * - Thư viện tiện ích điều phối tiến trình gọi API hạch toán AP, GL, CORE.
+ * - Kiểm tra và quản lý trạng thái hàng đợi tích hợp hạch toán kế toán.
+ * -----------------------------------------------------------------------------
+ */
+
 var logger = getLog("ESD_HTKT_ACCOUNTING_UTILS");
 
 var ACCOUNTING_TYPE = {
@@ -177,7 +188,7 @@ function checkOpenAccoutingTime() {
 }
 
 function processAccounting(esdHTKTprepayment) {
-    logger.info('ESD_HTKT_ACCOUNTING_UTILS::processAccounting: ' + rteJSONStringify(esdHTKTprepayment));
+    // logger.info('ESD_HTKT_ACCOUNTING_UTILS::processAccounting: ' + rteJSONStringify(esdHTKTprepayment));
     if (!esdHTKTprepayment || !esdHTKTprepayment.id) return;
 
     var accountingInTime = checkOpenAccoutingTime();
@@ -251,14 +262,14 @@ function processAccounting(esdHTKTprepayment) {
 function callApiAp(esdHTKTacountingInfo) {
     var success = false;
     if (!esdHTKTacountingInfo || !esdHTKTacountingInfo['request.id'] || !esdHTKTacountingInfo.data) {
-        logger.info('ESD_HTKT_ACCOUNTING_UTILS::callApiAp: invalid payload');
+        // logger.info('ESD_HTKT_ACCOUNTING_UTILS::callApiAp: invalid payload');
         return success;
     }
     var payload = null;
     try {
         payload = rteJSONParse(esdHTKTacountingInfo.data);
     } catch (e) {
-        logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiAp: sub.type không xác định");
+        // logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiAp: sub.type không xác định");
     }
 
     if (payload) {
@@ -270,7 +281,7 @@ function callApiAp(esdHTKTacountingInfo) {
         } else if (esdHTKTacountingInfo['sub.type'] == ACCOUNTING_SUB_TYPE.TAT_TOAN) {
             response = lib.ESD_HTKT_INVOICE_OGL_INTEGRATION.createApPayment(payload);
         } else {
-            logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiAp: sub.type không xác định");
+            // logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiAp: sub.type không xác định");
         }
         if (response) {
             success = response.success;
@@ -297,14 +308,14 @@ function callApiAp(esdHTKTacountingInfo) {
 function callApiGl(esdHTKTacountingInfo) {
     var success = false;
     if (!esdHTKTacountingInfo || !esdHTKTacountingInfo['request.id'] || !esdHTKTacountingInfo.data) {
-        logger.info('ESD_HTKT_ACCOUNTING_UTILS::callApiGl: invalid payload');
+        // logger.info('ESD_HTKT_ACCOUNTING_UTILS::callApiGl: invalid payload');
         return success;
     }
     var payload = null;
     try {
         payload = rteJSONParse(esdHTKTacountingInfo.data);
     } catch (e) {
-        logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiGl: QLTS Cannot parse json payload");
+        // logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiGl: QLTS Cannot parse json payload");
     }
     if (payload) {
         var response = lib.ESD_HTKT_INVOICE_OGL_INTEGRATION.createBatchGL(payload);
@@ -334,14 +345,14 @@ function callApiGl(esdHTKTacountingInfo) {
 function callApiCore(esdHTKTacountingInfo) {
     var success = false;
     if (!esdHTKTacountingInfo || !esdHTKTacountingInfo['request.id'] || !esdHTKTacountingInfo.data) {
-        logger.info('ESD_HTKT_ACCOUNTING_UTILS::callApiCore: invalid payload');
+        // logger.info('ESD_HTKT_ACCOUNTING_UTILS::callApiCore: invalid payload');
         return success;
     }
     var payload = null;
     try {
         payload = rteJSONParse(esdHTKTacountingInfo.data);
     } catch (e) {
-        logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiCore: QLTS Cannot parse json payload");
+        // logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiCore: QLTS Cannot parse json payload");
     }
     if (payload) {
         var response = null;
@@ -352,7 +363,7 @@ function callApiCore(esdHTKTacountingInfo) {
         } else if (esdHTKTacountingInfo['sub.type'] == ACCOUNTING_SUB_TYPE.CITAD) {
             response = lib.ESD_HTKT_FUND_TRANSFER_INTEGRATION.fundTranferOut(payload);
         } else {
-            logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiCore: sub.type không xác định");
+            // logger.info("ESD_HTKT_ACCOUNTING_UTILS::callApiCore: sub.type không xác định");
         }
         if (response) {
             if (response.status) {
@@ -377,7 +388,7 @@ function callApiCore(esdHTKTacountingInfo) {
 
 // kiem tra thong tin hach toan theo request ID
 function checkAccountingInfo(requestId) {
-    logger.info(`checkAccountingInfo: ${requestId}`);
+    // logger.info(`checkAccountingInfo: ${requestId}`);
     if (!requestId || requestId.trim().length == 0) return;
     var itemAccounting = new SCFile('esdHTKTaccountingInformation');
     var result = itemAccounting.doSelect(`request.id = "${requestId}"`);
@@ -429,7 +440,7 @@ function checkAccountingInfo(requestId) {
 }
 
 function createJobCheckAccounting(requestId) {
-    logger.info(`createJobCheckAccounting: ${requestId}`);
+    // logger.info(`createJobCheckAccounting: ${requestId}`);
     var workerName = "ESD HTKT CHECK ACCOUNTING == " + requestId;
     lib.ESD_HTKT_Utils.createSchedule({
         name: workerName,
@@ -505,16 +516,16 @@ function jobCallCheckAccoutingStatus() {
     if (arrCheck.length > 0) {
         arrCheck.forEach(requestId => checkAccountingInfo(requestId));
     } else {
-        logger.info('ESD_HTKT_ACCOUNTING_UTILS::jobCallCheckAccoutingStatus: no item for check');
+        // logger.info('ESD_HTKT_ACCOUNTING_UTILS::jobCallCheckAccoutingStatus: no item for check');
     }
 }
 
 //jobCallCheckAccoutingStatus();
 
 function jobCallIntegrateRecordInQueue() {
-    logger.info('ESD_HTKT_ACCOUNTING_UTILS::jobCallIntegrateRecordInQueue: ' + funcs.tod());
+    // logger.info('ESD_HTKT_ACCOUNTING_UTILS::jobCallIntegrateRecordInQueue: ' + funcs.tod());
     if (!checkOpenAccoutingTime()) {
-        logger.info('ESD_HTKT_ACCOUNTING_UTILS::jobCallIntegrateRecordInQueue: COT');
+        // logger.info('ESD_HTKT_ACCOUNTING_UTILS::jobCallIntegrateRecordInQueue: COT');
         return;
     }
     var accountingInfoItem = new SCFile('esdHTKTaccountingInformation');
@@ -536,7 +547,7 @@ function jobCallIntegrateRecordInQueue() {
     if (arrItem.length > 0) {
         arrItem.forEach(prepaymentId => processAccounting({ id: prepaymentId }));
     } else {
-        logger.info('ESD_HTKT_ACCOUNTING_UTILS::jobCallIntegrateRecordInQueue: no item for check');
+        // logger.info('ESD_HTKT_ACCOUNTING_UTILS::jobCallIntegrateRecordInQueue: no item for check');
     }
 }
 
@@ -547,12 +558,12 @@ function checkAccount(accountId, napasCode) {
         var response = lib.ESD_HTKT_FUND_TRANSFER_INTEGRATION.checkNameAccount(accountId);
         if (response && response.data && response.data.acctName) {
             if (response.data.stat !== "0") {
-                print('Tài khoản không ở trạng thái active');
+                // print('Tài khoản không ở trạng thái active');
                 return null;
             }
             return response.data.acctName;
         } else if (response.status && response.status.code != "0" && response.status.detail) {
-            print('Kiểm tra tên tài khoản không thành công: ' + response.status.detail);
+            // print('Kiểm tra tên tài khoản không thành công: ' + response.status.detail);
         }
     } else if (napasCode) { // kiem tra ngoai he thong
         var response = lib.ESD_HTKT_FUND_TRANSFER_INTEGRATION.checkNameAccountNapas(accountId, napasCode);
@@ -562,11 +573,11 @@ function checkAccount(accountId, napasCode) {
                 response.data.custInfo[0].depAcctIdTo.refVal) {
                 return response.data.custInfo[0].depAcctIdTo.refVal;
             } else if (response.status && response.status.code != "0" && response.status.detail) {
-                print('Kiểm tra tên tài khoản không thành công: ' + response.status.detail);
+                // print('Kiểm tra tên tài khoản không thành công: ' + response.status.detail);
             }
         }
     } else {
-        print('Không đủ thông tin để kiểm tra tên người thụ hưởng, vui lòng nhập thủ công');
+        // print('Không đủ thông tin để kiểm tra tên người thụ hưởng, vui lòng nhập thủ công');
     }
     return null;
 }

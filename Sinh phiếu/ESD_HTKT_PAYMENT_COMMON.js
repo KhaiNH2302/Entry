@@ -216,7 +216,7 @@ function log(message) {
 		return;
 	}
 	try {
-		print(HTKT_COMMON_LOG_PREFIX + " " + toString(message));
+		// print(HTKT_COMMON_LOG_PREFIX + " " + toString(message));
 	} catch (eLog) {}
 }
 
@@ -225,7 +225,7 @@ function log(message) {
  */
 function logError(functionName, error) {
 	try {
-		print(HTKT_COMMON_LOG_PREFIX + "." + trim(functionName) + " ERROR: " + exceptionToString(error));
+		// print(HTKT_COMMON_LOG_PREFIX + "." + trim(functionName) + " ERROR: " + exceptionToString(error));
 	} catch (eLog) {}
 }
 
