@@ -12,9 +12,9 @@ var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 //var HTKT_TRANSFER_TEMPLATE_ID = "496288db-cabf-479e-ab4e-19d786e24e39";
 //var HTKT_TRANSFER_TEMPLATE_CODE = "03-TUCK";
 
-var HTKT_CASH_TEMPLATE_ID = "4c46548f-fcd0-47e6-8852-dedeedfacc40";
+var HTKT_CASH_TEMPLATE_ID = "02674886-9922-4c27-93e3-4c2d218826a9";
 var HTKT_CASH_TEMPLATE_CODE = "01-TUTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "d1192500-d732-4a92-a8ef-84aa37c78c7f";
+var HTKT_TRANSFER_TEMPLATE_ID = "6b36a0cc-7d98-4b23-a4bd-76c2d2c1d823";
 var HTKT_TRANSFER_TEMPLATE_CODE = "03-TUCK";
 var HTKT_PREPAYMENT_RECIPIENT = "Lãnh đạo đơn vị";
 
@@ -1089,32 +1089,88 @@ function htktBuildDetailAccountingRows(entryRows, defaultCurrency) {
 }
 
 function htktBuildOtherUsers(prepaymentFile) {
-	var roleUsers = [
-		{
-			role: "Cán bộ KTTC tiếp nhận",
-			username: HTKT_COMMON.readString(prepaymentFile, ["user.checker.kttc"])
-		},
-		{
-			role: "Cán bộ Rà soát ĐMMS",
-			username: HTKT_COMMON.readString(prepaymentFile, ["user.checker.dmms"])
-		},
-		{
-			role: "Cán bộ Rà soát cuối",
-			username: HTKT_COMMON.readString(prepaymentFile, ["user.checker.final"])
-		}
-	];
-	var otherUsers = [];
+	/*
+	 * Footer "Người ký khác" ({#other_users}{username}{/other_users}):
+	 * - Chỉ map tên hiển thị (theo user của phase) của các phase KHÔNG ký số mà phiếu đã đi qua tới phase hiện tại.
+	 * - Các phase có ký số (approval_dmms/dmms_approved, approval_kttc/kttc_approved,
+	 *   approval_final/approved) không map vào footer.
+	 */
+	var currentPhase = HTKT_COMMON.readString(prepaymentFile, [
+		"current.phase",
+		"current_phase"
+	]);
+	var initialRole = HTKT_COMMON.readString(prepaymentFile, [
+		"initial.role",
+		"initial_role"
+	]);
+	var createdBy = HTKT_COMMON.readString(prepaymentFile, [
+		"created.by",
+		"created_by"
+	]);
+	var checkerKttc = HTKT_COMMON.readString(prepaymentFile, ["user.checker.kttc"]);
+	var checkerDmms = HTKT_COMMON.readString(prepaymentFile, ["user.checker.dmms"]);
+	var checkerFinal = HTKT_COMMON.readString(prepaymentFile, ["user.checker.final"]);
+	var requireLevel1 = HTKT_COMMON.readBoolean(prepaymentFile, ["require.check.level1"], false);
+	var requireLevel2 = HTKT_COMMON.readBoolean(prepaymentFile, ["require.check.level2"], false);
 
-	for (var i = 0; i < roleUsers.length; i++) {
-		if (!roleUsers[i].username) continue;
+	/* Thứ tự phase trong workflow (phase có ký số vẫn giữ vị trí để so sánh). */
+	var phaseRank = {
+		initial_dmms: 1,
+		initial_kttc: 2,
+		check_dmms: 3,
+		approval_dmms: 4,
+		approval_kttc: 5,
+		check_final: 6,
+		approval_final: 7
+	};
 
-		otherUsers.push({
-			username: roleUsers[i].role + " - " + roleUsers[i].username
-		});
+	var currentRank = phaseRank[currentPhase];
+	if (currentRank === null || currentRank === undefined) {
+		/* Phase cuối/không xác định: giữ các user đã gán của các phase không ký. */
+		currentRank = 100;
 	}
 
-	for (var userIndex = 0; userIndex < otherUsers.length - 1; userIndex++) {
-		otherUsers[userIndex].username += "\t";
+	var usernames = [];
+
+	/* initial_dmms (CB ĐMMS khởi tạo/lập phiếu - không ký). */
+	if (currentRank >= 1 && initialRole === "dmms" && createdBy) {
+		usernames.push(createdBy);
+	}
+	/* initial_kttc (KTTC tiếp nhận/trình duyệt - không ký). */
+	if (currentRank >= 2) {
+		var kttcUser = checkerKttc;
+		if (!kttcUser && initialRole === "kttc") {
+			kttcUser = createdBy;
+		}
+		if (kttcUser) usernames.push(kttcUser);
+	}
+
+	/* check_dmms (rà soát ĐMMS - không ký). */
+	if (currentRank >= 3 && requireLevel1 && checkerDmms) {
+		usernames.push(checkerDmms);
+	}
+
+	/* check_final (rà soát cuối - không ký). */
+	if (currentRank >= 6 && requireLevel2 && checkerFinal) {
+		usernames.push(checkerFinal);
+	}
+
+	var displayNames = [];
+	var seenUsernames = {};
+
+	for (var i = 0; i < usernames.length; i++) {
+		var key = HTKT_COMMON.toLower(usernames[i]);
+		if (seenUsernames[key]) continue;
+		seenUsernames[key] = true;
+		displayNames.push(htktGetContactDisplayName(usernames[i]));
+	}
+
+	/* Gop tat ca ten vao 1 dong cua footer. */
+	var otherUsers = [];
+	if (displayNames.length > 0) {
+		otherUsers.push({
+			username: displayNames.join("     ")
+		});
 	}
 
 	return otherUsers;
