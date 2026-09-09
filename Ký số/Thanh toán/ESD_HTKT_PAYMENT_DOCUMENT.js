@@ -864,7 +864,6 @@ function downloadPresentation(input) {
 }
 
 // Action getFileECM cho màn ký số NextJS, lấy đúng bản trình ký hiện hành từ attachment
-// Action getFileECM cho màn ký số NextJS, lấy đúng bản trình ký hiện hành từ attachment
 function get_file_ecm_HTKT(file) {
 	try {
 		var input = file || {};
