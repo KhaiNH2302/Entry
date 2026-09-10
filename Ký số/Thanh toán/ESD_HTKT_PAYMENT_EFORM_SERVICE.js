@@ -20,15 +20,15 @@ var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
 
-//var HTKT_CASH_TEMPLATE_ID = "d9d1f4b3-db38-430c-8b3f-e1c26b77f610";
-//var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-//var HTKT_TRANSFER_TEMPLATE_ID = "bc37f81e-ef2f-42b7-8d78-6e2876aac20a";
-//var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
-
-var HTKT_CASH_TEMPLATE_ID = "HTKT_TTTM";
+var HTKT_CASH_TEMPLATE_ID = "ac041621-590c-4806-a11a-14dbdb379be4";
 var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "HTKT_TTCK";
-var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK__3_";
+var HTKT_TRANSFER_TEMPLATE_ID = "0b4c71c1-40bd-4911-8247-e81326200bcc";
+var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
+
+//var HTKT_CASH_TEMPLATE_ID = "HTKT_TTTM";
+//var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
+//var HTKT_TRANSFER_TEMPLATE_ID = "HTKT_TTCK";
+//var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK__3_";
 var HTKT_PAYMENT_RECIPIENT = "Lãnh đạo đơn vị";
 
 function htktEscapeForJavaScript(value) {
@@ -1002,8 +1002,8 @@ function htktBuildPaymentTemplateRows(sourceRows, paymentKind) {
 	return {
 		rows: rows,
 		totalRaw: totalRaw,
-		cashCheckbox: paymentKind === "cash" ? "☒" : "☐",
-		transferCheckbox: paymentKind === "transfer" ? "☒" : "☐"
+		cashCheckbox: (paymentKind === "cash" && totalRaw > 0) ? "☒" : "☐",
+		transferCheckbox: (paymentKind === "transfer" && totalRaw > 0) ? "☒" : "☐"
 	};
 }
 
@@ -1440,6 +1440,41 @@ function htktGetPrepaymentCreditBankNames(entryRows, vendorSourceRows) {
 	return bankNames.join(", ");
 }
 
+function htktBuildOtherUsers(paymentFile) {
+	var initialRole = HTKT_COMMON.toLower(
+			HTKT_COMMON.readString(paymentFile, ["initial.role", "initial_role"])
+	);
+	var createdBy = HTKT_COMMON.readString(paymentFile, ["created.by", "created_by"]);
+	var checkerKttc = HTKT_COMMON.readString(paymentFile, ["user.checker.kttc"]);
+
+	var creatorName = htktGetContactDisplayName(createdBy);
+	var kttcName = htktGetContactDisplayName(checkerKttc);
+
+	var footerText = "";
+	if (initialRole === "kttc") {
+		footerText = creatorName ? ("NĐN: " + creatorName) : "";
+	} else if (initialRole === "dmms") {
+		if (creatorName && kttcName) {
+			footerText = "NĐN: " + creatorName + ", KTTC: " + kttcName;
+		} else if (creatorName) {
+			footerText = "NĐN: " + creatorName;
+		} else if (kttcName) {
+			footerText = "KTTC: " + kttcName;
+		}
+	} else {
+		footerText = creatorName ? ("NĐN: " + creatorName) : "";
+	}
+
+	var otherUsers = [];
+	if (footerText) {
+		otherUsers.push({
+			username: footerText
+		});
+	}
+
+	return otherUsers;
+}
+
 function htktBuildTemplateData(paymentId) {
 	/* Cache chỉ dùng trong một lần dựng phiếu để không giữ dữ liệu danh mục cũ. */
 	HTKT_VENDOR_INFO_CACHE = {};
@@ -1518,6 +1553,8 @@ function htktBuildTemplateData(paymentId) {
 			entryRows,
 			vendorSourceRows
 	);
+	var isCashChecked = hasPaymentAmount && paymentTemplate.kind === "cash";
+	var isTransferChecked = hasPaymentAmount && paymentTemplate.kind === "transfer";
 	var data = {
 		/* =========================================================================
 		 * 1. THÔNG TIN CHUNG PHIẾU ĐỀ NGHỊ (Header & Master Data)
@@ -1583,56 +1620,48 @@ function htktBuildTemplateData(paymentId) {
 		calc_total_remaining_amount: htktFormatMoney(prepaymentTotals.totalRemainingRaw), // Alias cũ tương thích
 
 		/* =========================================================================
-		 * 4. THÔNG TIN HOÀN TẠM ỨNG PHẢI NỘP VÀ TÀI KHOẢN GHI CÓ HOÀN ỨNG
+		 * 4. THÔNG TIN HOÀN TẠM ỨNG PHẢI NỘP VÀ TÀI KHOẢN GHI CÓ HOÀN ỨNG (Để trống theo yêu cầu)
 		 * ========================================================================= */
-		refund_checkbox: hasRefundAmount ? "☒" : "☐",                           // Checkbox có phát sinh hoàn ứng hay không
-		ref_checkbox: hasRefundAmount ? "☒" : "☐",                              // {ref_checkbox}    : Alias tương thích
-		ref_amt_checkbox: hasRefundAmount ? "☒" : "☐",                          // {ref_amt_checkbox}: Alias tương thích
-		refund_amount_checkbox: hasRefundAmount ? "☒" : "☐",                   // Alias tương thích
-		ref_amt: hasRefundAmount ? htktFormatMoney(refundAmountRaw) : "",       // {ref_amt}   : Số tiền hoàn tạm ứng phải nộp (số)
-		refund_submit: hasRefundAmount ? htktFormatMoney(refundAmountRaw) : "", // Alias tương thích
-		refund_amount_to_submit: hasRefundAmount ? htktFormatMoney(refundAmountRaw) : "", // Alias cũ tương thích
-		ref_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "", // {ref_words} : Tiền hoàn tạm ứng bằng chữ
-		refund_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "", // Alias tương thích
-		refund_submit_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "",
-		refund_amount_to_submit_words: hasRefundAmount ? htktAmountToVietnameseWords(refundAmountRaw, currency) : "",
+		refund_checkbox: "☐",                                                  // Checkbox có phát sinh hoàn ứng hay không
+		ref_checkbox: "☐",                                                     // {ref_checkbox}    : Alias tương thích
+		ref_amt_checkbox: "☐",                                                 // {ref_amt_checkbox}: Alias tương thích
+		refund_amount_checkbox: "☐",                                          // Alias tương thích
+		refund_cash_checkbox: "☐",                                             // {refund_cash_checkbox} : Checkbox nộp tiền mặt hoàn ứng (auto không tích)
+		ref_cash_checkbox: "☐",                                                // Alias tương thích
+		refund_transfer_checkbox: "☐",                                         // {refund_transfer_checkbox} : Checkbox nộp chuyển khoản hoàn ứng (auto không tích)
+		ref_transfer_checkbox: "☐",                                            // Alias tương thích
+		ref_amt: "",                                                           // {ref_amt}   : Số tiền hoàn tạm ứng phải nộp (số)
+		refund_submit: "",                                                     // Alias tương thích
+		refund_amount_to_submit: "",                                           // Alias cũ tương thích
+		ref_words: "",                                                         // {ref_words} : Tiền hoàn tạm ứng bằng chữ
+		refund_words: "",                                                      // Alias tương thích
+		refund_submit_words: "",
+		refund_amount_to_submit_words: "",
 
-		// Thông tin tài khoản Có hoàn tạm ứng (chỉ hiển thị khi có hoàn ứng):
-		ref_acc: hasRefundAmount ? prepaymentCreditAccountNumbers : "",        // {ref_acc}   : Số TK ghi Có (TK tạm ứng, VD: 126150610)
-		prepay_no: hasRefundAmount ? prepaymentCreditAccountNumbers : "",      // Alias tương thích
-		ref_name: hasRefundAmount ? prepaymentCreditAccountNames : "",         // {ref_name}  : Tên TK ghi Có (VD: Tạm ứng cho NCC...)
-		prepay_name: hasRefundAmount ? prepaymentCreditAccountNames : "",      // Alias tương thích
-		ref_bank: hasRefundAmount ? prepaymentCreditBankNames : "",            // {ref_bank}  : Tại Ngân hàng (VD: VietinBank)
-		prepay_bank: hasRefundAmount ? prepaymentCreditBankNames : "",          // Alias tương thích
+		// Thông tin tài khoản Có hoàn tạm ứng (để trống):
+		ref_acc: "",                                                           // {ref_acc}   : Số TK ghi Có (TK tạm ứng)
+		prepay_no: "",                                                         // Alias tương thích
+		ref_name: "",                                                          // {ref_name}  : Tên TK ghi Có
+		prepay_name: "",                                                       // Alias tương thích
+		ref_bank: "",                                                          // {ref_bank}  : Tại Ngân hàng
+		prepay_bank: "",                                                       // Alias tương thích
 
 		// Block điều kiện hiển thị phần thông tin nộp hoàn ứng trong bảng ({#refund_info}...{/refund_info}):
-		refund_info: hasRefundAmount ? [{
-			transfer_checkbox: paymentData.transferCheckbox,
-			cash_checkbox: paymentData.cashCheckbox,
-			ref_acc: prepaymentCreditAccountNumbers,
-			ref_name: prepaymentCreditAccountNames,
-			ref_bank: prepaymentCreditBankNames
-		}] : [],
-		ref_info: hasRefundAmount ? [{
-			transfer_checkbox: paymentData.transferCheckbox,
-			cash_checkbox: paymentData.cashCheckbox,
-			ref_acc: prepaymentCreditAccountNumbers,
-			ref_name: prepaymentCreditAccountNames,
-			ref_bank: prepaymentCreditBankNames
-		}] : [],
-		has_refund: hasRefundAmount,
-		has_refund_amount: hasRefundAmount,
+		refund_info: [],
+		ref_info: [],
+		has_refund: false,
+		has_refund_amount: false,
 
 		// Các alias tương thích ngược cũ
-		prepayment_credit_account_numbers: hasRefundAmount ? prepaymentCreditAccountNumbers : "",
-		prepayment_credit_account_number: hasRefundAmount ? prepaymentCreditAccountNumbers : "",
-		prepayment_credit_account_names: hasRefundAmount ? prepaymentCreditAccountNumbers : "",
-		prepayment_credit_account_name: hasRefundAmount ? prepaymentCreditAccountNumbers : "",
-		prepayment_credit_bank_accounts: hasRefundAmount ? prepaymentCreditAccountNames : "",
-		prepayment_credit_bank_account: hasRefundAmount ? prepaymentCreditAccountNames : "",
-		prepayment_credit_bank_names: hasRefundAmount ? prepaymentCreditBankNames : "",
-		prepayment_credit_bank_name: hasRefundAmount ? prepaymentCreditBankNames : "",
-		bank_name: hasRefundAmount ? prepaymentCreditBankNames : "",
+		prepayment_credit_account_numbers: "",
+		prepayment_credit_account_number: "",
+		prepayment_credit_account_names: "",
+		prepayment_credit_account_name: "",
+		prepayment_credit_bank_accounts: "",
+		prepayment_credit_bank_account: "",
+		prepayment_credit_bank_names: "",
+		prepayment_credit_bank_name: "",
+		bank_name: "",
 
 		/* =========================================================================
 		 * 5. BẢNG CÁC NGHĨA VỤ THANH TOÁN KHÁC (Vòng lặp: {#supp})
@@ -1648,22 +1677,22 @@ function htktBuildTemplateData(paymentId) {
 		 * - Chuyển khoản (04-TTCK): {stt}, {name}, {acc}, {bank}, {des}, {amount}
 		 * ========================================================================= */
 		payment_method: paymentTemplate.payment_method,                         // Hình thức thanh toán: TIENMAT hoặc CHUYENKHOAN
-		cash_checkbox: paymentData.cashCheckbox,                               // Checkbox Tiền mặt ☒/☐
-		transfer_checkbox: paymentData.transferCheckbox,                       // Checkbox Chuyển khoản ☒/☐
-		cash: paymentTemplate.kind === "cash" ? paymentData.rows : [],         // {#cash}     : Danh sách người nhận tiền mặt (02-TTTM)
-		cash_rows: paymentTemplate.kind === "cash" ? paymentData.rows : [],    // Alias tương thích
-		cash_payment_rows: paymentTemplate.kind === "cash" ? paymentData.rows : [], // Alias cũ tương thích
-		trans: paymentTemplate.kind === "transfer" ? paymentData.rows : [],     // {#trans}    : Danh sách nhận chuyển khoản (04-TTCK)
-		payment_rows: paymentTemplate.kind === "transfer" ? paymentData.rows : [],  // Alias tương thích
-		transfer_rows: paymentTemplate.kind === "transfer" ? paymentData.rows : [], // Alias tương thích
-		sum_trans: htktFormatMoney(paymentData.totalRaw),                      // {sum_trans} : Tổng tiền chuyển khoản (rút gọn từ calc_total_payment_amount)
-		total_payment: htktFormatMoney(paymentData.totalRaw),                  // Alias tương thích
-		calc_total_payment_amount: htktFormatMoney(paymentData.totalRaw),      // Alias cũ tương thích
-		sum_cash: paymentTemplate.kind === "cash" ? htktFormatMoney(paymentData.totalRaw) : "", // {sum_cash}  : Tổng tiền mặt (rút gọn từ calc_total_cash_amount)
-		total_cash: paymentTemplate.kind === "cash" ? htktFormatMoney(paymentData.totalRaw) : "", // Alias tương thích
-		calc_total_cash_amount: paymentTemplate.kind === "cash" ? htktFormatMoney(paymentData.totalRaw) : "", // Alias cũ tương thích
-		total_transfer: paymentTemplate.kind === "transfer" ? htktFormatMoney(paymentData.totalRaw) : "",
-		calc_total_transfer_amount: paymentTemplate.kind === "transfer" ? htktFormatMoney(paymentData.totalRaw) : "",
+		cash_checkbox: isCashChecked ? "☒" : "☐",                               // Checkbox Tiền mặt ☒/☐
+		transfer_checkbox: isTransferChecked ? "☒" : "☐",                       // Checkbox Chuyển khoản ☒/☐
+		cash: isCashChecked ? paymentData.rows : [],                           // {#cash}     : Danh sách người nhận tiền mặt (02-TTTM)
+		cash_rows: isCashChecked ? paymentData.rows : [],                      // Alias tương thích
+		cash_payment_rows: isCashChecked ? paymentData.rows : [],              // Alias cũ tương thích
+		trans: isTransferChecked ? paymentData.rows : [],                       // {#trans}    : Danh sách nhận chuyển khoản (04-TTCK)
+		payment_rows: isTransferChecked ? paymentData.rows : [],                // Alias tương thích
+		transfer_rows: isTransferChecked ? paymentData.rows : [],               // Alias tương thích
+		sum_trans: isTransferChecked ? htktFormatMoney(paymentData.totalRaw) : "", // {sum_trans} : Tổng tiền chuyển khoản (rút gọn từ calc_total_payment_amount)
+		total_payment: isTransferChecked ? htktFormatMoney(paymentData.totalRaw) : "", // Alias tương thích
+		calc_total_payment_amount: isTransferChecked ? htktFormatMoney(paymentData.totalRaw) : "", // Alias cũ tương thích
+		sum_cash: isCashChecked ? htktFormatMoney(paymentData.totalRaw) : "",   // {sum_cash}  : Tổng tiền mặt (rút gọn từ calc_total_cash_amount)
+		total_cash: isCashChecked ? htktFormatMoney(paymentData.totalRaw) : "", // Alias tương thích
+		calc_total_cash_amount: isCashChecked ? htktFormatMoney(paymentData.totalRaw) : "", // Alias cũ tương thích
+		total_transfer: isTransferChecked ? htktFormatMoney(paymentData.totalRaw) : "",
+		calc_total_transfer_amount: isTransferChecked ? htktFormatMoney(paymentData.totalRaw) : "",
 
 		/* =========================================================================
 		 * 7. BẢNG HẠCH TOÁN KẾ TOÁN (Vòng lặp: {#acc})
@@ -1686,6 +1715,7 @@ function htktBuildTemplateData(paymentId) {
 		user_approver_kttc: "",                                                // Vị trí chữ ký Lãnh đạo phòng Kế toán
 		blank_signature: "",                                                   // Vị trí chữ ký Chủ đầu tư dự án
 		user_approver_final: "",                                               // Vị trí chữ ký Lãnh đạo Đơn vị
+		other_users: htktBuildOtherUsers(paymentFile),
 
 		payment_id: paymentId,
 		created_by_username: createdByUsername,
