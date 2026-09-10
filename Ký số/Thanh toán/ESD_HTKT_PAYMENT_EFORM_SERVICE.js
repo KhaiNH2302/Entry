@@ -20,9 +20,9 @@ var HTKT_DOC_HTTP_TIMEOUT = 300;
 var HTKT_DOC_MAX_BASE64_LENGTH = 5000000;
 
 
-var HTKT_CASH_TEMPLATE_ID = "4bbeea93-c8da-447a-9a40-de869da7f395";
+var HTKT_CASH_TEMPLATE_ID = "cd45b156-9086-460f-b7f6-3b702492db75";
 var HTKT_CASH_TEMPLATE_CODE = "HTKT-02-TTTM";
-var HTKT_TRANSFER_TEMPLATE_ID = "7fce45e2-8838-4c7c-8fc8-e30a3c52c7f4";
+var HTKT_TRANSFER_TEMPLATE_ID = "860193a2-1547-45f0-a43f-b3113559a315";
 var HTKT_TRANSFER_TEMPLATE_CODE = "HTKT-04-TTCK";
 
 //var HTKT_CASH_TEMPLATE_ID = "HTKT_TTTM";
@@ -1040,7 +1040,12 @@ function htktGetPaymentEntrySourceRows(paymentId) {
 				accounting_request_id: HTKT_COMMON.readString(
 						entryFile,
 						["accounting.request.id"]
-				)
+				),
+				branch: HTKT_COMMON.readString(entryFile, ["branch"]),
+				branch_entity_code: HTKT_COMMON.readString(entryFile, ["branch.entity.code", "branch_entity_code"]),
+				department: HTKT_COMMON.readString(entryFile, ["department"]),
+				transaction_office: HTKT_COMMON.readString(entryFile, ["transaction.code", "transaction.office", "transaction_office"]),
+				currency: HTKT_COMMON.readString(entryFile, ["currency"])
 			});
 
 			rc = entryFile.getNext();
@@ -1118,7 +1123,7 @@ function htktGetGlGroupInfo(paymentId, entry) {
 	};
 }
 
-function htktBuildSupplementalEntryRows(paymentId, entryRows) {
+function htktBuildSupplementalEntryRows(paymentId, entryRows, defaultCurrency) {
 	var groupsByKey = {};
 	var groups = [];
 
@@ -1139,7 +1144,8 @@ function htktBuildSupplementalEntryRows(paymentId, entryRows) {
 				order: groupInfo.order,
 				descriptions: [],
 				descriptionSet: {},
-				totalDebitRaw: 0
+				totalDebitRaw: 0,
+				rows: []
 			};
 			groupsByKey[groupInfo.key] = group;
 			groups.push(group);
@@ -1162,18 +1168,172 @@ function htktBuildSupplementalEntryRows(paymentId, entryRows) {
 		return left.order - right.order;
 	});
 
-	var result = [];
-	for (var groupIndex = 0; groupIndex < groups.length; groupIndex++) {
-		result.push({
-			stt: groupIndex + 1,                                        // {stt}    : STT nghĩa vụ thanh toán khác
-			des: groups[groupIndex].descriptions.join("\n"),             // {des}    : Nội dung chi tiết nghĩa vụ (rút gọn từ description)
-			description: groups[groupIndex].descriptions.join("\n"),     // Alias cũ tương thích
-			amount: htktFormatMoney(groups[groupIndex].totalDebitRaw),   // {amount} : Số tiền nghĩa vụ
-			note: ""                                                     // {note}   : Ghi chú nghĩa vụ
+	// Thu chi tiet tung dong theo nhom (Bút toán 1, Bút toán 2...)
+	for (var j = 0; j < entryRows.length; j++) {
+		var rowEntry = entryRows[j];
+		var rowType = htktNormalizePaymentMethod(rowEntry.type);
+
+		if (rowType !== HTKT_ENTRY_TYPE_GL) {
+			continue;
+		}
+
+		var rowGroupInfo = htktGetGlGroupInfo(paymentId, rowEntry);
+		var rowGroup = groupsByKey[rowGroupInfo.key];
+		if (!rowGroup) continue;
+
+		var amountRaw = Number(rowEntry.amount_raw || 0);
+		var accountSide = htktGetAccountSide(rowEntry.account_type);
+		var debitAmount = "";
+		var creditAmount = "";
+
+		if (accountSide === "debit") {
+			debitAmount = htktFormatMoney(amountRaw);
+		} else if (accountSide === "credit") {
+			creditAmount = htktFormatMoney(amountRaw);
+		}
+
+		rowGroup.rows.push({
+			stt: rowGroup.rows.length + 1,
+			account_number: rowEntry.account_number || "",
+			account_name: rowEntry.account_name || "",
+			unit_code: htktGetEntityUnitDisplay(
+					HTKT_COMMON.trim(rowEntry.branch) || rowEntry.branch_entity_code
+			),
+			description: rowEntry.description || "",
+			currency: rowEntry.currency || defaultCurrency || "",
+			debit_amount: debitAmount,
+			credit_amount: creditAmount
 		});
 	}
 
-	return result;
+	var summaryRows = [];
+	var groupsResult = [];
+
+	for (var groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+		var group = groups[groupIndex];
+		summaryRows.push({
+			stt: groupIndex + 1,
+			des: group.descriptions.join("\n"),
+			description: group.descriptions.join("\n"),
+			amount: htktFormatMoney(group.totalDebitRaw),
+			note: ""
+		});
+		groupsResult.push({
+			stt: groupIndex + 1,
+			description: group.descriptions.join("\n"),
+			amount: htktFormatMoney(group.totalDebitRaw),
+			note: "",
+			rows: group.rows
+		});
+	}
+
+	return {
+		summary: summaryRows,
+		groups: groupsResult
+	};
+}
+
+var HTKT_TABLE_ENTITY = "esdDMentity";
+
+function htktIsAllZeroCode(value) {
+	var code = HTKT_COMMON.trim(value);
+	return code !== "" && /^0+$/.test(code);
+}
+
+function htktUnknownCodeDisplay(code) {
+	return HTKT_COMMON.trim(code) + " - Không xác định";
+}
+
+function htktGetEntityUnitDisplay(branchCode) {
+	var code = HTKT_COMMON.trim(branchCode);
+	if (!code) return "";
+	if (htktIsAllZeroCode(code)) return htktUnknownCodeDisplay(code);
+
+	// Thu cac dang ma branch (106, 0106, 00106) vi dbdict co the luu kem so 0 dau.
+	var candidates = [code, "0" + code, "00" + code];
+	var matchedEntityCode = "";
+	var matchedName = "";
+	var fallbackEntityCode = "";
+	var fallbackName = "";
+
+	for (var candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+		var candidate = candidates[candidateIndex];
+		var entityFile = HTKT_COMMON.newReadOnlyFile(HTKT_TABLE_ENTITY);
+		if (!entityFile) continue;
+
+		var rc = entityFile.doSelect(
+				'ogl.branch.code="' + HTKT_COMMON.escapeQueryValue(candidate) + '"'
+		);
+
+		while (rc === RC_SUCCESS) {
+			var entityCode = HTKT_COMMON.readString(entityFile, ["entity.code"]);
+			var branchName = HTKT_COMMON.readString(entityFile, ["branch.name"]);
+			var transactionCode = HTKT_COMMON.readString(entityFile, ["org.transaction.code"]);
+
+			if (!fallbackEntityCode && entityCode) {
+				fallbackEntityCode = entityCode;
+				fallbackName = branchName;
+			}
+
+			// Uu tien dong Don vi (org.transaction.code = 98) giong dropdown UI.
+			if (transactionCode === "98" && entityCode && !matchedEntityCode) {
+				matchedEntityCode = entityCode;
+				matchedName = branchName;
+			}
+
+			rc = entityFile.getNext();
+		}
+
+		HTKT_COMMON.closeFile(entityFile);
+
+		if (matchedEntityCode) break;
+	}
+
+	// Neu chua tim thay, thu tim truc tiep theo entity.code
+	if (!matchedEntityCode) {
+		var entityFileDirect = HTKT_COMMON.newReadOnlyFile(HTKT_TABLE_ENTITY);
+		if (entityFileDirect) {
+			var rcDirect = entityFileDirect.doSelect('entity.code="' + HTKT_COMMON.escapeQueryValue(code) + '"');
+			if (rcDirect === RC_SUCCESS) {
+				matchedEntityCode = HTKT_COMMON.readString(entityFileDirect, ["entity.code"]);
+				matchedName = HTKT_COMMON.readString(entityFileDirect, ["branch.name"]);
+			}
+			HTKT_COMMON.closeFile(entityFileDirect);
+		}
+	}
+
+	var displayCode = matchedEntityCode || fallbackEntityCode || code;
+	var branchName = matchedName || fallbackName || "";
+	var separatorIndex = branchName.indexOf("-");
+	var namePrefix = (separatorIndex >= 0 ? branchName.substring(0, separatorIndex) : branchName).trim();
+
+	return namePrefix ? displayCode + " - " + namePrefix : displayCode;
+}
+
+function htktBuildSupplementalText(supplementalEntryRows, currency) {
+	if (!supplementalEntryRows || supplementalEntryRows.length === 0) {
+		return "";
+	}
+
+	var parts = [];
+	for (var i = 0; i < supplementalEntryRows.length; i++) {
+		var row = supplementalEntryRows[i];
+		var text = HTKT_COMMON.trim(row.des || row.description || "");
+		var amt = HTKT_COMMON.trim(row.amount);
+		if (amt && currency) {
+			amt += " " + currency;
+		}
+
+		if (text && amt) {
+			parts.push(text + ": " + amt);
+		} else if (text) {
+			parts.push(text);
+		} else if (amt) {
+			parts.push(amt);
+		}
+	}
+
+	return parts.join("; ");
 }
 
 function htktGetAccountingBankName(entry, vendorById) {
@@ -1529,9 +1689,16 @@ function htktBuildTemplateData(paymentId) {
 			paymentTemplate.kind
 	);
 	var entryRows = htktGetPaymentEntrySourceRows(paymentId);
-	var supplementalEntryRows = htktBuildSupplementalEntryRows(
+	var supplementalData = htktBuildSupplementalEntryRows(
 			paymentId,
-			entryRows
+			entryRows,
+			currency
+	);
+	var supplementalEntryRows = supplementalData.summary;
+	var supplementalEntryGroups = supplementalData.groups;
+	var supplementalText = htktBuildSupplementalText(
+			supplementalEntryRows,
+			currency
 	);
 	var accountingData = htktBuildAccountingRows(
 			entryRows,
@@ -1664,12 +1831,17 @@ function htktBuildTemplateData(paymentId) {
 		bank_name: "",
 
 		/* =========================================================================
-		 * 5. BẢNG CÁC NGHĨA VỤ THANH TOÁN KHÁC (Vòng lặp: {#supp})
-		 * Các trường trong mỗi dòng: {stt}, {des}, {amount}, {note}
+		 * 5. BẢNG CÁC NGHĨA VỤ THANH TOÁN KHÁC & BÚT TOÁN BỔ SUNG (GL)
 		 * ========================================================================= */
+		supp_des: supplementalText,                                             // {supp_des} : Chuỗi nội dung nghĩa vụ khác kèm số tiền
+		supp_text: supplementalText,                                            // Alias tương thích
+		supplemental_des: supplementalText,                                     // Alias tương thích
+		supplemental_description: supplementalText,                             // Alias tương thích
+		other_obligation: supplementalText,                                     // Alias tương thích
 		supp: supplementalEntryRows,                                           // {#supp}     : Danh sách nghĩa vụ thanh toán khác (rút gọn từ supplemental_entry_rows)
 		supp_rows: supplementalEntryRows,                                      // Alias tương thích
 		supplemental_entry_rows: supplementalEntryRows,                         // Alias cũ tương thích
+		supplemental_entry_groups: supplementalEntryGroups,                     // {#supplemental_entry_groups} : Nhóm bút toán GL bổ sung chi tiết theo mẫu chuẩn Tạm ứng
 
 		/* =========================================================================
 		 * 6. BẢNG CHI TIẾT THANH TOÁN (Tiền mặt: {#cash} / Chuyển khoản: {#trans})
