@@ -179,7 +179,8 @@ var ENTRY_TYPE = {
 	PREPAYMENT: 'PREPAYMENT', // TK tạm ứng
 	TAX: 'TAX',               // TK thuế
 	PAYABLE: 'PAYABLE',       // TK phải trả
-	CUSTOMER: 'CUSTOMER'      // TK KH
+	CUSTOMER: 'CUSTOMER',     // TK KH
+	OTHER: 'OTHER'            // TK khác
 };
 
 var GENERATION_PHASE = {
@@ -1602,6 +1603,7 @@ function normalizeEntryType(value) {
 	if (type === ENTRY_TYPE.TAX) return ENTRY_TYPE.TAX;
 	if (type === ENTRY_TYPE.PAYABLE) return ENTRY_TYPE.PAYABLE;
 	if (type === ENTRY_TYPE.CUSTOMER) return ENTRY_TYPE.CUSTOMER;
+	if (type === ENTRY_TYPE.OTHER) return ENTRY_TYPE.OTHER;
 	return '';
 }
 
@@ -2358,8 +2360,8 @@ function getStandardExpenseAllocations(c) {
 	if (result.length === 0) {
 		// debugPaymentEntry('COST-FALLBACK', 'NCC ' + (c.vendor.vendor_id || '?') + ': không có PCCP, dùng debit.account=' + safeString(c.vendor.debit_account));
 		result.push({
-			account_number: c.vendor.debit_account,
-			account_name: getGlAccountName(c.vendor.debit_account),
+			account_number: '',
+			account_name: '',
 			department: '',
 			branch: '',
 			amount: Math.max(0, c.approvedAmount - (c.hasTax ? c.taxInfo.totalDeductibleTax : 0))
@@ -2645,7 +2647,7 @@ function getAutoEntryRowErrors(row) {
 
 	if (!row.account_number) {
 		if (entryCode === AUTO_ENTRY_CODE.COST) {
-			costDivisionFields.push('account.number');
+			// Cho phép sinh dòng chi phí chưa chọn tài khoản để KT nhập sau.
 		} else if (entryCode === AUTO_ENTRY_CODE.TAX) {
 			categoryItemFields.push('item.name (' + CATEGORY_TAX_ACCOUNT_NUMBER + ')');
 		} else if (entryCode === AUTO_ENTRY_CODE.LIABILITY ||
@@ -4732,16 +4734,16 @@ function validateCostDebitAgainstInvoice(paymentId, entries) {
 		// Chuẩn hóa giá trị hóa đơn mục tiêu
 		targetInvoiceAmount = cleanAndFormatAmount(targetInvoiceAmount);
 
-		// Tính tổng cột ghi NỢ đối với các dòng có type là chi phí của NCC này
+		// Tính tổng ghi Nợ Chi phí + Thuế + Khác của NCC này.
 		var totalCostDebit = "0";
 		for (var j = 0; j < vendorEntries.length; j++) {
 			var row = vendorEntries[j];
 
-			var entryTypeCode = safeString(row.entry_type).toUpperCase();
+			var entryTypeCode = safeString(row.entry_type).trim().toUpperCase();
 			var accountSide = getAccountingSide(row.account_type);
 
 			var isCostType = (
-					entryTypeCode === 'COST' || entryTypeCode === 'TAX'
+					entryTypeCode === 'COST' || entryTypeCode === 'TAX' || entryTypeCode === 'OTHER'
 			);
 
 			// Kiểm tra chiều Ghi Nợ (debit)
@@ -4759,7 +4761,7 @@ function validateCostDebitAgainstInvoice(paymentId, entries) {
 
 		if (compareResult !== 0) {
 			var vendorName = getVendorName(vId);
-			return makeError('Tổng ghi Nợ của loại tài khoản Chi phí và Thuế của nhà cung cấp [' + vendorName + '] (' + totalCostDebit + ') phải bằng giá trị hóa đơn chấp nhận (' + targetInvoiceAmount + ').');
+			return makeError('Tổng ghi Nợ của loại tài khoản Chi phí, Thuế và Khác của nhà cung cấp [' + vendorName + '] (' + totalCostDebit + ') phải bằng giá trị hóa đơn chấp nhận (' + targetInvoiceAmount + ').');
 		}
 	}
 
