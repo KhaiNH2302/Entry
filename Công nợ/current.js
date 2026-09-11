@@ -948,6 +948,8 @@ function getSupplierDebtSummary(input) {
 			"pe.payment.id AS entry_payment_id, " +
 			"aip.status AS ogl_status " +
 			"FROM esdHTKTaccountingInformation ai " +
+			"JOIN esdHTKTprepayment prep " +
+			'ON (ai.prepayment.id = prep.id AND prep.status = "accounted") ' +
 			"LEFT JOIN esdHTKTpaymentEntry pe " +
 			"ON (ai.prepayment.id = pe.ref.id AND pe.entry.type = \"PREPAYMENT\" AND pe.vendor.id = \"" + escapeSmQueryValue(vendorId) + "\") " +
 			"LEFT JOIN esdHTKTaccountingInformation aip " +
@@ -1011,17 +1013,20 @@ function getSupplierDebtSummary(input) {
 
 	// 2. TÍNH THUẾ CỦA CÁC PHIẾU ĐNTƯ ĐÃ COMPLETED (sub.type = "THUE")
 	var totalAdvanceTax = 0;
-	var queryThue = 'contract.id = "' + escapeSmQueryValue(contractId) + '" ' +
-			'AND vendor.id = "' + escapeSmQueryValue(vendorId) + '" ' +
-			'AND sub.type = "THUE" ' +
-			'AND type = "AP" ' +
-			'AND status = "COMPLETED"';
+	var queryThue =
+			"SELECT ai.amount AS advance_amount FROM esdHTKTaccountingInformation ai " +
+			"JOIN esdHTKTprepayment prep ON (ai.prepayment.id = prep.id AND prep.status = \"accounted\") " +
+			'WHERE ai.contract.id = "' + escapeSmQueryValue(contractId) + '" ' +
+			'AND ai.vendor.id = "' + escapeSmQueryValue(vendorId) + '" ' +
+			'AND ai.sub.type = "THUE" ' +
+			'AND ai.type = "AP" ' +
+			'AND ai.status = "COMPLETED"';
 	var fileThue = null;
 	try {
 		fileThue = new SCFile("esdHTKTaccountingInformation", SCFILE_READONLY);
 		var rcThue = fileThue.doSelect(queryThue);
 		while (rcThue == RC_SUCCESS) {
-			totalAdvanceTax += getNumberField(fileThue, ["amount", "ai.amount"]);
+			totalAdvanceTax += getNumberField(fileThue, ["advance_amount", "amount", "ai.amount"]);
 			rcThue = fileThue.getNext();
 		}
 	} catch (eThue) {
@@ -1041,6 +1046,8 @@ function getSupplierDebtSummary(input) {
 			"pe.payment.id AS entry_payment_id, " +
 			"aip.status AS ogl_status " +
 			"FROM esdHTKTaccountingInformation ai " +
+			"JOIN esdHTKTpayment payment " +
+			'ON (ai.prepayment.id = payment.id AND payment.status = "accounted") ' +
 			"LEFT JOIN esdHTKTpaymentEntry pe " +
 			"ON (ai.prepayment.id = pe.ref.id AND pe.entry.type = \"PAYABLE\" AND pe.account.type = \"DEBIT\" AND pe.vendor.id = \"" + escapeSmQueryValue(vendorId) + "\") " +
 			"LEFT JOIN esdHTKTaccountingInformation aip " +

@@ -68,36 +68,8 @@ function createPaymentRequest(input) {
 
 		if (contractId) {
 			try {
-				// 1. TỔNG GIÁ TRỊ ĐÃ TẠM ỨNG
-				var totalPrepayment = "0";
-				var prepaymentFile = new SCFile("esdHTKTprepayment", SCFILE_READONLY);
-				var sqlPrepayment = 'contract.id="' + contractId + '" and (status="approved" or status="accounted")';
-
-				if (prepaymentFile.doSelect(sqlPrepayment) === RC_SUCCESS) {
-					do {
-						var prepaymentVendorFile = new SCFile("esdHTKTprepaymentVendor", SCFILE_READONLY);
-						if (prepaymentVendorFile.doSelect('prepayment.id="' + prepaymentFile.id + '"') === RC_SUCCESS) {
-							do {
-								// Đảm bảo amount không bị rỗng/null để thư viện cộng chuỗi không báo lỗi
-								var vendorAmt = prepaymentVendorFile.amount ? String(prepaymentVendorFile.amount) : "0";
-								totalPrepayment = lib.ESD_HTKT_Utils.addStringsManual(totalPrepayment, vendorAmt);
-
-							} while (prepaymentVendorFile.getNext() === RC_SUCCESS);
-						}
-						prepaymentVendorFile.doClose();
-
-					} while (prepaymentFile.getNext() === RC_SUCCESS);
-				}
-				prepaymentFile.doClose();
-
-				// 2. TỔNG GIÁ TRỊ ĐÃ THANH TOÁN
-				var totalPayment = "0";
-
-				// 3. GIÁ TRỊ HĐ/KMS CÒN LẠI
 				var currentContractAmount = String(contractData['totalValue'] || contractData['contract.amount'] || "0");
-
-				var remainingContractValue = lib.ESD_HTKT_Utils.subtractStringsManual(currentContractAmount, totalPrepayment);
-				remainingContractValue = lib.ESD_HTKT_Utils.subtractStringsManual(remainingContractValue, totalPayment);
+				var remainingContractValue = calculateContractRemainingValue(contractId, currentContractAmount);
 
 				// 4. KIỂM TRA CHẶN
 				// Ép kiểu về số để kiểm tra <= 0
@@ -539,7 +511,14 @@ function listPurchaseContracts(input) {
 				itemData.name = itemData.name;
 			}
 
-			dataArray.push(itemData);
+			// --- LỌC BẢN GHI CÓ SỐ TIỀN CÒN LẠI > 0 (THEO CÁCH TÍNH CHẶN KHI TẠO PHIẾU) ---
+			var contractId = itemData.id;
+			var currentContractAmount = String(itemData.totalValue || itemData['contract.amount'] || "0");
+			var remainingVal = calculateContractRemainingValue(contractId, currentContractAmount);
+
+			if (Number(remainingVal) > 0) {
+				dataArray.push(itemData);
+			}
 
 			rc = f.getNext();
 		}
@@ -557,6 +536,45 @@ function listPurchaseContracts(input) {
 		success: true,
 		data: dataArray
 	};
+}
+
+function calculateContractRemainingValue(contractId, currentContractAmount) {
+	if (!contractId) return String(currentContractAmount || "0");
+
+	try {
+		// 1. TỔNG GIÁ TRỊ ĐÃ TẠM ỨNG
+		var totalPrepayment = "0";
+		var prepaymentFile = new SCFile("esdHTKTprepayment", SCFILE_READONLY);
+		var sqlPrepayment = 'contract.id="' + contractId + '" and (status="approved" or status="accounted")';
+
+		if (prepaymentFile.doSelect(sqlPrepayment) === RC_SUCCESS) {
+			do {
+				var prepaymentVendorFile = new SCFile("esdHTKTprepaymentVendor", SCFILE_READONLY);
+				if (prepaymentVendorFile.doSelect('prepayment.id="' + prepaymentFile.id + '"') === RC_SUCCESS) {
+					do {
+						// Đảm bảo amount không bị rỗng/null để thư viện cộng chuỗi không báo lỗi
+						var vendorAmt = prepaymentVendorFile.amount ? String(prepaymentVendorFile.amount) : "0";
+						totalPrepayment = lib.ESD_HTKT_Utils.addStringsManual(totalPrepayment, vendorAmt);
+
+					} while (prepaymentVendorFile.getNext() === RC_SUCCESS);
+				}
+				prepaymentVendorFile.doClose();
+
+			} while (prepaymentFile.getNext() === RC_SUCCESS);
+		}
+		prepaymentFile.doClose();
+
+		// 2. TỔNG GIÁ TRỊ ĐÃ THANH TOÁN
+		var totalPayment = "0";
+
+		// 3. GIÁ TRỊ HĐ/KMS CÒN LẠI
+		var remainingContractValue = lib.ESD_HTKT_Utils.subtractStringsManual(String(currentContractAmount || "0"), totalPrepayment);
+		remainingContractValue = lib.ESD_HTKT_Utils.subtractStringsManual(remainingContractValue, totalPayment);
+
+		return remainingContractValue;
+	} catch (e) {
+		return String(currentContractAmount || "0");
+	}
 }
 
 function mapRowToObject(scFileRecord, fieldMappings) {

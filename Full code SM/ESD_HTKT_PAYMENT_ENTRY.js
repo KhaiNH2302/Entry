@@ -179,7 +179,8 @@ var ENTRY_TYPE = {
 	PREPAYMENT: 'PREPAYMENT', // TK tạm ứng
 	TAX: 'TAX',               // TK thuế
 	PAYABLE: 'PAYABLE',       // TK phải trả
-	CUSTOMER: 'CUSTOMER'      // TK KH
+	CUSTOMER: 'CUSTOMER',     // TK KH
+	OTHER: 'OTHER'            // TK khác
 };
 
 var GENERATION_PHASE = {
@@ -436,8 +437,18 @@ function getListPaymentEntryByInputDetails(details) {
 		return makeResult([], 'empty', summaryMeta);
 	}
 
-	// debugPaymentEntry('GET-LIST', 'Không có dữ liệu, trả empty và không tự động sinh');
-	return makeResult([], 'empty', summaryMeta);
+	// Nếu DB chưa có bút toán -> Tiến hành đồng bộ và sinh mới.
+	var generatedResult = syncPaymentEntryNowByInputDetails(details);
+	if (generatedResult.data && generatedResult.data.length > 0) {
+		applyCreatorUnitToEntries(
+				generatedResult.data,
+				creatorUnit.code
+		);
+		generatedResult.data = getUniqueCostEntriesByAccountNumber(generatedResult.data);
+		generatedResult.accountingItems = mapAccountingTableItems(generatedResult.data);
+	}
+	copyObject(generatedResult, summaryMeta);
+	return generatedResult;
 }
 
 /**
@@ -1602,6 +1613,7 @@ function normalizeEntryType(value) {
 	if (type === ENTRY_TYPE.TAX) return ENTRY_TYPE.TAX;
 	if (type === ENTRY_TYPE.PAYABLE) return ENTRY_TYPE.PAYABLE;
 	if (type === ENTRY_TYPE.CUSTOMER) return ENTRY_TYPE.CUSTOMER;
+	if (type === ENTRY_TYPE.OTHER) return ENTRY_TYPE.OTHER;
 	return '';
 }
 
@@ -2358,8 +2370,8 @@ function getStandardExpenseAllocations(c) {
 	if (result.length === 0) {
 		// debugPaymentEntry('COST-FALLBACK', 'NCC ' + (c.vendor.vendor_id || '?') + ': không có PCCP, dùng debit.account=' + safeString(c.vendor.debit_account));
 		result.push({
-			account_number: c.vendor.debit_account,
-			account_name: getGlAccountName(c.vendor.debit_account),
+			account_number: '',
+			account_name: '',
 			department: '',
 			branch: '',
 			amount: Math.max(0, c.approvedAmount - (c.hasTax ? c.taxInfo.totalDeductibleTax : 0))
@@ -2631,51 +2643,50 @@ function getAutoEntryRowsErrors(rows) {
 function getAutoEntryRowErrors(row) {
 	var errors = [];
 	var subject = row.entry_type ? 'Bút toán ' + row.entry_type : 'Bút toán tự động';
-	var entryCode = safeString(row.rule_code).trim();
-	var entryFields = [];
-	var paymentVendorFields = [];
-	var vendorSiteFields = [];
-	var categoryItemFields = [];
-	var costDivisionFields = [];
+	var entryCode = safeString(row.rule_code || row.entry_type).trim();
+	var vendorLabel = safeString(row.vendor_name).trim() || safeString(row.vendor_id).trim();
+	var vendorReference = vendorLabel ? ' của nhà cung cấp ' + vendorLabel : '';
 
-	if (!row.payment_id) entryFields.push('payment.id');
-	if (!row.entry_type) entryFields.push('entry.type');
-	if (!row.vendor_id) paymentVendorFields.push('vendor.id');
-	if (!row.currency) paymentVendorFields.push('currency');
+	if (!row.payment_id) {
+		errors.push(subject + ' chưa xác định được Số đề nghị thanh toán. Vui lòng kiểm tra lại.');
+	}
+	if (!row.vendor_id) {
+		errors.push(subject + ' chưa xác định được Nhà cung cấp. Vui lòng kiểm tra lại.');
+	}
+	if (!row.currency) {
+		errors.push(subject + vendorReference + ' chưa chọn Loại tiền. Vui lòng kiểm tra lại.');
+	}
 
 	if (!row.account_number) {
 		if (entryCode === AUTO_ENTRY_CODE.COST) {
-			costDivisionFields.push('account.number');
+			// Cho phép sinh dòng chi phí chưa chọn tài khoản để KT nhập sau.
 		} else if (entryCode === AUTO_ENTRY_CODE.TAX) {
-			categoryItemFields.push('item.name (' + CATEGORY_TAX_ACCOUNT_NUMBER + ')');
+			errors.push(subject + vendorReference + ' chưa được thiết lập Tài khoản thuế GTGT đầu vào trong danh mục hệ thống. Vui lòng kiểm tra lại.');
 		} else if (entryCode === AUTO_ENTRY_CODE.LIABILITY ||
 				entryCode === AUTO_ENTRY_CODE.REFUND_DR ||
 				entryCode === AUTO_ENTRY_CODE.PAYMENT ||
 				entryCode === AUTO_ENTRY_CODE.SUSPENDED) {
-			// Tài khoản phải trả NCC.
-			vendorSiteFields.push('credit.account');
+			errors.push(subject + vendorReference + ' chưa được thiết lập Tài khoản công nợ phải trả tại danh mục Site nhà cung cấp. Vui lòng kiểm tra lại.');
 		} else if (entryCode === AUTO_ENTRY_CODE.REFUND_CR) {
-			vendorSiteFields.push('debit.account');
-		} else if (entryCode === AUTO_ENTRY_CODE.TRANSFER &&
-				!isCashPayment(row.payment_method)) {
-			paymentVendorFields.push('beneficiary.account');
+			errors.push(subject + vendorReference + ' chưa được thiết lập Tài khoản tạm ứng tại danh mục Site nhà cung cấp. Vui lòng kiểm tra lại.');
+		} else if (entryCode === AUTO_ENTRY_CODE.TRANSFER && !isCashPayment(row.payment_method)) {
+			errors.push(subject + vendorReference + ' chưa có thông tin Số tài khoản thụ hưởng. Vui lòng kiểm tra lại.');
 		} else {
-			errors.push(subject + ': không xác định được tài khoản.');
+			errors.push(subject + vendorReference + ' chưa xác định được tài khoản định khoản kế toán. Vui lòng kiểm tra lại.');
 		}
 	}
 
-	addMissingFieldsError(errors, subject, TABLE_PAYMENT_ENTRY, entryFields);
-	addMissingFieldsError(errors, subject, TABLE_PAYMENT_VENDOR, paymentVendorFields);
-	addMissingFieldsError(errors, subject, TABLE_VENDOR_SITE, vendorSiteFields);
-	addMissingFieldsError(errors, subject, TABLE_CATEGORY_ITEM, categoryItemFields);
-	addMissingFieldsError(errors, subject, TABLE_COST_DIVISION, costDivisionFields);
-
-	// var amountIsBlank = row.amount === null || row.amount === undefined || row.amount === '';
-	// if (!(row.allow_blank_amount && amountIsBlank) && toNumber(row.amount) <= 0) {
-	//   errors.push(subject + ': số tiền phải lớn hơn 0.');
-	// }
-
 	return errors;
+}
+
+// Map tên NCC dùng trong thông báo lỗi sinh bút toán.
+function getVendorGenerationSubject(vendor) {
+	var vendorName = safeString(vendor.vendor_name || vendor.name).trim();
+	var vendorId = safeString(vendor.vendor_id || vendor.id).trim();
+
+	if (vendorName) return 'Nhà cung cấp ' + vendorName;
+	if (vendorId) return 'Nhà cung cấp ' + vendorId;
+	return 'Nhà cung cấp';
 }
 
 // -----------------------------------------------------------------------------
@@ -2684,37 +2695,42 @@ function getAutoEntryRowErrors(row) {
 
 function getVendorAutoEntryErrors(vendor) {
 	var errors = [];
-	var subject = vendor.vendor_id ? 'NCC ' + vendor.vendor_id : 'NCC';
-	var paymentVendorFields = [];
-	var vendorFields = [];
-	var vendorSiteFields = [];
+	var subject = getVendorGenerationSubject(vendor);
 
-	if (!vendor.vendor_id) paymentVendorFields.push('vendor.id');
-	if (!vendor.vendor_site_id) paymentVendorFields.push('vendor.site.id');
-	if (!vendor.currency) paymentVendorFields.push('currency');
-	if (toNumber(vendor.amount) > 0 && !vendor.payment_method) paymentVendorFields.push('payment.method');
-	if (!vendor.vendor_number) vendorFields.push('vendor.number');
-	// ogl.site.code chi bat buoc tai buoc mapping/call API, khong chan sinh but toan.
-	// Khong bat buoc credit.account o cap NCC. Neu dong tu sinh thuc te can
-	// tai khoan phai tra, getAutoEntryRowErrors se validate theo dung dong do.
-	// Không yêu cầu debit.account chỉ vì có refund.amount: paymentEntry chưa sinh
-	// dòng Có TK tạm ứng; tài khoản này được kiểm tra ở bước xử lý tab Công nợ.
-
-	// Chỉ bắt buộc thông tin thụ hưởng khi case thực sự có đi tiền.
-	if (toNumber(vendor.amount) > 0) {
-		if (isBankTransfer(vendor.payment_method)) {
-			if (!vendor.beneficiary_account) paymentVendorFields.push('beneficiary.account');
-			if (!vendor.beneficiary_name) paymentVendorFields.push('beneficiary.name');
-			if (!vendor.beneficiary_bank) paymentVendorFields.push('beneficiary.bank');
-		} else if (!isCashPayment(vendor.payment_method)) {
-			// Phương thức khác Tiền mặt chưa có mapping cố định.
-			if (!vendor.beneficiary_account) paymentVendorFields.push('beneficiary.account');
-		}
+	if (!vendor.vendor_id) {
+		errors.push('Hồ sơ đề nghị chưa lựa chọn Nhà cung cấp. Vui lòng kiểm tra lại.');
+	}
+	if (!vendor.vendor_site_id) {
+		errors.push(subject + ' chưa chọn nhà cung cấp. Vui lòng kiểm tra lại.');
+	}
+	if (vendor.vendor_site_id && !vendor.vendor_site_code) {
+		errors.push(subject + ' chưa có thông tin Site nhà cung cấp. Vui lòng kiểm tra lại.');
+	}
+	if (!vendor.currency) {
+		errors.push(subject + ' chưa chọn Loại tiền. Vui lòng kiểm tra lại.');
+	}
+	if (toNumber(vendor.amount) > 0 && !vendor.payment_method) {
+		errors.push(subject + ' chưa chọn Phương thức thanh toán (Chuyển khoản/Tiền mặt). Vui lòng kiểm tra lại.');
 	}
 
-	addMissingFieldsError(errors, subject, TABLE_PAYMENT_VENDOR, paymentVendorFields);
-	addMissingFieldsError(errors, subject, TABLE_VENDOR, vendorFields);
-	addMissingFieldsError(errors, subject, TABLE_VENDOR_SITE, vendorSiteFields);
+// Chỉ bắt buộc thông tin thụ hưởng khi case thực sự có đi tiền.
+	if (toNumber(vendor.amount) > 0) {
+		if (isBankTransfer(vendor.payment_method)) {
+			if (!vendor.beneficiary_account) {
+				errors.push(subject + ' chưa nhập Số tài khoản thụ hưởng. Vui lòng kiểm tra lại.');
+			}
+			if (!vendor.beneficiary_name) {
+				errors.push(subject + ' chưa nhập Tên đơn vị thụ hưởng. Vui lòng kiểm tra lại.');
+			}
+			if (!vendor.beneficiary_bank) {
+				errors.push(subject + ' chưa chọn Ngân hàng thụ hưởng. Vui lòng kiểm tra lại.');
+			}
+		} else if (!isCashPayment(vendor.payment_method)) {
+			if (!vendor.beneficiary_account) {
+				errors.push(subject + ' chưa nhập Số tài khoản thụ hưởng. Vui lòng kiểm tra lại.');
+			}
+		}
+	}
 
 	return errors;
 }
@@ -2899,9 +2915,9 @@ function getLinkedInvoiceVendorErrors(paymentId, vendors) {
 		}
 
 		if (!sellerTaxCode) {
-			errors.push('Hóa đơn ' + links[i].invoice_id + ': thiếu seller.tax.code tại ' + TABLE_INVOICE + '.');
+			errors.push('Hóa đơn ' + links[i].invoice_id + ' đang để trống Mã số thuế bên bán. Vui lòng kiểm tra lại.');
 		} else if (!matched) {
-			errors.push('Hóa đơn ' + links[i].invoice_id + ': seller.tax.code không khớp vendor.number của NCC.');
+			errors.push('Hóa đơn ' + links[i].invoice_id + ': Mã số thuế bên bán không khớp với Mã số thuế của Nhà cung cấp trong đề nghị.');
 		}
 	}
 
@@ -4732,16 +4748,16 @@ function validateCostDebitAgainstInvoice(paymentId, entries) {
 		// Chuẩn hóa giá trị hóa đơn mục tiêu
 		targetInvoiceAmount = cleanAndFormatAmount(targetInvoiceAmount);
 
-		// Tính tổng cột ghi NỢ đối với các dòng có type là chi phí của NCC này
+		// Tính tổng ghi Nợ Chi phí + Thuế + Khác của NCC này.
 		var totalCostDebit = "0";
 		for (var j = 0; j < vendorEntries.length; j++) {
 			var row = vendorEntries[j];
 
-			var entryTypeCode = safeString(row.entry_type).toUpperCase();
+			var entryTypeCode = safeString(row.entry_type).trim().toUpperCase();
 			var accountSide = getAccountingSide(row.account_type);
 
 			var isCostType = (
-					entryTypeCode === 'COST' || entryTypeCode === 'TAX'
+					entryTypeCode === 'COST' || entryTypeCode === 'TAX' || entryTypeCode === 'OTHER'
 			);
 
 			// Kiểm tra chiều Ghi Nợ (debit)
@@ -4759,7 +4775,7 @@ function validateCostDebitAgainstInvoice(paymentId, entries) {
 
 		if (compareResult !== 0) {
 			var vendorName = getVendorName(vId);
-			return makeError('Tổng ghi Nợ của loại tài khoản Chi phí và Thuế của nhà cung cấp [' + vendorName + '] (' + totalCostDebit + ') phải bằng giá trị hóa đơn chấp nhận (' + targetInvoiceAmount + ').');
+			return makeError('Tổng ghi Nợ của loại tài khoản Chi phí, Thuế và Khác của nhà cung cấp [' + vendorName + '] (' + totalCostDebit + ') phải bằng giá trị hóa đơn chấp nhận (' + targetInvoiceAmount + ').');
 		}
 	}
 

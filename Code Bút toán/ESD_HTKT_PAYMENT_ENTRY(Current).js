@@ -2654,7 +2654,7 @@ function getAutoEntryRowErrors(row) {
 		errors.push(subject + ' chưa xác định được Nhà cung cấp. Vui lòng kiểm tra lại.');
 	}
 	if (!row.currency) {
-		errors.push(subject + vendorReference + ' chưa chọn Đồng tiền thanh toán. Vui lòng kiểm tra lại.');
+		errors.push(subject + vendorReference + ' chưa chọn Loại tiền. Vui lòng kiểm tra lại.');
 	}
 
 	if (!row.account_number) {
@@ -2666,9 +2666,9 @@ function getAutoEntryRowErrors(row) {
 				entryCode === AUTO_ENTRY_CODE.REFUND_DR ||
 				entryCode === AUTO_ENTRY_CODE.PAYMENT ||
 				entryCode === AUTO_ENTRY_CODE.SUSPENDED) {
-			errors.push(subject + vendorReference + ' chưa được thiết lập Tài khoản công nợ phải trả tại danh mục Địa điểm nhà cung cấp. Vui lòng kiểm tra lại.');
+			errors.push(subject + vendorReference + ' chưa được thiết lập Tài khoản công nợ phải trả tại danh mục Site nhà cung cấp. Vui lòng kiểm tra lại.');
 		} else if (entryCode === AUTO_ENTRY_CODE.REFUND_CR) {
-			errors.push(subject + vendorReference + ' chưa được thiết lập Tài khoản tạm ứng tại danh mục Địa điểm nhà cung cấp. Vui lòng kiểm tra lại.');
+			errors.push(subject + vendorReference + ' chưa được thiết lập Tài khoản tạm ứng tại danh mục Site nhà cung cấp. Vui lòng kiểm tra lại.');
 		} else if (entryCode === AUTO_ENTRY_CODE.TRANSFER && !isCashPayment(row.payment_method)) {
 			errors.push(subject + vendorReference + ' chưa có thông tin Số tài khoản thụ hưởng. Vui lòng kiểm tra lại.');
 		} else {
@@ -2701,19 +2701,19 @@ function getVendorAutoEntryErrors(vendor) {
 		errors.push('Hồ sơ đề nghị chưa lựa chọn Nhà cung cấp. Vui lòng kiểm tra lại.');
 	}
 	if (!vendor.vendor_site_id) {
-		errors.push(subject + ' chưa chọn Địa điểm nhà cung cấp. Vui lòng kiểm tra lại.');
+		errors.push(subject + ' chưa chọn nhà cung cấp. Vui lòng kiểm tra lại.');
 	}
 	if (vendor.vendor_site_id && !vendor.vendor_site_code) {
 		errors.push(subject + ' chưa có thông tin Site nhà cung cấp. Vui lòng kiểm tra lại.');
 	}
 	if (!vendor.currency) {
-		errors.push(subject + ' chưa chọn Đồng tiền thanh toán. Vui lòng kiểm tra lại.');
+		errors.push(subject + ' chưa chọn Loại tiền. Vui lòng kiểm tra lại.');
 	}
 	if (toNumber(vendor.amount) > 0 && !vendor.payment_method) {
 		errors.push(subject + ' chưa chọn Phương thức thanh toán (Chuyển khoản/Tiền mặt). Vui lòng kiểm tra lại.');
 	}
 
-	// Chỉ bắt buộc thông tin thụ hưởng khi case thực sự có đi tiền.
+// Chỉ bắt buộc thông tin thụ hưởng khi case thực sự có đi tiền.
 	if (toNumber(vendor.amount) > 0) {
 		if (isBankTransfer(vendor.payment_method)) {
 			if (!vendor.beneficiary_account) {
