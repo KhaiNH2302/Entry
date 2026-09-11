@@ -202,7 +202,7 @@ function updateNextStatus(record, previousRecord) {
 					document: currentDocument.data
 				}, "Bản trình ký đã được tạo trước đó.");
 			} else if (currentDocument && currentDocument.code && currentDocument.code !== "DOCUMENT_NOT_FOUND") {
-				throw new Error(currentDocument.message || "Không kiểm tra được bản trình ký hiện tại.");
+//                throw new Error(currentDocument.message || "Không kiểm tra được bản trình ký hiện tại.");
 			} else {
 				documentResult = htktWfDocument().generateAndUploadPresentation({
 					paymentId: paymentId,
@@ -220,7 +220,7 @@ function updateNextStatus(record, previousRecord) {
 				}
 			}
 		} catch (docErr) {
-			throw docErr;
+//            throw docErr;
 		}
 	}
 
@@ -686,6 +686,43 @@ function validateVendorAndPaymentDetails(record) {
 		errorMss.push("Số tiền hoàn ứng lần này phải lớn hơn 0.");
 	} else if (refundAmount > remainingAmount) {
 		errorMss.push("Số tiền hoàn ứng lần này phải nhỏ hơn hoặc bằng Số tiền còn lại.");
+	}
+
+	var paymentId = String(record["payment.id"] || record.payment_id || "").trim();
+	var vendorId = String(record["vendor.id"] || record.vendor_id || "").trim();
+	var contractId = String(record["contract.id"] || record.contract_id || "").trim();
+
+	if (refundAmount > 0 && vendorId) {
+		var paymentFile = null;
+		try {
+
+
+			if (!contractId && paymentId) {
+				paymentFile = new SCFile("esdHTKTpayment", SCFILE_READONLY);
+				if (paymentFile.doSelect('id="' + escapeSmQueryValue(paymentId) + '"') == RC_SUCCESS) {
+					contractId = String(paymentFile["contract.id"] || "").trim();
+				}
+			}
+
+			if (!paymentId || !contractId) {
+				throw new Error("Thiếu thông tin phiếu thanh toán, hợp đồng.");
+			}
+
+			var debtSummary = lib.ESD_HTKT_PAYMENT_SUPPLIER_LEDGER_LIST.getSupplierDebtSummary({
+				details: JSON.stringify({ paymentId: paymentId, vendorId: vendorId, contractId: contractId })
+			});
+			var tongCoTheHoanUng = parseAmount(debtSummary && debtSummary.tongCoTheHoanUng);
+			if (isNaN(tongCoTheHoanUng) || tongCoTheHoanUng < 0) {
+				throw new Error("Tổng có thể hoàn ứng không hợp lệ.");
+			}
+			if (refundAmount > tongCoTheHoanUng) {
+				errorMss.push("Số tiền hoàn ứng lần này phải nhỏ hơn hoặc bằng Tổng có thể hoàn ứng (" + tongCoTheHoanUng + ").");
+			}
+		} catch (eRefund) {
+			errorMss.push("Không thể kiểm tra Tổng có thể hoàn ứng. " + String(eRefund.message || eRefund));
+		} finally {
+			try { if (paymentFile) paymentFile.doClose(); } catch (eClosePayment) {}
+		}
 	}
 
 	if(refundAmount == 0 && amountField == 0 && approvedInvoiceAmount == 0) {
