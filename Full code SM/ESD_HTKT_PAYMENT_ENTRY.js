@@ -2701,7 +2701,7 @@ function getVendorAutoEntryErrors(vendor) {
 		errors.push('Hồ sơ đề nghị chưa lựa chọn Nhà cung cấp. Vui lòng kiểm tra lại.');
 	}
 	if (!vendor.vendor_site_id) {
-		errors.push(subject + ' chưa chọn nhà cung cấp. Vui lòng kiểm tra lại.');
+		errors.push(subject + ' chưa có thông tin Site nhà cung cấp. Vui lòng kiểm tra lại.');
 	}
 	if (vendor.vendor_site_id && !vendor.vendor_site_code) {
 		errors.push(subject + ' chưa có thông tin Site nhà cung cấp. Vui lòng kiểm tra lại.');
