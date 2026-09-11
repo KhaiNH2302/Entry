@@ -1009,18 +1009,18 @@ function getAutoEntryRowErrors(row) {
 	var vendorReference = vendorLabel ? ' của nhà cung cấp ' + vendorLabel : '';
 
 	if (!row.vendor_id) {
-		errors.push(subject + ' đang để trống Nhà cung cấp. Vui lòng kiểm tra lại.');
+		errors.push(subject + ' chưa xác định được Nhà cung cấp. Vui lòng kiểm tra lại.');
 	}
 
 	if (!row.account_number) {
 		if (entryCode === AUTO_ENTRY_CODE.ADVANCE) {
-			errors.push(subject + vendorReference + ' đang để trống trường Tài khoản ghi nợ. Vui lòng kiểm tra lại.');
+			errors.push(subject + vendorReference + ' chưa được thiết lập Tài khoản tạm ứng (Ghi nợ) tại danh mục Địa điểm nhà cung cấp. Vui lòng kiểm tra lại.');
 		} else if (entryCode === AUTO_ENTRY_CODE.PAYMENT && isBankTransfer(row.payment_method)) {
-			errors.push(subject + vendorReference + ' đang để trống trường Số tài khoản thụ hưởng. Vui lòng kiểm tra lại.');
+			errors.push(subject + vendorReference + ' chưa có thông tin Số tài khoản thụ hưởng. Vui lòng kiểm tra lại.');
 		} else if (entryCode === AUTO_ENTRY_CODE.PAYMENT && isCashPayment(row.payment_method)) {
-			errors.push(subject + vendorReference + ' đang để trống trường Tài khoản ghi có. Vui lòng kiểm tra lại.');
+			errors.push(subject + vendorReference + ' chưa được thiết lập Tài khoản chi tiền mặt (Ghi có). Vui lòng kiểm tra lại.');
 		} else {
-			errors.push(subject + vendorReference + ' chưa xác định được tài khoản. Vui lòng kiểm tra lại.');
+			errors.push(subject + vendorReference + ' chưa xác định được tài khoản định khoản kế toán. Vui lòng kiểm tra lại.');
 		}
 	}
 
@@ -1032,16 +1032,16 @@ function getVendorAutoEntryErrors(vendor) {
 	var subject = getVendorGenerationSubject(vendor);
 
 	if (!vendor.vendor_id) {
-		errors.push('Đề nghị đang để trống Nhà cung cấp. Vui lòng kiểm tra lại.');
+		errors.push('Hồ sơ đề nghị chưa lựa chọn Nhà cung cấp. Vui lòng kiểm tra lại.');
 	}
 	if (!vendor.vendor_site_id) {
-		errors.push(subject + ' đang để trống trường Site NCC. Vui lòng kiểm tra lại.');
+		errors.push(subject + ' chưa chọn Địa điểm nhà cung cấp. Vui lòng kiểm tra lại.');
 	}
 
 	// Chỉ kiểm tra dữ liệu Site NCC sau khi đã xác định được Site NCC cần tra cứu.
 	if (vendor.vendor_site_id) {
 		if (!vendor.vendor_site_code) {
-			errors.push(subject + ' đang để trống trường Mã Site NCC. Vui lòng kiểm tra lại.');
+			errors.push(subject + ' chưa có thông tin Mã địa điểm nhà cung cấp. Vui lòng kiểm tra lại.');
 		}
 	}
 
